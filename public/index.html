@@ -559,7 +559,6 @@
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
 <div id="loginScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:90%;max-width:380px;box-shadow:var(--shadow);text-align:center">
     <div style="font-size:2.5rem;margin-bottom:12px">🔐</div>
@@ -573,12 +572,10 @@
   </div>
 </div>
 
-<!-- MAIN APP (hidden until login) -->
 <div id="mainApp" style="display:none">
 
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- Hero -->
 <div class="hero">
   <h1>🏆 Live Leaderboard</h1>
   <p>The competition is heating up!</p>
@@ -586,10 +583,8 @@
 
 <div class="container">
 
-  <!-- Stats -->
   <div class="stats-row" id="dashStats"></div>
 
-  <!-- Nav -->
   <div class="nav-bar">
     <button class="active" onclick="showSection('leaderboard',this)">🏅 Leaderboard</button>
     <button onclick="showSection('taskcenter',this)">📝 Task Center</button>
@@ -601,7 +596,6 @@
     <button onclick="showSection('advisors',this)">👥 Advisors</button>
   </div>
 
-  <!-- ═══ LEADERBOARD ═══ -->
   <div class="section active" id="section-leaderboard">
     <div class="section-header"><h2>🏅 Leaderboard</h2></div>
     <div class="leaderboard" id="fullLeaderboard"></div>
@@ -610,9 +604,7 @@
     <div class="cat-grid" id="dashCatGrid"></div>
   </div>
 
-  <!-- ═══ CONSOLIDATED TASK CENTER ═══ -->
   <div class="section" id="section-taskcenter">
-    <!-- Top Action Headers -->
     <div class="section-header">
       <h2>📝 Task Configuration & Tools</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -623,21 +615,16 @@
       </div>
     </div>
 
-    <!-- Alert Context Box for Imports -->
     <div id="importResult" style="display:none; margin-bottom: 16px;"></div>
 
-    <!-- Live Search input -->
     <input type="text" class="search-input" placeholder="🔍 Live filter tasks across categories..." id="taskSearch" oninput="renderAllTasks()">
 
-    <!-- Real-time Interactive Task Checklists (Old All Tasks View Content) -->
     <div id="allTasksContainer" style="margin-bottom: 32px;"></div>
 
-    <!-- Admin Task Configuration Table List (Old Tasks Config View Content) -->
     <div class="section-header"><h3>⚙️ Modify Categories & Task Database</h3></div>
     <div id="taskMgmtContainer"></div>
   </div>
 
-  <!-- ═══ TEAM VIEW ═══ -->
   <div class="section" id="section-team">
     <div class="section-header"><h2>👤 Team View</h2></div>
     <div class="team-select-bar">
@@ -647,7 +634,6 @@
     <div id="teamViewContent"></div>
   </div>
 
-  <!-- ═══ MANAGE TEAMS ═══ -->
   <div class="section" id="section-teams">
     <div class="section-header">
       <h2>⚙️ Manage Teams</h2>
@@ -656,13 +642,11 @@
     <div class="team-manage-grid" id="teamManageGrid"></div>
   </div>
 
-  <!-- ═══ ACTIVITY LOG ═══ -->
   <div class="section" id="section-activity">
     <div class="section-header"><h2>📜 Activity Log</h2></div>
     <div class="log-list" id="activityLog"></div>
   </div>
 
-  <!-- ═══ SUBMISSIONS ═══ -->
   <div class="section" id="section-submissions">
     <div class="section-header"><h2>📨 Submissions</h2></div>
     <div id="pendingCount" style="margin-bottom:16px;font-size:.9rem;color:var(--text-dim)"></div>
@@ -671,7 +655,6 @@
     <div id="reviewedSubmissions"></div>
   </div>
 
-  <!-- ═══ ADVISORS ═══ -->
   <div class="section" id="section-advisors">
     <div class="section-header">
       <h2>👥 Advisors</h2>
@@ -680,7 +663,6 @@
     <div id="advisorsList"></div>
   </div>
 
-  <!-- ═══ RULES ═══ -->
   <div class="section" id="section-rules">
     <div class="section-header"><h2>📖 Rules & Notes</h2></div>
     <div class="rules-grid">
@@ -707,7 +689,6 @@
 
 </div>
 
-<!-- ═══ MODALS ═══ -->
 <div class="modal-overlay" id="addTeamModal">
   <div class="modal">
     <h2>➕ Add New Team</h2>
@@ -742,7 +723,6 @@
   </div>
 </div>
 
-<!-- Add Advisor Modal -->
 <div class="modal-overlay" id="addAdvisorModal">
   <div class="modal">
     <h2>➕ Add Advisor</h2>
@@ -761,7 +741,6 @@
   </div>
 </div>
 
-<!-- Edit Advisor Modal -->
 <div class="modal-overlay" id="editAdvisorModal">
   <div class="modal">
     <h2>✏️ Edit Advisor</h2>
@@ -780,7 +759,6 @@
   </div>
 </div>
 
-<!-- Add Task Modal -->
 <div class="modal-overlay" id="addTaskModal">
   <div class="modal">
     <h2>➕ Add New Task</h2>
@@ -797,8 +775,6 @@
       <label>Category Icon (emoji)</label>
       <input type="text" id="newCatIcon" placeholder="e.g. 🍕" style="width:80px">
     </div>
-    <label>Task Number</label>
-    <input type="number" id="newTaskNum" placeholder="1" min="1" style="width:100px">
     <label>Task Name</label>
     <input type="text" id="newTaskName" placeholder="What needs to be done?">
     <label>Evidence Type</label>
@@ -825,7 +801,6 @@
   </div>
 </div>
 
-<!-- Edit Task Modal -->
 <div class="modal-overlay" id="editTaskModal">
   <div class="modal">
     <h2>✏️ Edit Task</h2>
@@ -857,9 +832,7 @@
   </div>
 </div>
 
-</div><!-- end mainApp -->
-
-<script>
+</div><script>
 let CATEGORIES = [];
 let teams = [];
 let activityLog = [];
@@ -1045,7 +1018,6 @@ function populateTeamSelects() {
   }
 }
 
-// ── Consolidated Interactive Display Checklist with Actions ──
 function renderAllTasks() {
   const c = document.getElementById('allTasksContainer');
   if (!c) return;
@@ -1597,7 +1569,6 @@ function openAddTaskModal() {
   sel.innerHTML = '<option value="">— Select category —</option><option value="_new">➕ Create new category...</option>' +
     CATEGORIES.map(c => '<option value="' + c.id + '">' + c.icon + ' ' + c.name + '</option>').join('');
   document.getElementById('newCatFields').style.display = 'none';
-  document.getElementById('newTaskNum').value = '';
   document.getElementById('newTaskName').value = '';
   document.getElementById('newTaskComment').value = '';
   document.getElementById('newTaskLevel').value = 'Easy';
@@ -1608,10 +1579,6 @@ function openAddTaskModal() {
 function onNewTaskCatChange() {
   const val = document.getElementById('newTaskCat').value;
   document.getElementById('newCatFields').style.display = val === '_new' ? 'block' : 'none';
-  if (val && val !== '_new') {
-    const cat = CATEGORIES.find(c => c.id === val);
-    if (cat) document.getElementById('newTaskNum').value = cat.tasks.length + 1;
-  }
 }
 
 async function saveNewTask() {
@@ -1632,21 +1599,20 @@ async function saveNewTask() {
     showToast('⚠️', 'Select a category'); return;
   }
 
-  const taskNum = parseInt(document.getElementById('newTaskNum').value);
   const taskName = document.getElementById('newTaskName').value.trim();
   const evidence = document.getElementById('newTaskEvidence').value;
   const level = document.getElementById('newTaskLevel').value;
   const comment = document.getElementById('newTaskComment').value.trim();
 
-  if (!taskNum || !taskName) { showToast('⚠️', 'Task number and name required'); return; }
+  if (!taskName) { showToast('⚠️', 'Task name required'); return; }
 
   try {
     const res = await api('POST', '/tasks', {
       category_id: catId, category_name: catName, category_icon: catIcon,
-      task_num: taskNum, task_name: taskName, evidence, level, comment
+      task_name: taskName, evidence, level, comment
     });
     if (res.error) { showToast('❌', res.error); return; }
-    showToast('✅', 'Task added!');
+    showToast('✅', 'Task added automatically!');
     closeModal('addTaskModal');
     await loadCategoriesFromDB();
     refreshAll();
