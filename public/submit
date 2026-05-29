@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Team Dashboard — Event</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#fafafa;--card:#fff;--text:#1a1a1a;--text-dim:#6b7280;--text-muted:#9ca3af;--border:#e5e7eb;--orange:#f97316;--orange-light:#fff7ed;--orange-dark:#ea580c;--green:#22c55e;--green-light:#f0fdf4;--red:#ef4444;--red-light:#fef2f2;--blue:#3b82f6;--blue-light:#eff6ff;--purple:#8b5cf6;--purple-light:#f5f3ff;--radius:1rem;--shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);--shadow-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06)}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;-webkit-tap-highlight-color:transparent}
+  .container{max-width:640px;margin:0 auto;padding:0 16px 80px}
+
+  .header{text-align:center;padding:28px 16px 16px}
+  .header h1{font-size:1.4rem;font-weight:700;letter-spacing:-.03em}
+
+  /* Team Lock Banner */
+  .team-banner{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
+  .team-banner .tb-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+  .team-banner .tb-info{flex:1}
+  .team-banner .tb-name{font-weight:700;font-size:1rem}
+  .team-banner .tb-sub{font-size:.75rem;color:var(--text-muted)}
+  .team-banner .tb-badge{background:var(--green-light);color:#15803d;padding:4px 10px;border-radius:50px;font-size:.7rem;font-weight:600;flex-shrink:0}
+
+  /* Stats */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:14px 8px;text-align:center;box-shadow:var(--shadow)}
+  .stat .s-num{font-size:1.5rem;font-weight:700;line-height:1;margin-bottom:2px}
+  .stat .s-label{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;font-weight:500}
+
+  /* Nav */
+  .nav-bar{display:flex;gap:4px;margin-bottom:16px;padding:4px;background:var(--card);border-radius:.75rem;border:1px solid var(--border);box-shadow:var(--shadow);overflow-x:auto}
+  .nav-bar button{flex:1;min-width:0;padding:10px 8px;border:none;border-radius:.5rem;background:transparent;color:var(--text-dim);font-size:.8rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+  .nav-bar button:hover{background:var(--orange-light);color:var(--orange)}
+  .nav-bar button.active{background:var(--orange);color:#fff;font-weight:600}
+
+  .sec{display:none;animation:fadeIn .2s ease}.sec.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .sec-title{font-size:1rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .sec-title .st-back{width:26px;height:26px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.8rem}
+
+  /* Category Progress */
+  .cat-progress-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+  .cp-card{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:12px 14px;box-shadow:var(--shadow)}
+  .cp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .cp-name{font-weight:600;font-size:.85rem;display:flex;align-items:center;gap:6px}
+  .cp-pts{font-weight:700;font-size:.82rem;color:var(--orange)}
+  .cp-bar{height:5px;background:var(--bg);border-radius:3px;overflow:hidden}
+  .cp-fill{height:100%;border-radius:3px;transition:width .4s}
+
+  /* Category Grid (for picking) */
+  .cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .cat-btn{padding:16px 8px;border:2px solid var(--border);border-radius:.75rem;background:var(--card);cursor:pointer;text-align:center;transition:all .15s;font-family:inherit}
+  .cat-btn:hover{border-color:var(--orange);background:var(--orange-light)}
+  .cat-btn.selected{border-color:var(--orange);background:var(--orange-light)}
+  .cat-btn .cb-icon{font-size:1.6rem;margin-bottom:4px}
+  .cat-btn .cb-name{font-weight:600;font-size:.75rem;line-height:1.3}
+  .cat-btn .cb-meta{font-size:.65rem;color:var(--text-muted);margin-top:2px}
+
+  /* Task List */
+  .task-list{display:flex;flex-direction:column;gap:8px}
+  .task-btn{padding:14px 16px;border:2px solid var(--border);border-radius:.75rem;background:var(--card);cursor:pointer;text-align:left;transition:all .15s;display:flex;align-items:center;gap:12px;font-family:inherit}
+  .task-btn:hover{border-color:var(--orange)}
+  .task-btn.selected{border-color:var(--orange);background:var(--orange-light)}
+  .task-btn.done{opacity:.5;pointer-events:none;background:var(--green-light);border-color:#bbf7d0}
+  .task-btn.pending{border-color:#fcd34d;background:#fffbeb}
+  .task-btn .tk-num{width:28px;height:28px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.78rem;color:var(--orange);flex-shrink:0;border:1px solid var(--border)}
+  .task-btn.selected .tk-num{background:var(--orange);color:#fff;border-color:var(--orange)}
+  .task-btn.done .tk-num{background:var(--green);color:#fff;border-color:var(--green)}
+  .task-btn.pending .tk-num{background:#fbbf24;color:#fff;border-color:#fbbf24}
+  .task-btn .tk-info{flex:1;min-width:0}
+  .task-btn .tk-name{font-weight:600;font-size:.85rem}
+  .task-btn .tk-meta{font-size:.72rem;color:var(--text-muted);margin-top:2px;display:flex;gap:8px;align-items:center}
+  .task-btn .tk-pts{font-weight:700;color:var(--orange);font-size:.85rem;flex-shrink:0}
+
+  .lvl{display:inline-block;padding:1px 6px;border-radius:50px;font-size:.6rem;font-weight:600;text-transform:uppercase}
+  .lvl-easy{background:var(--green-light);color:var(--green)}
+  .lvl-medium{background:var(--blue-light);color:var(--blue)}
+  .lvl-hard{background:var(--orange-light);color:var(--orange-dark)}
+  .lvl-rare{background:var(--purple-light);color:var(--purple)}
+
+  /* Upload */
+  .upload-area{border:2px dashed var(--border);border-radius:.75rem;padding:28px 16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--card);position:relative}
+  .upload-area:hover{border-color:var(--orange);background:var(--orange-light)}
+  .upload-area.has-file{border-color:var(--green);background:var(--green-light);border-style:solid}
+  .upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .upload-area .up-icon{font-size:1.8rem;margin-bottom:4px}
+  .upload-area .up-text{font-size:.85rem;color:var(--text-dim)}
+  .upload-area .up-text strong{color:var(--orange)}
+  .upload-area .up-file{font-size:.82rem;color:var(--green);font-weight:600;margin-top:4px}
+  .upload-preview{max-width:160px;max-height:120px;margin:8px auto 0;border-radius:.5rem;display:none}
+
+  textarea{width:100%;padding:12px;border:1px solid var(--border);border-radius:.75rem;font-size:.9rem;font-family:inherit;background:var(--card);color:var(--text);outline:none;resize:vertical;min-height:60px;margin-top:12px}
+  textarea:focus{border-color:var(--orange)}
+  textarea::placeholder{color:var(--text-muted)}
+
+  .submit-btn{width:100%;padding:14px;border:none;border-radius:.75rem;background:var(--orange);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;margin-top:14px;font-family:inherit;transition:all .15s}
+  .submit-btn:hover{background:var(--orange-dark)}
+  .submit-btn:disabled{opacity:.4;cursor:not-allowed}
+
+  .msg{padding:12px 16px;border-radius:.75rem;margin-top:12px;font-size:.85rem;font-weight:500;display:none}
+  .msg.ok{display:block;background:var(--green-light);color:#15803d;border:1px solid #bbf7d0}
+  .msg.err{display:block;background:var(--red-light);color:#b91c1c;border:1px solid #fecaca}
+
+  /* Submission List */
+  .sub-item{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow)}
+  .sub-top{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .sub-icon{font-size:1rem;flex-shrink:0}
+  .sub-task{font-weight:600;font-size:.85rem;flex:1}
+  .sub-badge{padding:3px 10px;border-radius:50px;font-size:.7rem;font-weight:600;flex-shrink:0}
+  .sub-pending{background:#fef3c7;color:#b45309}
+  .sub-approved{background:var(--green-light);color:#15803d}
+  .sub-rejected{background:var(--red-light);color:#b91c1c}
+  .sub-detail{font-size:.75rem;color:var(--text-muted);display:flex;gap:10px;align-items:center}
+  .sub-pts{font-weight:700;color:var(--orange);font-size:.82rem}
+
+  /* Mini Leaderboard */
+  .mini-lb{display:flex;flex-direction:column;gap:6px}
+  .mlb-entry{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:.82rem;box-shadow:var(--shadow)}
+  .mlb-entry.me{border-color:var(--orange);background:var(--orange-light)}
+  .mlb-rank{width:28px;height:28px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;flex-shrink:0;border:1px solid var(--border)}
+  .mlb-rank.r1{background:#fef3c7;color:#b45309;border-color:#fcd34d}
+  .mlb-rank.r2{background:#f3f4f6;color:#4b5563;border-color:#d1d5db}
+  .mlb-rank.r3{background:#fed7aa;color:#c2410c;border-color:#fdba74}
+  .mlb-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .mlb-name{flex:1;font-weight:600}
+  .mlb-pts{font-weight:700;color:var(--orange)}
+
+  /* PIN Modal */
+  .pin-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;justify-content:center;align-items:center;backdrop-filter:blur(4px)}
+  .pin-overlay.show{display:flex}
+  .pin-box{background:var(--card);border-radius:var(--radius);padding:28px;width:90%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.15);animation:fadeIn .2s ease}
+  .pin-box h3{font-size:1.1rem;font-weight:700;margin-bottom:4px}
+  .pin-box .pb-sub{font-size:.82rem;color:var(--text-dim);margin-bottom:16px}
+  .pin-box .pb-team{display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:14px;font-weight:600}
+  .pin-input{width:100%;padding:14px;text-align:center;font-size:1.5rem;font-weight:700;letter-spacing:.4em;border:2px solid var(--border);border-radius:.75rem;background:var(--bg);color:var(--text);outline:none;font-family:inherit}
+  .pin-input:focus{border-color:var(--orange)}
+  .pin-input.error{border-color:var(--red);animation:shake .3s ease}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .pin-err{color:var(--red);font-size:.82rem;margin-top:8px;display:none}
+  .pin-btn{width:100%;padding:12px;border:none;border-radius:.5rem;background:var(--orange);color:#fff;font-size:.95rem;font-weight:600;cursor:pointer;margin-top:12px;font-family:inherit}
+  .pin-btn:hover{background:var(--orange-dark)}
+  .pin-cancel{background:none;border:none;color:var(--text-dim);font-size:.82rem;cursor:pointer;margin-top:8px;font-family:inherit}
+
+  .toast-container{position:fixed;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:6px}
+  .toast{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:12px 16px;font-size:.82rem;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:8px;max-width:300px;animation:slideIn .2s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+  .empty{text-align:center;padding:32px;color:var(--text-muted);font-size:.85rem}
+
+  @media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr)}.cat-grid{grid-template-columns:repeat(2,1fr)}.nav-bar button{padding:8px 6px;font-size:.75rem}}
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="container">
+  <div class="header"><h1>🏆 Team Dashboard</h1></div>
+
+  <!-- Team Banner (appears after lock) -->
+  <div id="teamBanner" style="display:none"></div>
+
+  <!-- Stats (appears after lock) -->
+  <div class="stats-grid" id="myStats" style="display:none"></div>
+
+  <!-- Nav -->
+  <div class="nav-bar" id="mainNav" style="display:none">
+    <button class="active" onclick="showSec('home',this)">🏠 Home</button>
+    <button onclick="showSec('submit',this)">📝 Submit</button>
+    <button onclick="showSec('history',this)">📋 My Tasks</button>
+    <button onclick="showSec('leaderboard',this)">🏅 Standings</button>
+  </div>
+
+  <!-- HOME: Category Progress -->
+  <div class="sec active" id="sec-home">
+    <div class="sec-title">📊 Progress</div>
+    <div class="cat-progress-list" id="catProgressList"></div>
+  </div>
+
+  <!-- SUBMIT: Pick Category → Task → Upload -->
+  <div class="sec" id="sec-submit">
+    <div id="submitStep1">
+      <div class="sec-title">📂 Pick a category</div>
+      <div class="cat-grid" id="catGrid"></div>
+    </div>
+    <div id="submitStep2" style="display:none">
+      <div class="sec-title"><div class="st-back" onclick="backToCats()">←</div> <span id="catTitle">Tasks</span></div>
+      <div class="task-list" id="taskList"></div>
+    </div>
+    <div id="submitStep3" style="display:none">
+      <div class="sec-title"><div class="st-back" onclick="backToTasks()">←</div> Upload evidence</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:14px;margin-bottom:14px">
+        <div style="font-weight:600;font-size:.9rem" id="selTaskName"></div>
+        <div style="font-size:.78rem;color:var(--text-muted);margin-top:2px" id="selTaskMeta"></div>
+      </div>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="evidenceFile" accept="image/*,video/*" onchange="onFileChange()">
+        <div class="up-icon">📷</div>
+        <div class="up-text"><strong>Tap to upload</strong> photo or video</div>
+        <div class="up-file" id="fileName"></div>
+        <img class="upload-preview" id="filePreview">
+      </div>
+      <textarea id="note" placeholder="Add a note (optional)..."></textarea>
+      <button class="submit-btn" id="submitBtn" onclick="submitTask()" disabled>Submit for Review</button>
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY: All my submissions -->
+  <div class="sec" id="sec-history">
+    <div class="sec-title">📋 My Submissions</div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="sec" id="sec-leaderboard">
+    <div class="sec-title">🏅 Standings</div>
+    <div class="mini-lb" id="miniLB"></div>
+  </div>
+
+  <!-- Team Selection (shown if not locked) -->
+  <div id="teamSelectScreen" style="display:none">
+    <div class="sec-title" style="margin-bottom:14px">👋 Select your team</div>
+    <div class="team-grid" id="teamGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
+  </div>
+</div>
+
+<!-- PIN Modal -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-box">
+    <h3>🔐 Enter Team PIN</h3>
+    <div class="pb-sub">Enter the PIN for</div>
+    <div class="pb-team"><span id="pinTeamDot" style="width:12px;height:12px;border-radius:50%;display:inline-block"></span><span id="pinTeamName"></span></div>
+    <input type="tel" class="pin-input" id="pinInput" maxlength="6" placeholder="• • • •" inputmode="numeric" autocomplete="off">
+    <div class="pin-err" id="pinErr">❌ Wrong PIN</div>
+    <button class="pin-btn" id="pinBtn" onclick="verifyPin()">Unlock</button>
+    <button class="pin-cancel" onclick="closePin()">Cancel</button>
+  </div>
+</div>
+
+<script>
+const LEVEL_PTS = {easy:20,medium:30,hard:50,rare:70};
+const CATEGORIES = [
+  {id:'community',name:'Community Service',icon:'🤝',tasks:[{num:1,name:'Collect 5 recyclable materials',evidence:'Video',level:'Easy',pts:20},{num:2,name:'Feed 4 different animals',evidence:'Photo',level:'Medium',pts:30},{num:3,name:'Find 3 plants, make presentation',evidence:'Video',level:'Medium',pts:30},{num:4,name:'Awareness campaign about cleanliness',evidence:'Video',level:'Hard',pts:50}]},
+  {id:'bonding',name:'Bonding & Communication',icon:'💬',tasks:[{num:1,name:'Dabke performance with locals',evidence:'Video',level:'Easy',pts:20},{num:2,name:'Picture with another team',evidence:'Photo',level:'Easy',pts:20},{num:3,name:'5 people smiling (not your team)',evidence:'Photo',level:'Medium',pts:30},{num:4,name:'Interview local about favorite place',evidence:'Video',level:'Medium',pts:30},{num:5,name:'Learn vendor signature dish',evidence:'Video',level:'Hard',pts:50}]},
+  {id:'available-soon',name:'Available Soon',icon:'⏳',tasks:[{num:1,name:'Hunchies — find ch. Majed',evidence:'Photo',level:'Medium',pts:30},{num:2,name:'Pioneer wall — type anything',evidence:'Photo',level:'Medium',pts:30},{num:3,name:'BOB Juice — find ch. Ahmad',evidence:'Photo',level:'Medium',pts:30},{num:4,name:'Hidden task',evidence:'Photo',level:'Hard',pts:50},{num:5,name:'Catch the flag',evidence:'Photo',level:'Rare',pts:70}]},
+  {id:'challenges',name:'Challenges',icon:'⚡',tasks:[{num:1,name:'Get camel-hair with proof',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Signature from red hat person',evidence:'Video',level:'Easy',pts:20},{num:3,name:'Pic with animal at Pets N Claws',evidence:'Photo',level:'Easy',pts:20},{num:4,name:'Try to fish',evidence:'Photo',level:'Easy',pts:20},{num:5,name:'5 ants in a bottle',evidence:'Photo',level:'Easy',pts:20},{num:6,name:'Follow @vip.bob.taxi on Instagram',evidence:'Photo',level:'Easy',pts:20},{num:7,name:'Picture with BOB taxi car',evidence:'Photo',level:'Medium',pts:30},{num:8,name:'Buy anything with 1000 Lira',evidence:'Photo',level:'Medium',pts:30},{num:9,name:'Selfie with Markit Driver + tag',evidence:'Photo',level:'Medium',pts:30},{num:10,name:'Help someone change a tire',evidence:'Photo',level:'Medium',pts:30},{num:11,name:'Trade up from a pen',evidence:'Video',level:'Medium',pts:30},{num:12,name:'Make a vlog for Event',evidence:'Video',level:'Medium',pts:30},{num:13,name:'Find 50+ year old business',evidence:'Photo',level:'Medium',pts:30},{num:14,name:'Picture of foreign money',evidence:'Photo',level:'Medium',pts:30},{num:15,name:'Like @LSA.S1 on @amccocamping',evidence:'Screenshot',level:'Medium',pts:30},{num:16,name:'Markit App QR scan & verify',evidence:'Screenshot',level:'Hard',pts:50},{num:17,name:'Makari Engineering task (10–1:30)',evidence:'Photo',level:'Hard',pts:50},{num:18,name:'Foreign car plate photo',evidence:'Photo',level:'Hard',pts:50},{num:19,name:'Photo with 1M+ follower person',evidence:'Photo',level:'Hard',pts:50},{num:20,name:"Last year's Event bracelet",evidence:'Photo',level:'Hard',pts:50},{num:21,name:'Fastest apple eating — Saida Beach',evidence:'Video',level:'Rare',pts:70},{num:22,name:'Biggest plate with letter S',evidence:'Photo',level:'Rare',pts:70}]},
+  {id:'sport',name:'Sport & Fitness',icon:'🏃',tasks:[{num:1,name:'Human pyramid with another team',evidence:'Photo',level:'Medium',pts:30},{num:2,name:'Win tug of war — Saida Beach',evidence:'Video',level:'Hard',pts:50},{num:3,name:'Most pull-ups — Saida Stadium',evidence:'Video',level:'Rare',pts:70},{num:4,name:'Most push-ups — Saida Stadium',evidence:'Video',level:'Rare',pts:70},{num:5,name:'Fastest run — Saida Stadium',evidence:'Video',level:'Rare',pts:70},{num:6,name:'Fastest climb — Saida Mall',evidence:'Video',level:'Rare',pts:70}]},
+  {id:'saida',name:'Saida City',icon:'🏛️',tasks:[{num:1,name:'Picture at Saida Castle',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Picture in Soap Museum',evidence:'Photo',level:'Easy',pts:20},{num:3,name:'Find 5 street names',evidence:'Photo',level:'Medium',pts:30},{num:4,name:'Visit 3 Khans in Old Saida',evidence:'Photo',level:'Medium',pts:30},{num:5,name:'Learn manakish making at bakery',evidence:'Video',level:'Medium',pts:30},{num:6,name:'5 different doors in Old Souk',evidence:'Photo',level:'Medium',pts:30},{num:7,name:'Photograph abandoned building',evidence:'Photo',level:'Medium',pts:30},{num:8,name:'Find مختار, take picture',evidence:'Photo',level:'Hard',pts:50}]},
+  {id:'riddles',name:'Riddles & Treasure Hunt',icon:'🧩',tasks:[{num:1,name:'Solve "That Level Again 2"',evidence:'Screenshot',level:'Medium',pts:30},{num:2,name:'Solve morse code at دوار القناية',evidence:'Photo',level:'Hard',pts:50},{num:3,name:'Khatib Center QR tasks',evidence:'Photo',level:'Hard',pts:50}]},
+  {id:'getfind',name:'Get & Find',icon:'🔍',tasks:[{num:1,name:'Get a stamp (طابع)',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Get 500 + 250 LBP coins',evidence:'Photo',level:'Easy',pts:20},{num:3,name:'5 different screw sizes',evidence:'Photo',level:'Easy',pts:20},{num:4,name:'Street named after famous person',evidence:'Photo',level:'Easy',pts:20},{num:5,name:'Find an electric car',evidence:'Photo',level:'Medium',pts:30},{num:6,name:'Local speaking other language',evidence:'Video',level:'Medium',pts:30},{num:7,name:'Create souvenir with artisan',evidence:'Photo',level:'Hard',pts:50}]},
+  {id:'bonus',name:'Bonus',icon:'🌟',tasks:[{num:1,name:'First to finish all Easy tasks',evidence:'Advisor',level:'Rare',pts:70},{num:2,name:'First to finish all Medium tasks',evidence:'Advisor',level:'Rare',pts:70},{num:3,name:'First to finish one category',evidence:'Advisor',level:'Rare',pts:70},{num:4,name:'Design new Event logo',evidence:'Photo',level:'Rare',pts:70},{num:5,name:'Longest straight line of people',evidence:'Photo',level:'Rare',pts:70}]}
+];
+const TOTAL_TASKS = CATEGORIES.reduce((s,c)=>s+c.tasks.length,0);
+
+let teams=[], myTeamId=null, myCatId=null, myTaskNum=null, doneMap={}, pendingMap={}, allSubs=[];
+const LOCK_KEY='event_team_lock';
+
+async function api(m,p,b){const o={method:m,headers:{'Content-Type':'application/json'}};if(b)o.body=JSON.stringify(b);return(await fetch('/api'+p,o)).json();}
+function toast(icon,msg){const c=document.getElementById('toastContainer'),t=document.createElement('div');t.className='toast';t.innerHTML='<span style="font-size:1rem">'+icon+'</span> '+msg;c.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},3000);}
+function showSec(id,btn){document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));document.getElementById('sec-'+id).classList.add('active');document.querySelectorAll('.nav-bar button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');}
+
+// ── INIT ──
+async function init(){
+  const data=await api('GET','/state');
+  teams=data.teams||[];
+  const lockedId=localStorage.getItem(LOCK_KEY);
+  if(lockedId){
+    const team=teams.find(t=>t.id===parseInt(lockedId));
+    if(team){lockTeam(team.id);return;}
+    else localStorage.removeItem(LOCK_KEY);
+  }
+  showTeamSelect();
+}
+
+function showTeamSelect(){
+  document.getElementById('teamSelectScreen').style.display='block';
+  document.getElementById('mainNav').style.display='none';
+  document.getElementById('myStats').style.display='none';
+  document.getElementById('teamBanner').style.display='none';
+  document.getElementById('teamGrid').innerHTML=teams.map(t=>
+    '<div style="padding:16px;border:2px solid var(--border);border-radius:.75rem;background:var(--card);cursor:pointer;text-align:center" onclick="pickTeam('+t.id+')">'+
+    '<div style="width:12px;height:12px;border-radius:50%;background:'+t.color+';margin:0 auto 6px"></div>'+
+    '<div style="font-weight:600;font-size:.88rem">'+t.name+'</div>'+
+    '<div style="font-size:.72rem;color:var(--text-muted)">'+t.members.length+' members</div></div>'
+  ).join('');
+}
+
+// ── PIN ──
+let pendingTeamId=null;
+function pickTeam(id){
+  pendingTeamId=id;const team=teams.find(t=>t.id===id);
+  document.getElementById('pinTeamDot').style.background=team.color;
+  document.getElementById('pinTeamName').textContent=team.name;
+  document.getElementById('pinInput').value='';document.getElementById('pinErr').style.display='none';
+  document.getElementById('pinInput').classList.remove('error');
+  document.getElementById('pinOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('pinInput').focus(),100);
+}
+function closePin(){document.getElementById('pinOverlay').classList.remove('show');pendingTeamId=null;}
+async function verifyPin(){
+  const pin=document.getElementById('pinInput').value.trim();if(!pin)return;
+  const btn=document.getElementById('pinBtn');btn.disabled=true;btn.textContent='Checking...';
+  try{
+    const res=await api('POST','/verify-pin',{teamId:pendingTeamId,pin});
+    if(res.valid){document.getElementById('pinOverlay').classList.remove('show');localStorage.setItem(LOCK_KEY,pendingTeamId);lockTeam(pendingTeamId);}
+    else{document.getElementById('pinInput').classList.add('error');document.getElementById('pinErr').style.display='block';document.getElementById('pinInput').value='';document.getElementById('pinInput').focus();}
+  }catch(e){document.getElementById('pinErr').textContent='❌ Network error';document.getElementById('pinErr').style.display='block';}
+  btn.disabled=false;btn.textContent='Unlock';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('pinOverlay').classList.contains('show'))verifyPin();});
+
+// ── LOCK TEAM ──
+async function lockTeam(id){
+  myTeamId=id;const team=teams.find(t=>t.id===id);
+  doneMap={};pendingMap={};
+  if(team.completions)team.completions.forEach(c=>{doneMap[c.categoryId+'-'+c.taskNum]=true;});
+  document.getElementById('teamSelectScreen').style.display='none';
+  document.getElementById('teamBanner').style.display='flex';
+  document.getElementById('myStats').style.display='grid';
+  document.getElementById('mainNav').style.display='flex';
+  document.getElementById('teamBanner').innerHTML=
+    '<div class="tb-dot" style="background:'+team.color+'"></div>'+
+    '<div class="tb-info"><div class="tb-name">'+team.name+'</div>'+
+    '<div class="tb-sub">'+team.members.length+' members</div></div>'+
+    '<span class="tb-badge">🔒 Locked</span>'+
+    '<button style="background:none;border:1px solid var(--border);border-radius:.4rem;padding:3px 8px;font-size:.7rem;color:var(--text-dim);cursor:pointer;font-family:inherit" onclick="if(confirm(\'Change team? Requires new PIN.\')){localStorage.removeItem(\'event_team_lock\');location.reload();}">Change</button>';
+  await loadSubs();renderAll();
+}
+
+async function loadSubs(){
+  const data=await api('GET','/state');teams=data.teams||[];
+  const subData=await fetch('/api/submissions?status=pending').then(r=>r.json());
+  const appr=await fetch('/api/submissions?status=approved').then(r=>r.json());
+  const rej=await fetch('/api/submissions?status=rejected').then(r=>r.json());
+  allSubs=[...subData.filter(s=>s.team_id===myTeamId),...appr.filter(s=>s.team_id===myTeamId),...rej.filter(s=>s.team_id===myTeamId)];
+  allSubs.sort((a,b)=>b.id-a.id);
+  allSubs.forEach(s=>{if(s.status==='pending')pendingMap[s.category_id+'-'+s.task_num]='pending';});
+}
+
+function myTeam(){return teams.find(t=>t.id===myTeamId);}
+function myPoints(){
+  const team=myTeam();if(!team)return 0;let pts=0;
+  const done=getDoneMap(team);
+  CATEGORIES.forEach(cat=>cat.tasks.forEach(t=>{if(done[cat.id+'-'+t.num])pts+=t.pts;}));
+  return pts;
+}
+function getDoneMap(team){const m={};if(team.completions)team.completions.forEach(c=>{m[c.categoryId+'-'+c.taskNum]=true;});return m;}
+
+// ── RENDER ALL ──
+function renderAll(){
+  const team=myTeam();if(!team)return;
+  const done=getDoneMap(team);const doneCount=Object.keys(done).length;
+  const pts=myPoints();
+  const sorted=[...teams].sort((a,b)=>{const pa=getDoneMap(a);const pb=getDoneMap(b);let sa=0,sb=0;CATEGORIES.forEach(c=>c.tasks.forEach(t=>{if(pa[c.id+'-'+t.num])sa+=t.pts;if(pb[c.id+'-'+t.num])sb+=t.pts;}));return sb-sa;});
+  const rank=sorted.findIndex(t=>t.id===myTeamId)+1;
+  const pendingCount=allSubs.filter(s=>s.status==='pending').length;
+
+  // Stats
+  document.getElementById('myStats').innerHTML=
+    '<div class="stat"><div class="s-num" style="color:var(--orange)">'+pts+'</div><div class="s-label">Points</div></div>'+
+    '<div class="stat"><div class="s-num" style="color:var(--green)">'+doneCount+'</div><div class="s-label">Done</div></div>'+
+    '<div class="stat"><div class="s-num" style="color:var(--blue)">'+pendingCount+'</div><div class="s-label">Pending</div></div>'+
+    '<div class="stat"><div class="s-num" style="color:var(--purple)">#'+rank+'</div><div class="s-label">Rank</div></div>';
+
+  renderCatProgress();renderCats();renderHistory();renderLB();
+}
+
+// ── HOME: Category Progress ──
+function renderCatProgress(){
+  const done=getDoneMap(myTeam());
+  document.getElementById('catProgressList').innerHTML=CATEGORIES.map(cat=>{
+    const catDone=cat.tasks.filter(t=>done[cat.id+'-'+t.num]).length;
+    const catMax=cat.tasks.reduce((s,t)=>s+t.pts,0);
+    const catEarned=cat.tasks.reduce((s,t)=>s+(done[cat.id+'-'+t.num]?t.pts:0),0);
+    const pct=Math.round((catDone/cat.tasks.length)*100);
+    return '<div class="cp-card"><div class="cp-top"><div class="cp-name">'+cat.icon+' '+cat.name+'</div><div class="cp-pts">'+catEarned+'/'+catMax+'</div></div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-muted);margin-bottom:4px"><span>'+catDone+'/'+cat.tasks.length+' tasks</span><span>'+pct+'%</span></div>'+
+      '<div class="cp-bar"><div class="cp-fill" style="width:'+pct+'%;background:'+myTeam().color+'"></div></div></div>';
+  }).join('');
+}
+
+// ── SUBMIT: Categories ──
+function renderCats(){
+  const done=getDoneMap(myTeam());
+  document.getElementById('catGrid').innerHTML=CATEGORIES.map(c=>{
+    const total=c.tasks.length;const dn=c.tasks.filter(t=>done[c.id+'-'+t.num]).length;
+    return '<div class="cat-btn" onclick="pickCat(\''+c.id+'\')"><div class="cb-icon">'+c.icon+'</div><div class="cb-name">'+c.name+'</div><div class="cb-meta">'+dn+'/'+total+' done</div></div>';
+  }).join('');
+}
+function pickCat(id){
+  myCatId=id;const cat=CATEGORIES.find(c=>c.id===id);
+  document.getElementById('catTitle').textContent=cat.icon+' '+cat.name;
+  renderTasks();document.getElementById('submitStep1').style.display='none';document.getElementById('submitStep2').style.display='block';
+}
+function backToCats(){document.getElementById('submitStep1').style.display='block';document.getElementById('submitStep2').style.display='none';document.getElementById('submitStep3').style.display='none';}
+
+// ── SUBMIT: Tasks ──
+function renderTasks(){
+  const cat=CATEGORIES.find(c=>c.id===myCatId);const done=getDoneMap(myTeam());
+  document.getElementById('taskList').innerHTML=cat.tasks.map(t=>{
+    const key=myCatId+'-'+t.num;const isDone=done[key];const isPending=pendingMap[key];
+    const cls=isDone?'done':isPending?'pending':'';
+    const status=isDone?'✅':isPending?'⏳ Pending':t.pts+' pts';
+    return '<div class="task-btn '+cls+'" onclick="pickTask('+t.num+')"><div class="tk-num">'+t.num+'</div>'+
+      '<div class="tk-info"><div class="tk-name">'+t.name+'</div><div class="tk-meta"><span class="lvl lvl-'+t.level.toLowerCase()+'">'+t.level+'</span> '+t.evidence+'</div></div>'+
+      '<div class="tk-pts">'+status+'</div></div>';
+  }).join('');
+}
+function pickTask(num){
+  myTaskNum=num;const cat=CATEGORIES.find(c=>c.id===myCatId);const task=cat.tasks.find(t=>t.num===num);
+  document.getElementById('selTaskName').textContent=task.name;
+  document.getElementById('selTaskMeta').innerHTML='<span class="lvl lvl-'+task.level.toLowerCase()+'">'+task.level+'</span> • '+task.pts+' pts • Evidence: '+task.evidence;
+  document.getElementById('evidenceFile').value='';document.getElementById('fileName').textContent='';
+  document.getElementById('filePreview').style.display='none';document.getElementById('uploadArea').classList.remove('has-file');
+  document.getElementById('note').value='';document.getElementById('msg').style.display='none';document.getElementById('submitBtn').disabled=true;
+  document.getElementById('submitStep2').style.display='none';document.getElementById('submitStep3').style.display='block';
+}
+function backToTasks(){document.getElementById('submitStep2').style.display='block';document.getElementById('submitStep3').style.display='none';}
+
+// ── SUBMIT: Upload ──
+function onFileChange(){
+  const f=document.getElementById('evidenceFile').files[0];if(!f)return;
+  document.getElementById('uploadArea').classList.add('has-file');document.getElementById('fileName').textContent='📎 '+f.name;
+  document.getElementById('submitBtn').disabled=false;
+  const p=document.getElementById('filePreview');
+  if(f.type.startsWith('image/')){const r=new FileReader();r.onload=e=>{p.src=e.target.result;p.style.display='block'};r.readAsDataURL(f);}
+  else p.style.display='none';
+}
+async function submitTask(){
+  const btn=document.getElementById('submitBtn'),msg=document.getElementById('msg');
+  btn.disabled=true;btn.textContent='Submitting...';
+  try{
+    const file=document.getElementById('evidenceFile').files[0];let fileName='',fileData='';
+    if(file){fileData=await new Promise(r=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.readAsDataURL(file)});fileName=file.name;}
+    const res=await fetch('/api/submissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({teamId:myTeamId,categoryId:myCatId,taskNum:myTaskNum,note:document.getElementById('note').value,fileName,fileData})});
+    const data=await res.json();
+    if(data.success){msg.className='msg ok';msg.textContent='✅ Submitted! Waiting for approval.';msg.style.display='block';await loadSubs();renderAll();}
+    else{msg.className='msg err';msg.textContent='❌ '+(data.error||'Failed');msg.style.display='block';}
+  }catch(e){msg.className='msg err';msg.textContent='❌ Network error';msg.style.display='block';}
+  btn.textContent='Submit for Review';btn.disabled=false;
+}
+
+// ── HISTORY ──
+function renderHistory(){
+  if(!allSubs.length){document.getElementById('historyList').innerHTML='<div class="empty">No submissions yet. Go submit some tasks!</div>';return;}
+  document.getElementById('historyList').innerHTML=allSubs.map(s=>{
+    const cat=CATEGORIES.find(c=>c.id===s.category_id);const task=cat?cat.tasks.find(t=>t.num===s.task_num):null;
+    const name=task?task.name:s.category_id+'-'+s.task_num;const pts=task?task.pts:0;
+    const icon=s.status==='pending'?'⏳':s.status==='approved'?'✅':'❌';
+    const cls=s.status==='pending'?'sub-pending':s.status==='approved'?'sub-approved':'sub-rejected';
+    const ptsHtml=s.status==='approved'?'<span class="sub-pts">+'+pts+' pts</span>':'';
+    const ev=s.evidence_file?'<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎 Evidence</a>':'';
+    return '<div class="sub-item"><div class="sub-top"><span class="sub-icon">'+icon+'</span><span class="sub-task">'+name+'</span><span class="sub-badge '+cls+'">'+s.status+'</span></div>'+
+      '<div class="sub-detail">'+ptsHtml+ev+'</div></div>';
+  }).join('');
+}
+
+// ── LEADERBOARD ──
+function renderLB(){
+  const calcPts=t=>{const d=getDoneMap(t);let p=0;CATEGORIES.forEach(c=>c.tasks.forEach(tk=>{if(d[c.id+'-'+tk.num])p+=tk.pts;}));return p;};
+  const sorted=[...teams].sort((a,b)=>calcPts(b)-calcPts(a));
+  const max=sorted.length?calcPts(sorted[0]):1;
+  document.getElementById('miniLB').innerHTML=sorted.map((t,i)=>{
+    const pts=calcPts(t);const isMe=t.id===myTeamId;
+    const rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
+    return '<div class="mlb-entry'+(isMe?' me':'')+'"><div class="mlb-rank '+rc+'">'+(i+1)+'</div>'+
+      '<div class="mlb-dot" style="background:'+t.color+'"></div><div class="mlb-name">'+t.name+(isMe?' (You)':'')+'</div>'+
+      '<div class="mlb-pts">'+pts+'</div></div>';
+  }).join('');
+}
+
+init();
+setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();}},5000);
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
