@@ -646,6 +646,7 @@
     <button onclick="showSection('submissions',this)">📨 Submissions</button>
     <button onclick="showSection('rules',this)">📖 Rules</button>
     <button onclick="showSection('advisors',this)">👥 Advisors</button>
+    <button onclick="showSection('taskmgmt',this)">📝 Tasks</button>
     <button onclick="showSection('tools',this)">🔧 Tools</button>
   </div>
 
@@ -710,6 +711,18 @@
       <button class="btn btn-primary" onclick="openAddAdvisorModal()">+ Add Advisor</button>
     </div>
     <div id="advisorsList"></div>
+  </div>
+
+  <!-- ═══ TASK MANAGEMENT ═══ -->
+  <div class="section" id="section-taskmgmt">
+    <div class="section-header">
+      <h2>📝 Task Management</h2>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="openAddCategoryModal()">+ Add Category</button>
+        <button class="btn btn-primary" onclick="openAddTaskModal()">+ Add Task</button>
+      </div>
+    </div>
+    <div id="taskMgmtContainer"></div>
   </div>
 
   <!-- ═══ TOOLS ═══ -->
@@ -846,7 +859,84 @@ Member 3"></textarea>
       <button class="btn btn-primary" onclick="saveAdvisor()">Save</button>
     </div>
   </div>
+<!-- Add Task Modal -->
+<div class="modal-overlay" id="addTaskModal">
+  <div class="modal">
+    <h2>➕ Add New Task</h2>
+    <label>Category</label>
+    <select id="newTaskCat" onchange="onNewTaskCatChange()">
+      <option value="">— Select category —</option>
+      <option value="_new">➕ Create new category...</option>
+    </select>
+    <div id="newCatFields" style="display:none">
+      <label>Category ID (lowercase, no spaces)</label>
+      <input type="text" id="newCatId" placeholder="e.g. food-challenge">
+      <label>Category Name</label>
+      <input type="text" id="newCatName" placeholder="e.g. Food Challenge">
+      <label>Category Icon (emoji)</label>
+      <input type="text" id="newCatIcon" placeholder="e.g. 🍕" style="width:80px">
+    </div>
+    <label>Task Number</label>
+    <input type="number" id="newTaskNum" placeholder="1" min="1" style="width:100px">
+    <label>Task Name</label>
+    <input type="text" id="newTaskName" placeholder="What needs to be done?">
+    <label>Evidence Type</label>
+    <select id="newTaskEvidence">
+      <option value="Photo">Photo</option>
+      <option value="Video">Video</option>
+      <option value="Screenshot">Screenshot</option>
+      <option value="Voice">Voice</option>
+      <option value="Advisor">Advisor</option>
+    </select>
+    <label>Difficulty Level</label>
+    <select id="newTaskLevel">
+      <option value="Easy">Easy (20 pts)</option>
+      <option value="Medium">Medium (30 pts)</option>
+      <option value="Hard">Hard (50 pts)</option>
+      <option value="Rare">Rare (70 pts)</option>
+    </select>
+    <label>Comment (optional)</label>
+    <input type="text" id="newTaskComment" placeholder="Any extra notes...">
+    <div class="btn-row">
+      <button class="btn" onclick="closeModal('addTaskModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewTask()">Add Task</button>
+    </div>
+  </div>
 </div>
+
+<!-- Edit Task Modal -->
+<div class="modal-overlay" id="editTaskModal">
+  <div class="modal">
+    <h2>✏️ Edit Task</h2>
+    <input type="hidden" id="editTaskId">
+    <label>Task Name</label>
+    <input type="text" id="editTaskName">
+    <label>Evidence Type</label>
+    <select id="editTaskEvidence">
+      <option value="Photo">Photo</option>
+      <option value="Video">Video</option>
+      <option value="Screenshot">Screenshot</option>
+      <option value="Voice">Voice</option>
+      <option value="Advisor">Advisor</option>
+    </select>
+    <label>Difficulty Level</label>
+    <select id="editTaskLevel">
+      <option value="Easy">Easy (20 pts)</option>
+      <option value="Medium">Medium (30 pts)</option>
+      <option value="Hard">Hard (50 pts)</option>
+      <option value="Rare">Rare (70 pts)</option>
+    </select>
+    <label>Comment (optional)</label>
+    <input type="text" id="editTaskComment">
+    <div class="btn-row">
+      <button class="btn btn-danger btn-sm" onclick="deleteTask()">🗑️ Delete</button>
+      <button class="btn" onclick="closeModal('editTaskModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditTask()">Save</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end mainApp -->
 
 <script>
 let CATEGORIES = [];
@@ -1304,6 +1394,7 @@ function showTasksForCat(catId) {
 // ── Refresh ──
 function refreshAll() {
   renderStats();
+  if (typeof renderTaskManagement === 'function') renderTaskManagement();
   renderLeaderboard();
   renderCategories();
   populateTeamSelects();
@@ -1580,6 +1671,189 @@ async function deleteAdvisor() {
 }
 
 // ── Init ──
+// ── Task Management ──
+function renderTaskManagement() {
+  const container = document.getElementById('taskMgmtContainer');
+  if (!CATEGORIES.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><p>No tasks yet. Import tasks from the Tools tab or add them manually.</p></div>';
+    return;
+  }
+
+  let html = '';
+  CATEGORIES.forEach(cat => {
+    const catMax = cat.tasks.reduce((s,t) => s + t.pts, 0);
+    html += '<div class="task-table-wrap" style="margin-bottom:16px">';
+    html += '<div class="task-table-header">';
+    html += '<div class="th-left"><span class="th-icon">' + cat.icon + '</span>';
+    html += '<div><div class="th-name">' + cat.name + '</div>';
+    html += '<div class="th-meta">' + cat.id + ' • ' + cat.tasks.length + ' tasks • ' + catMax + ' pts</div></div></div>';
+    html += '<div style="display:flex;gap:6px">';
+    html += '<button class="btn btn-sm btn-danger" onclick="deleteCategory(\'' + cat.id + '\',\'' + cat.name.replace(/'/g, "\\'") + '\')">🗑️ Delete Category</button>';
+    html += '</div></div>';
+    html += '<table class="task-table"><thead><tr>';
+    html += '<th style="width:40px">#</th><th>Task</th><th>Evidence</th><th>Level</th><th style="width:50px">Pts</th><th style="width:80px;text-align:center">Actions</th>';
+    html += '</tr></thead><tbody>';
+    cat.tasks.forEach(t => {
+      html += '<tr>';
+      html += '<td class="task-num">' + t.num + '</td>';
+      html += '<td><div class="task-name">' + t.name + '</div>';
+      if (t.comment) html += '<div class="task-comment" style="font-size:.75rem;color:var(--text-muted);margin-top:2px">💡 ' + t.comment + '</div>';
+      html += '</td>';
+      html += '<td class="evidence-cell">' + t.evidence + '</td>';
+      html += '<td><span class="level-badge level-' + t.level.toLowerCase() + '">' + t.level + '</span></td>';
+      html += '<td class="pts-cell">' + t.pts + '</td>';
+      html += '<td style="text-align:center">';
+      html += '<button class="btn btn-sm" onclick="openEditTaskModal(\'' + cat.id + '\',' + t.num + ')" style="padding:4px 8px">✏️</button> ';
+      html += '<button class="btn btn-sm btn-danger" onclick="deleteTaskDirect(\'' + cat.id + '\',' + t.num + ',\'' + t.name.replace(/'/g, "\\'") + '\')" style="padding:4px 8px">🗑️</button>';
+      html += '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  container.innerHTML = html;
+}
+
+function openAddCategoryModal() {
+  openAddTaskModal();
+  document.getElementById('newTaskCat').value = '_new';
+  onNewTaskCatChange();
+}
+
+function openAddTaskModal() {
+  // Populate category dropdown
+  const sel = document.getElementById('newTaskCat');
+  sel.innerHTML = '<option value="">— Select category —</option><option value="_new">➕ Create new category...</option>' +
+    CATEGORIES.map(c => '<option value="' + c.id + '">' + c.icon + ' ' + c.name + '</option>').join('');
+  document.getElementById('newCatFields').style.display = 'none';
+  document.getElementById('newTaskNum').value = '';
+  document.getElementById('newTaskName').value = '';
+  document.getElementById('newTaskComment').value = '';
+  document.getElementById('newTaskLevel').value = 'Easy';
+  document.getElementById('newTaskEvidence').value = 'Photo';
+  document.getElementById('addTaskModal').classList.add('show');
+}
+
+function onNewTaskCatChange() {
+  const val = document.getElementById('newTaskCat').value;
+  document.getElementById('newCatFields').style.display = val === '_new' ? 'block' : 'none';
+  if (val && val !== '_new') {
+    const cat = CATEGORIES.find(c => c.id === val);
+    if (cat) document.getElementById('newTaskNum').value = cat.tasks.length + 1;
+  }
+}
+
+async function saveNewTask() {
+  const catVal = document.getElementById('newTaskCat').value;
+  let catId, catName, catIcon;
+
+  if (catVal === '_new') {
+    catId = document.getElementById('newCatId').value.trim();
+    catName = document.getElementById('newCatName').value.trim();
+    catIcon = document.getElementById('newCatIcon').value.trim() || '📋';
+    if (!catId || !catName) { showToast('⚠️', 'Category ID and Name required'); return; }
+  } else if (catVal) {
+    catId = catVal;
+    const cat = CATEGORIES.find(c => c.id === catVal);
+    catName = cat ? cat.name : catVal;
+    catIcon = cat ? cat.icon : '📋';
+  } else {
+    showToast('⚠️', 'Select a category'); return;
+  }
+
+  const taskNum = parseInt(document.getElementById('newTaskNum').value);
+  const taskName = document.getElementById('newTaskName').value.trim();
+  const evidence = document.getElementById('newTaskEvidence').value;
+  const level = document.getElementById('newTaskLevel').value;
+  const comment = document.getElementById('newTaskComment').value.trim();
+
+  if (!taskNum || !taskName) { showToast('⚠️', 'Task number and name required'); return; }
+
+  try {
+    const res = await api('POST', '/tasks', {
+      category_id: catId, category_name: catName, category_icon: catIcon,
+      task_num: taskNum, task_name: taskName, evidence, level, comment
+    });
+    if (res.error) { showToast('❌', res.error); return; }
+    showToast('✅', 'Task added!');
+    closeModal('addTaskModal');
+    await loadCategoriesFromDB();
+    refreshAll();
+  } catch(e) { showToast('❌', 'Error adding task'); }
+}
+
+function openEditTaskModal(catId, taskNum) {
+  const cat = CATEGORIES.find(c => c.id === catId);
+  if (!cat) return;
+  const task = cat.tasks.find(t => t.num === taskNum);
+  if (!task) return;
+
+  document.getElementById('editTaskId').value = catId + '-' + taskNum;
+  document.getElementById('editTaskName').value = task.name;
+  document.getElementById('editTaskEvidence').value = task.evidence;
+  document.getElementById('editTaskLevel').value = task.level;
+  document.getElementById('editTaskComment').value = task.comment || '';
+  document.getElementById('editTaskModal').classList.add('show');
+}
+
+async function saveEditTask() {
+  const idParts = document.getElementById('editTaskId').value.split('-');
+  const catId = idParts[0];
+  const taskNum = parseInt(idParts[1]);
+
+  // Find the task in DB by matching category_id and task_num
+  const allTasks = await api('GET', '/tasks');
+  const dbTask = allTasks.find(t => t.category_id === catId && t.task_num === taskNum);
+  if (!dbTask) { showToast('❌', 'Task not found'); return; }
+
+  const taskName = document.getElementById('editTaskName').value.trim();
+  const evidence = document.getElementById('editTaskEvidence').value;
+  const level = document.getElementById('editTaskLevel').value;
+  const comment = document.getElementById('editTaskComment').value.trim();
+
+  if (!taskName) { showToast('⚠️', 'Task name required'); return; }
+
+  try {
+    await api('PUT', '/tasks/' + dbTask.id, { task_name: taskName, evidence, level, comment });
+    showToast('✅', 'Task updated!');
+    closeModal('editTaskModal');
+    await loadCategoriesFromDB();
+    refreshAll();
+  } catch(e) { showToast('❌', 'Error updating task'); }
+}
+
+async function deleteTask() {
+  const idParts = document.getElementById('editTaskId').value.split('-');
+  const catId = idParts[0];
+  const taskNum = parseInt(idParts[1]);
+  const allTasks = await api('GET', '/tasks');
+  const dbTask = allTasks.find(t => t.category_id === catId && t.task_num === taskNum);
+  if (!dbTask) return;
+  if (!confirm('Delete this task?')) return;
+  await api('DELETE', '/tasks/' + dbTask.id);
+  showToast('🗑️', 'Task deleted');
+  closeModal('editTaskModal');
+  await loadCategoriesFromDB();
+  refreshAll();
+}
+
+async function deleteTaskDirect(catId, taskNum, taskName) {
+  if (!confirm('Delete "' + taskName + '"?')) return;
+  const allTasks = await api('GET', '/tasks');
+  const dbTask = allTasks.find(t => t.category_id === catId && t.task_num === taskNum);
+  if (!dbTask) return;
+  await api('DELETE', '/tasks/' + dbTask.id);
+  showToast('🗑️', 'Task deleted');
+  await loadCategoriesFromDB();
+  refreshAll();
+}
+
+async function deleteCategory(catId, catName) {
+  if (!confirm('Delete entire category "' + catName + '" and ALL its tasks?')) return;
+  await api('DELETE', '/categories/' + catId);
+  showToast('🗑️', 'Category deleted');
+  await loadCategoriesFromDB();
+  refreshAll();
+}
+
 async function initApp() {
   await loadCategoriesFromDB();
   await loadState();
@@ -1592,8 +1866,6 @@ if (localStorage.getItem('evt_admin_session') === '1') {
   initApp();
 }
 </script>
-</div><!-- end mainApp -->
-
 <script>
 // Admin login check
 const ADMIN_KEY = 'evt_admin_session';
