@@ -242,17 +242,39 @@
 
 <script>
 const LEVEL_PTS = {easy:20,medium:30,hard:50,rare:70};
-const CATEGORIES = [
-  {id:'community',name:'Community Service',icon:'🤝',tasks:[{num:1,name:'Collect 5 recyclable materials',evidence:'Video',level:'Easy',pts:20},{num:2,name:'Feed 4 different animals',evidence:'Photo',level:'Medium',pts:30},{num:3,name:'Find 3 plants, make presentation',evidence:'Video',level:'Medium',pts:30},{num:4,name:'Awareness campaign about cleanliness',evidence:'Video',level:'Hard',pts:50}]},
-  {id:'bonding',name:'Bonding & Communication',icon:'💬',tasks:[{num:1,name:'Dabke performance with locals',evidence:'Video',level:'Easy',pts:20},{num:2,name:'Picture with another team',evidence:'Photo',level:'Easy',pts:20},{num:3,name:'5 people smiling (not your team)',evidence:'Photo',level:'Medium',pts:30},{num:4,name:'Interview local about favorite place',evidence:'Video',level:'Medium',pts:30},{num:5,name:'Learn vendor signature dish',evidence:'Video',level:'Hard',pts:50}]},
-  {id:'available-soon',name:'Available Soon',icon:'⏳',tasks:[{num:1,name:'Hunchies — find ch. Majed',evidence:'Photo',level:'Medium',pts:30},{num:2,name:'Pioneer wall — type anything',evidence:'Photo',level:'Medium',pts:30},{num:3,name:'BOB Juice — find ch. Ahmad',evidence:'Photo',level:'Medium',pts:30},{num:4,name:'Hidden task',evidence:'Photo',level:'Hard',pts:50},{num:5,name:'Catch the flag',evidence:'Photo',level:'Rare',pts:70}]},
-  {id:'challenges',name:'Challenges',icon:'⚡',tasks:[{num:1,name:'Get camel-hair with proof',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Signature from red hat person',evidence:'Video',level:'Easy',pts:20},{num:3,name:'Pic with animal at Pets N Claws',evidence:'Photo',level:'Easy',pts:20},{num:4,name:'Try to fish',evidence:'Photo',level:'Easy',pts:20},{num:5,name:'5 ants in a bottle',evidence:'Photo',level:'Easy',pts:20},{num:6,name:'Follow @vip.bob.taxi on Instagram',evidence:'Photo',level:'Easy',pts:20},{num:7,name:'Picture with BOB taxi car',evidence:'Photo',level:'Medium',pts:30},{num:8,name:'Buy anything with 1000 Lira',evidence:'Photo',level:'Medium',pts:30},{num:9,name:'Selfie with Markit Driver + tag',evidence:'Photo',level:'Medium',pts:30},{num:10,name:'Help someone change a tire',evidence:'Photo',level:'Medium',pts:30},{num:11,name:'Trade up from a pen',evidence:'Video',level:'Medium',pts:30},{num:12,name:'Make a vlog for Event',evidence:'Video',level:'Medium',pts:30},{num:13,name:'Find 50+ year old business',evidence:'Photo',level:'Medium',pts:30},{num:14,name:'Picture of foreign money',evidence:'Photo',level:'Medium',pts:30},{num:15,name:'Like @LSA.S1 on @amccocamping',evidence:'Screenshot',level:'Medium',pts:30},{num:16,name:'Markit App QR scan & verify',evidence:'Screenshot',level:'Hard',pts:50},{num:17,name:'Makari Engineering task (10–1:30)',evidence:'Photo',level:'Hard',pts:50},{num:18,name:'Foreign car plate photo',evidence:'Photo',level:'Hard',pts:50},{num:19,name:'Photo with 1M+ follower person',evidence:'Photo',level:'Hard',pts:50},{num:20,name:"Last year's Event bracelet",evidence:'Photo',level:'Hard',pts:50},{num:21,name:'Fastest apple eating — Saida Beach',evidence:'Video',level:'Rare',pts:70},{num:22,name:'Biggest plate with letter S',evidence:'Photo',level:'Rare',pts:70}]},
-  {id:'sport',name:'Sport & Fitness',icon:'🏃',tasks:[{num:1,name:'Human pyramid with another team',evidence:'Photo',level:'Medium',pts:30},{num:2,name:'Win tug of war — Saida Beach',evidence:'Video',level:'Hard',pts:50},{num:3,name:'Most pull-ups — Saida Stadium',evidence:'Video',level:'Rare',pts:70},{num:4,name:'Most push-ups — Saida Stadium',evidence:'Video',level:'Rare',pts:70},{num:5,name:'Fastest run — Saida Stadium',evidence:'Video',level:'Rare',pts:70},{num:6,name:'Fastest climb — Saida Mall',evidence:'Video',level:'Rare',pts:70}]},
-  {id:'saida',name:'Saida City',icon:'🏛️',tasks:[{num:1,name:'Picture at Saida Castle',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Picture in Soap Museum',evidence:'Photo',level:'Easy',pts:20},{num:3,name:'Find 5 street names',evidence:'Photo',level:'Medium',pts:30},{num:4,name:'Visit 3 Khans in Old Saida',evidence:'Photo',level:'Medium',pts:30},{num:5,name:'Learn manakish making at bakery',evidence:'Video',level:'Medium',pts:30},{num:6,name:'5 different doors in Old Souk',evidence:'Photo',level:'Medium',pts:30},{num:7,name:'Photograph abandoned building',evidence:'Photo',level:'Medium',pts:30},{num:8,name:'Find مختار, take picture',evidence:'Photo',level:'Hard',pts:50}]},
-  {id:'riddles',name:'Riddles & Treasure Hunt',icon:'🧩',tasks:[{num:1,name:'Solve "That Level Again 2"',evidence:'Screenshot',level:'Medium',pts:30},{num:2,name:'Solve morse code at دوار القناية',evidence:'Photo',level:'Hard',pts:50},{num:3,name:'Khatib Center QR tasks',evidence:'Photo',level:'Hard',pts:50}]},
-  {id:'getfind',name:'Get & Find',icon:'🔍',tasks:[{num:1,name:'Get a stamp (طابع)',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Get 500 + 250 LBP coins',evidence:'Photo',level:'Easy',pts:20},{num:3,name:'5 different screw sizes',evidence:'Photo',level:'Easy',pts:20},{num:4,name:'Street named after famous person',evidence:'Photo',level:'Easy',pts:20},{num:5,name:'Find an electric car',evidence:'Photo',level:'Medium',pts:30},{num:6,name:'Local speaking other language',evidence:'Video',level:'Medium',pts:30},{num:7,name:'Create souvenir with artisan',evidence:'Photo',level:'Hard',pts:50}]},
-  {id:'bonus',name:'Bonus',icon:'🌟',tasks:[{num:1,name:'First to finish all Easy tasks',evidence:'Advisor',level:'Rare',pts:70},{num:2,name:'First to finish all Medium tasks',evidence:'Advisor',level:'Rare',pts:70},{num:3,name:'First to finish one category',evidence:'Advisor',level:'Rare',pts:70},{num:4,name:'Design new Event logo',evidence:'Photo',level:'Rare',pts:70},{num:5,name:'Longest straight line of people',evidence:'Photo',level:'Rare',pts:70}]}
-];
+let CATEGORIES = [];
+
+async function loadCategoriesFromDB() {
+  try {
+    const res = await fetch('/api/tasks');
+    const tasks = await res.json();
+    if (tasks.length === 0) return;
+
+    const catMap = {};
+    tasks.forEach(t => {
+      if (!catMap[t.category_id]) {
+        catMap[t.category_id] = {
+          id: t.category_id,
+          name: t.category_name,
+          icon: t.category_icon || '📋',
+          tasks: []
+        };
+      }
+      catMap[t.category_id].tasks.push({
+        num: t.task_num,
+        name: t.task_name,
+        evidence: t.evidence || '',
+        level: t.level || 'Easy',
+        pts: t.points || 20,
+        comment: t.comment || ''
+      });
+    });
+    Object.values(catMap).forEach(cat => cat.tasks.sort((a, b) => a.num - b.num));
+    CATEGORIES = Object.values(catMap);
+  } catch (e) {
+    console.error('Failed to load categories:', e);
+  }
+};
 const TOTAL_TASKS = CATEGORIES.reduce((s,c)=>s+c.tasks.length,0);
 
 let teams=[], myTeamId=null, myCatId=null, myTaskNum=null, doneMap={}, pendingMap={}, allSubs=[];
@@ -264,6 +286,7 @@ function showSec(id,btn){document.querySelectorAll('.sec').forEach(s=>s.classLis
 
 // ── INIT ──
 async function init(){
+  await loadCategoriesFromDB();
   const data=await api('GET','/state');
   teams=data.teams||[];
   const lockedId=localStorage.getItem(LOCK_KEY);
