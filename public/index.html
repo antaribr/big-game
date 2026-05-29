@@ -919,6 +919,13 @@
 
 </div><script>
 let CATEGORIES = [];
+let teams = [];
+let activityLog = [];
+let advisors = [];
+let selectedColor = '#f97316';
+let editSelectedColor = '';
+
+const TEAM_COLORS = ['#f97316','#3b82f6','#22c55e','#ef4444','#8b5cf6','#06b6d4','#ec4899','#eab308','#14b8a6','#f43f5e','#84cc16','#6366f1','#f97316','#a855f7','#0ea5e9'];
 
 async function loadCategoriesFromDB() {
   try {
@@ -962,54 +969,8 @@ async function loadCategoriesFromDB() {
 }
 
 function getFallbackCategories() {
-  return [
-    {id:'community',name:'Community Service',icon:'🤝',tasks:[
-      {num:1,name:'Collect 5 recyclable materials from around the city',evidence:'Video',level:'Easy',pts:20},
-      {num:2,name:'Go feed 4 different animals',evidence:'Photo',level:'Medium',pts:30},
-      {num:3,name:'Find 3 plants and make a presentation about them',evidence:'Video',level:'Medium',pts:30},
-      {num:4,name:'Make an awareness campaign about street cleanliness',evidence:'Video',level:'Hard',pts:50}
-    ]},
-    {id:'bonding',name:'Bonding & Public Communication',icon:'💬',tasks:[
-      {num:1,name:'Organize a small Dabke performance with locals',evidence:'Video',level:'Easy',pts:20},
-      {num:2,name:'Take a picture with another team',evidence:'Photo',level:'Easy',pts:20},
-      {num:3,name:'Capture 5 people while smiling (not your team)',evidence:'Photo',level:'Medium',pts:30,comment:'Get their approval'},
-      {num:4,name:'Interview a local about favorite place in Saida',evidence:'Video',level:'Medium',pts:30},
-      {num:5,name:'Learn vendor signature dish',evidence:'Video',level:'Hard',pts:50}
-    ]},
-    {id:'available-soon',name:'Available Soon Tasks',icon:'⏳',tasks:[
-      {num:1,name:'Go to Hunchies and find ch. Majed',evidence:'Photo',level:'Medium',pts:30,comment:'Wait for advisor'},
-      {num:2,name:'Go to Pioneer wall and type anything',evidence:'Photo',level:'Medium',pts:30,comment:'Wait for advisor'},
-      {num:3,name:'Go to BOB Juice and find ch. Ahmad',evidence:'Photo',level:'Medium',pts:30,comment:'Wait for location'},
-      {num:4,name:'Hidden task',evidence:'Photo',level:'Hard',pts:50,comment:'Wait for advisor'},
-      {num:5,name:'Catch the flag',evidence:'Photo',level:'Rare',pts:70,comment:'Wait for location'}
-    ]},
-    {id:'challenges',name:'Challenges',icon:'⚡',tasks:[
-      {num:1,name:'Get a camel-hair with a proof',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Get a signature from someone wearing a red hat',evidence:'Video',level:'Easy',pts:20},{num:3,name:'Take a pic with animal at Pets N Claws',evidence:'Photo',level:'Easy',pts:20},{num:4,name:'Try to fish',evidence:'Photo',level:'Easy',pts:20},{num:5,name:'Collect 5 ants in a bottle',evidence:'Photo',level:'Easy',pts:20},{num:6,name:'All members follow @vip.bob.taxi on Instagram',evidence:'Photo',level:'Easy',pts:20},{num:7,name:'Take a picture with a BOB taxi car',evidence:'Photo',level:'Medium',pts:30},{num:8,name:'Buy anything with 1000 Lira',evidence:'Photo',level:'Medium',pts:30},{num:9,name:'Find Markit Driver, selfie, tag @markit',evidence:'Photo',level:'Medium',pts:30,comment:"Don't forget to smile"},{num:10,name:'Help anyone who needs to change a tire',evidence:'Photo',level:'Medium',pts:30},{num:11,name:'Trade anything starting from a pen',evidence:'Video',level:'Medium',pts:30},{num:12,name:'Make a vlog for Event',evidence:'Video',level:'Medium',pts:30},{num:13,name:'Find a local business open for over 50 years',evidence:'Photo',level:'Medium',pts:30},{num:14,name:'Take a picture of money from another country',evidence:'Photo',level:'Medium',pts:30,comment:'Not LBP / Dollar'},{num:15,name:'Like @LSA.S1 comment on @amccocamping post',evidence:'Screenshot',level:'Medium',pts:30},{num:16,name:'Find Markit App QR code, scan, download, verify',evidence:'Screenshot',level:'Hard',pts:50},{num:17,name:'Go to Makari Engineering and solve the task (10-1:30)',evidence:'Photo',level:'Hard',pts:50},{num:18,name:'Take a picture of a foreign car plate',evidence:'Photo',level:'Hard',pts:50,comment:'Ask the driver first'},{num:19,name:'Photo with famous person (1M+ followers)',evidence:'Photo',level:'Hard',pts:50},{num:20,name:'Get last year Event bracelet',evidence:'Photo',level:'Hard',pts:50},{num:21,name:'Fastest apple eating with no hands at Saida Beach',evidence:'Video',level:'Rare',pts:70},{num:22,name:'Biggest car plate number with letter S',evidence:'Photo',level:'Rare',pts:70}
-    ]},
-    {id:'sport',name:'Sport & Fitness',icon:'🏃',tasks:[
-      {num:1,name:'Human pyramid with another team',evidence:'Photo',level:'Medium',pts:30},{num:2,name:'Win tug of war at Saida Beach (11-1:30)',evidence:'Video',level:'Hard',pts:50},{num:3,name:'Most pull-ups at Saida Stadium (10-1:30)',evidence:'Video',level:'Rare',pts:70},{num:4,name:'Most push-ups at Saida Stadium (10-1:30)',evidence:'Video',level:'Rare',pts:70},{num:5,name:'Fastest run at Saida Stadium (10-1:30)',evidence:'Video',level:'Rare',pts:70},{num:6,name:'Fastest climb at Saida Mall (3:30-5:00)',evidence:'Video',level:'Rare',pts:70}
-    ]},
-    {id:'saida',name:'Saida City',icon:'🏛️',tasks:[
-      {num:1,name:'Go to Saida Castle and take a picture',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Take a picture in the Soap Museum',evidence:'Photo',level:'Easy',pts:20},{num:3,name:'Find 5 street names in Saida',evidence:'Photo',level:'Medium',pts:30},{num:4,name:'Go to 3 Khans in Old Saida',evidence:'Photo',level:'Medium',pts:30},{num:5,name:'Visit a traditional bakery, learn about manakish',evidence:'Video',level:'Medium',pts:30},{num:6,name:'Photograph five different doors in the Old Souk',evidence:'Photo',level:'Medium',pts:30},{num:7,name:'Photograph an abandoned building',evidence:'Photo',level:'Medium',pts:30},{num:8,name:'Find mukhtar in Saida and take a picture',evidence:'Photo',level:'Hard',pts:50}
-    ]},
-    {id:'riddles',name:'Riddles & Treasure Hunt',icon:'🧩',tasks:[
-      {num:1,name:'Download That Level Again 2 and solve riddles',evidence:'Screenshot',level:'Medium',pts:30},{num:2,name:'Go to dawar al kanaya, solve the morse code',evidence:'Photo',level:'Hard',pts:50,comment:'Ask advisor for guide'},{num:3,name:'Go to Khatib Center, scan QR, complete tasks',evidence:'Photo',level:'Hard',pts:50}
-    ]},
-    {id:'getfind',name:'Get & Find',icon:'🔍',tasks:[
-      {num:1,name:'Get any stamp',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Get a 500 LBP and a 250 LBP coin',evidence:'Photo',level:'Easy',pts:20},{num:3,name:'Get 5 different screw sizes',evidence:'Photo',level:'Easy',pts:20},{num:4,name:'Find a street named after a famous person',evidence:'Photo',level:'Easy',pts:20},{num:5,name:'Find an electric car',evidence:'Photo',level:'Medium',pts:30},{num:6,name:'Find a local speaking non-Arabic/English/French',evidence:'Video',level:'Medium',pts:30},{num:7,name:'Find artisan in Old Souk, create handmade souvenir',evidence:'Photo',level:'Hard',pts:50}
-    ]},
-    {id:'bonus',name:'Bonus',icon:'🌟',tasks:[
-      {num:1,name:'First team to finish all Easy tasks',evidence:'Advisor',level:'Rare',pts:70},{num:2,name:'First team to finish all Medium tasks',evidence:'Advisor',level:'Rare',pts:70},{num:3,name:'First team to finish one entire category',evidence:'Advisor',level:'Rare',pts:70},{num:4,name:'Design a new Event logo',evidence:'Photo',level:'Rare',pts:70,comment:'Will influence next year event'},{num:5,name:'Make the longest straight line of people',evidence:'Photo',level:'Rare',pts:70}
-    ]}
-  ];
+  return []; // Blank start fallback when database rows are absent
 }
-
-const TEAM_COLORS = ['#f97316','#3b82f6','#22c55e','#ef4444','#8b5cf6','#06b6d4','#ec4899','#eab308','#14b8a6','#f43f5e','#84cc16','#6366f1','#f97316','#a855f7','#0ea5e9'];
-
-let teams = [];
-let activityLog = [];
-let selectedColor = TEAM_COLORS[0];
-let editSelectedColor = '';
 
 // ── API ──
 async function api(method, path, body) {
@@ -1160,7 +1121,6 @@ function renderAllTasks() {
   const c = document.getElementById('allTasksContainer');
   if (!c) return;
 
-  // Render option list globally fallback if select configuration is loaded
   const search = (document.getElementById('taskSearch').value||'').toLowerCase();
   let html = '';
   CATEGORIES.forEach(cat => {
@@ -1543,8 +1503,6 @@ async function changePin(teamId, teamName) {
 }
 
 // ── Advisors ──
-let advisors = [];
-
 async function loadAdvisors() {
   try {
     advisors = await api('GET', '/advisors') || [];
