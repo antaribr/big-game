@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
-const app = report || express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Ensure uploads directory exists
@@ -118,7 +118,7 @@ async function initDatabase() {
       )
     `);
 
-    console.log('%. Tables initialized');
+    console.log('✅ Tables initialized');
 
     const teamCount = await client.query('SELECT COUNT(*) FROM teams');
     if (parseInt(teamCount.rows[0].count) === 0) {
@@ -131,7 +131,7 @@ async function initDatabase() {
 
 async function seedDatabase(client) {
   await client.query("INSERT INTO activity_log (icon, message) VALUES ('🎉', 'Event platform initialized completely empty. Ready for configuration!')");
-  console.log('%. Seeded clean environment without default teams or tasks');
+  console.log('✅ Seeded clean environment without default teams or tasks');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -557,6 +557,12 @@ app.get('/api/tasks/export', async (req, res) => {
 });
 
 // Bulk Task Import Flow Node
+const LEVEL_PTS = { easy: 20, medium: 30, hard: 50, rare: 70 };
+const DEFAULT_ICONS = {
+  community: '🤝', bonding: '💬', 'available-soon': '⏳', challenges: '⚡',
+  sport: '🏃', saida: '🏛️', riddles: '🧩', getfind: '🔍', bonus: '🌟'
+};
+
 app.post('/api/tasks/import', async (req, res) => {
   try {
     const { csv } = req.body;
@@ -625,8 +631,8 @@ if (process.env.VERCEL) {
   module.exports = app;
 } else {
   initDatabase().then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log('\n🏆 Live Backend Engine Active: http://localhost:'+PORT);
+    app.listen(PORT, () => {
+      console.log('\n🏆 Live Backend Engine Active on port ' + PORT);
     });
   }).catch(err => { console.error('Initialization Failed:', err); process.exit(1); });
 }
