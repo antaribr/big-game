@@ -65,7 +65,10 @@
   .task-btn:hover{border-color:var(--orange)}
   .task-btn.selected{border-color:var(--orange);background:var(--orange-light)}
   .task-btn.done{opacity:.5;pointer-events:none;background:var(--green-light);border-color:#bbf7d0}
-  .task-btn.pending{border-color:#fcd34d;background:#fffbeb}
+  .task-btn.pending{border-color:#fcd34d;background:#fffbeb;opacity:.7;pointer-events:none}
+  .task-btn.rejected{border-color:var(--red);background:var(--red-light)}
+  .task-btn.rejected .tk-num{background:var(--red);color:#fff;border-color:var(--red)}
+  .task-btn.rejected .tk-pts{color:var(--red)}
   .task-btn .tk-num{width:28px;height:28px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.78rem;color:var(--orange);flex-shrink:0;border:1px solid var(--border)}
   .task-btn.selected .tk-num{background:var(--orange);color:#fff;border-color:var(--orange)}
   .task-btn.done .tk-num{background:var(--green);color:#fff;border-color:var(--green)}
@@ -360,7 +363,10 @@ async function loadSubs(){
   const rej=await fetch('/api/submissions?status=rejected').then(r=>r.json());
   allSubs=[...subData.filter(s=>s.team_id===myTeamId),...appr.filter(s=>s.team_id===myTeamId),...rej.filter(s=>s.team_id===myTeamId)];
   allSubs.sort((a,b)=>b.id-a.id);
-  allSubs.forEach(s=>{if(s.status==='pending')pendingMap[s.category_id+'-'+s.task_num]='pending';});
+  allSubs.forEach(s=>{
+    if(s.status==='pending')pendingMap[s.category_id+'-'+s.task_num]='pending';
+    if(s.status==='rejected')pendingMap[s.category_id+'-'+s.task_num]='rejected';
+  });
 }
 
 function myTeam(){return teams.find(t=>t.id===myTeamId);}
@@ -424,10 +430,15 @@ function backToCats(){document.getElementById('submitStep1').style.display='bloc
 function renderTasks(){
   const cat=CATEGORIES.find(c=>c.id===myCatId);const done=getDoneMap(myTeam());
   document.getElementById('taskList').innerHTML=cat.tasks.map(t=>{
-    const key=myCatId+'-'+t.num;const isDone=done[key];const isPending=pendingMap[key];
-    const cls=isDone?'done':isPending?'pending':'';
-    const status=isDone?'✅':isPending?'⏳ Pending':t.pts+' pts';
-    return '<div class="task-btn '+cls+'" onclick="pickTask('+t.num+')"><div class="tk-num">'+t.num+'</div>'+
+    const key=myCatId+'-'+t.num;const isDone=done[key];const subStatus=pendingMap[key];
+    const isPending=subStatus==='pending';const isRejected=subStatus==='rejected';
+    let cls='',status='',clickable=true;
+    if(isDone){cls='done';status='✅ Approved';clickable=false;}
+    else if(isPending){cls='pending';status='⏳ Waiting';clickable=false;}
+    else if(isRejected){cls='rejected';status='❌ Rejected — Tap to retry';clickable=true;}
+    else{status=t.pts+' pts';}
+    const onclick=clickable?' onclick="pickTask('+t.num+')"':'';
+    return '<div class="task-btn '+cls+'"'+onclick+'><div class="tk-num">'+t.num+'</div>'+
       '<div class="tk-info"><div class="tk-name">'+t.name+'</div><div class="tk-meta"><span class="lvl lvl-'+t.level.toLowerCase()+'">'+t.level+'</span> '+t.evidence+'</div></div>'+
       '<div class="tk-pts">'+status+'</div></div>';
   }).join('');
@@ -474,7 +485,7 @@ function renderHistory(){
     const name=task?task.name:s.category_id+'-'+s.task_num;const pts=task?task.pts:0;
     const icon=s.status==='pending'?'⏳':s.status==='approved'?'✅':'❌';
     const cls=s.status==='pending'?'sub-pending':s.status==='approved'?'sub-approved':'sub-rejected';
-    const ptsHtml=s.status==='approved'?'<span class="sub-pts">+'+pts+' pts</span>':'';
+    const ptsHtml=s.status==='approved'?'<span class="sub-pts">+'+pts+' pts</span>':s.status==='rejected'?'<span style="color:var(--red);font-size:.78rem">Rejected</span>':'';
     const ev=s.evidence_file?'<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎 Evidence</a>':'';
     return '<div class="sub-item"><div class="sub-top"><span class="sub-icon">'+icon+'</span><span class="sub-task">'+name+'</span><span class="sub-badge '+cls+'">'+s.status+'</span></div>'+
       '<div class="sub-detail">'+ptsHtml+ev+'</div></div>';
@@ -498,6 +509,6 @@ function renderLB(){
 init();
 setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();}},5000);
 </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0379953f98de1e0',t:'MTc4MDA3OTcyNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
