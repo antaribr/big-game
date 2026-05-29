@@ -28,7 +28,6 @@ const pool = new Pool({
 async function initDatabase() {
   const client = await pool.connect();
   try {
-    // Create tables
     await client.query(`
       CREATE TABLE IF NOT EXISTS teams (
         id SERIAL PRIMARY KEY,
@@ -85,8 +84,7 @@ async function initDatabase() {
         evidence_file TEXT DEFAULT '',
         status TEXT NOT NULL DEFAULT 'pending',
         submitted_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        reviewed_at TIMESTAMP,
-        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+        reviewed_at TIMESTAMP
       )
     `);
 
@@ -122,7 +120,6 @@ async function initDatabase() {
 
     console.log('✅ Tables created');
 
-    // Seed if empty
     const teamCount = await client.query('SELECT COUNT(*) FROM teams');
     if (parseInt(teamCount.rows[0].count) === 0) {
       await seedDatabase(client);
@@ -154,77 +151,76 @@ async function seedDatabase(client) {
     }
   }
 
-  // Seed tasks
   const defaultTasks = [
-    ['community','Community Service','🤝',1,'Collect 5 recyclable materials from around the city','Video','Easy',20,''],
-    ['community','Community Service','🤝',2,'Go feed 4 different animals','Photo','Medium',30,''],
-    ['community','Community Service','🤝',3,'Find 3 plants and make a presentation about them','Video','Medium',30,''],
-    ['community','Community Service','🤝',4,'Make an awareness campaign about street cleanliness','Video','Hard',50,''],
-    ['bonding','Bonding & Public Communication','💬',1,'Organize a small Dabke performance with locals','Video','Easy',20,''],
-    ['bonding','Bonding & Public Communication','💬',2,'Take a picture with another team','Photo','Easy',20,''],
-    ['bonding','Bonding & Public Communication','💬',3,'Capture 5 people while smiling (not your team)','Photo','Medium',30,'Get their approval'],
-    ['bonding','Bonding & Public Communication','💬',4,'Interview a local about favorite place in Saida','Video','Medium',30,''],
-    ['bonding','Bonding & Public Communication','💬',5,'Learn vendor signature dish','Video','Hard',50,''],
-    ['available-soon','Available Soon Tasks','⏳',1,'Go to Hunchies and find ch. Majed','Photo','Medium',30,'Wait for advisor'],
-    ['available-soon','Available Soon Tasks','⏳',2,"Go to Pioneer's wall and type anything",'Photo','Medium',30,'Wait for advisor'],
-    ['available-soon','Available Soon Tasks','⏳',3,'Go to BOB Juice and find ch. Ahmad','Photo','Medium',30,'Wait for location'],
-    ['available-soon','Available Soon Tasks','⏳',4,'Hidden task','Photo','Hard',50,'Wait for advisor'],
-    ['available-soon','Available Soon Tasks','⏳',5,'Catch the flag','Photo','Rare',70,'Wait for location'],
-    ['challenges','Challenges','⚡',1,'Get a camel-hair with a proof','Photo','Easy',20,''],
-    ['challenges','Challenges','⚡',2,'Get a signature from someone wearing a red hat','Video','Easy',20,''],
-    ['challenges','Challenges','⚡',3,'Take a pic with animal at Pets N Claws','Photo','Easy',20,''],
-    ['challenges','Challenges','⚡',4,'Try to fish','Photo','Easy',20,''],
-    ['challenges','Challenges','⚡',5,'Collect 5 ants in a bottle','Photo','Easy',20,''],
-    ['challenges','Challenges','⚡',6,'All members follow @vip.bob.taxi on Instagram','Photo','Easy',20,''],
-    ['challenges','Challenges','⚡',7,'Take a picture with a BOB taxi car','Photo','Medium',30,''],
-    ['challenges','Challenges','⚡',8,'Buy anything with 1000 Lira','Photo','Medium',30,''],
-    ['challenges','Challenges','⚡',9,'Find Markit Driver, selfie, tag @markit','Photo','Medium',30,"Don't forget to smile"],
-    ['challenges','Challenges','⚡',10,'Help anyone who needs to change a tire','Photo','Medium',30,''],
-    ['challenges','Challenges','⚡',11,'Trade anything starting from a pen','Video','Medium',30,''],
-    ['challenges','Challenges','⚡',12,'Make a vlog for Event','Video','Medium',30,''],
-    ['challenges','Challenges','⚡',13,'Find a local business open for over 50 years','Photo','Medium',30,''],
-    ['challenges','Challenges','⚡',14,'Take a picture of money from another country','Photo','Medium',30,'Not LBP / Dollar'],
-    ['challenges','Challenges','⚡',15,"Like @LSA.S1 comment on @amccocamping post",'Screenshot','Medium',30,''],
-    ['challenges','Challenges','⚡',16,'Find Markit App QR code, scan, download, verify','Screenshot','Hard',50,''],
-    ['challenges','Challenges','⚡',17,'Go to Makari Engineering and solve the task (10-1:30)','Photo','Hard',50,''],
-    ['challenges','Challenges','⚡',18,'Take a picture of a foreign car plate','Photo','Hard',50,'Ask the driver first'],
-    ['challenges','Challenges','⚡',19,'Photo with famous person (1M+ followers)','Photo','Hard',50,''],
-    ['challenges','Challenges','⚡',20,"Get last year's Event bracelet",'Photo','Hard',50,''],
-    ['challenges','Challenges','⚡',21,'Fastest apple eating with no hands at Saida Beach','Video','Rare',70,''],
-    ['challenges','Challenges','⚡',22,'Biggest car plate number with letter S','Photo','Rare',70,''],
-    ['sport','Sport & Fitness','🏃',1,'Human pyramid with another team','Photo','Medium',30,''],
-    ['sport','Sport & Fitness','🏃',2,'Win tug of war at Saida Beach (11-1:30)','Video','Hard',50,''],
-    ['sport','Sport & Fitness','🏃',3,'Most pull-ups at Saida Stadium (10-1:30)','Video','Rare',70,''],
-    ['sport','Sport & Fitness','🏃',4,'Most push-ups at Saida Stadium (10-1:30)','Video','Rare',70,''],
-    ['sport','Sport & Fitness','🏃',5,'Fastest run at Saida Stadium (10-1:30)','Video','Rare',70,''],
-    ['sport','Sport & Fitness','🏃',6,'Fastest climb at Saida Mall (3:30-5:00)','Video','Rare',70,''],
-    ['saida','Saida City','🏛️',1,'Go to Saida Castle and take a picture','Photo','Easy',20,''],
-    ['saida','Saida City','🏛️',2,'Take a picture in the Soap Museum','Photo','Easy',20,''],
-    ['saida','Saida City','🏛️',3,'Find 5 street names in Saida','Photo','Medium',30,''],
-    ['saida','Saida City','🏛️',4,'Go to 3 Khans in Old Saida','Photo','Medium',30,''],
-    ['saida','Saida City','🏛️',5,'Visit a traditional bakery, learn about manakish','Video','Medium',30,''],
-    ['saida','Saida City','🏛️',6,'Photograph five different doors in the Old Souk','Photo','Medium',30,''],
-    ['saida','Saida City','🏛️',7,'Photograph an abandoned building','Photo','Medium',30,''],
-    ['saida','Saida City','🏛️',8,'Find مختار in Saida and take a picture','Photo','Hard',50,''],
-    ['riddles','Riddles & Treasure Hunt','🧩',1,'Download "That Level Again 2" and solve riddles','Screenshot','Medium',30,''],
-    ['riddles','Riddles & Treasure Hunt','🧩',2,'Go to دوار القناية, solve the morse code','Photo','Hard',50,'Ask advisor for guide'],
-    ['riddles','Riddles & Treasure Hunt','🧩',3,'Go to Khatib Center, scan QR, complete tasks','Photo','Hard',50,''],
-    ['getfind','Get & Find','🔍',1,'Get any stamp (طابع)','Photo','Easy',20,''],
-    ['getfind','Get & Find','🔍',2,'Get a 500 LBP and a 250 LBP coin','Photo','Easy',20,''],
-    ['getfind','Get & Find','🔍',3,'Get 5 different screw sizes','Photo','Easy',20,''],
-    ['getfind','Get & Find','🔍',4,'Find a street named after a famous person','Photo','Easy',20,''],
-    ['getfind','Get & Find','🔍',5,'Find an electric car','Photo','Medium',30,''],
-    ['getfind','Get & Find','🔍',6,'Find a local speaking non-Arabic/English/French','Video','Medium',30,''],
-    ['getfind','Get & Find','🔍',7,'Find artisan in Old Souk, create handmade souvenir','Photo','Hard',50,''],
-    ['bonus','Bonus','🌟',1,'First team to finish all Easy tasks','Advisor','Rare',70,''],
-    ['bonus','Bonus','🌟',2,'First team to finish all Medium tasks','Advisor','Rare',70,''],
-    ['bonus','Bonus','🌟',3,'First team to finish one entire category','Advisor','Rare',70,''],
-    ['bonus','Bonus','🌟',4,'Design a new Event logo','Photo','Rare',70,"Will influence next year's event"],
-    ['bonus','Bonus','🌟',5,'Make the longest straight line of people','Photo','Rare',70,'']
+    ['community','Community Service','\u{1F91D}',1,'Collect 5 recyclable materials from around the city','Video','Easy',20,''],
+    ['community','Community Service','\u{1F91D}',2,'Go feed 4 different animals','Photo','Medium',30,''],
+    ['community','Community Service','\u{1F91D}',3,'Find 3 plants and make a presentation about them','Video','Medium',30,''],
+    ['community','Community Service','\u{1F91D}',4,'Make an awareness campaign about street cleanliness','Video','Hard',50,''],
+    ['bonding','Bonding & Public Communication','\u{1F4AC}',1,'Organize a small Dabke performance with locals','Video','Easy',20,''],
+    ['bonding','Bonding & Public Communication','\u{1F4AC}',2,'Take a picture with another team','Photo','Easy',20,''],
+    ['bonding','Bonding & Public Communication','\u{1F4AC}',3,'Capture 5 people while smiling (not your team)','Photo','Medium',30,'Get their approval'],
+    ['bonding','Bonding & Public Communication','\u{1F4AC}',4,'Interview a local about favorite place in Saida','Video','Medium',30,''],
+    ['bonding','Bonding & Public Communication','\u{1F4AC}',5,'Learn vendor signature dish','Video','Hard',50,''],
+    ['available-soon','Available Soon Tasks','\u{23F3}',1,'Go to Hunchies and find ch. Majed','Photo','Medium',30,'Wait for advisor'],
+    ['available-soon','Available Soon Tasks','\u{23F3}',2,'Go to Pioneer wall and type anything','Photo','Medium',30,'Wait for advisor'],
+    ['available-soon','Available Soon Tasks','\u{23F3}',3,'Go to BOB Juice and find ch. Ahmad','Photo','Medium',30,'Wait for location'],
+    ['available-soon','Available Soon Tasks','\u{23F3}',4,'Hidden task','Photo','Hard',50,'Wait for advisor'],
+    ['available-soon','Available Soon Tasks','\u{23F3}',5,'Catch the flag','Photo','Rare',70,'Wait for location'],
+    ['challenges','Challenges','\u{26A1}',1,'Get a camel-hair with a proof','Photo','Easy',20,''],
+    ['challenges','Challenges','\u{26A1}',2,'Get a signature from someone wearing a red hat','Video','Easy',20,''],
+    ['challenges','Challenges','\u{26A1}',3,'Take a pic with animal at Pets N Claws','Photo','Easy',20,''],
+    ['challenges','Challenges','\u{26A1}',4,'Try to fish','Photo','Easy',20,''],
+    ['challenges','Challenges','\u{26A1}',5,'Collect 5 ants in a bottle','Photo','Easy',20,''],
+    ['challenges','Challenges','\u{26A1}',6,'All members follow @vip.bob.taxi on Instagram','Photo','Easy',20,''],
+    ['challenges','Challenges','\u{26A1}',7,'Take a picture with a BOB taxi car','Photo','Medium',30,''],
+    ['challenges','Challenges','\u{26A1}',8,'Buy anything with 1000 Lira','Photo','Medium',30,''],
+    ['challenges','Challenges','\u{26A1}',9,'Find Markit Driver, selfie, tag @markit','Photo','Medium',30,'Dont forget to smile'],
+    ['challenges','Challenges','\u{26A1}',10,'Help anyone who needs to change a tire','Photo','Medium',30,''],
+    ['challenges','Challenges','\u{26A1}',11,'Trade anything starting from a pen','Video','Medium',30,''],
+    ['challenges','Challenges','\u{26A1}',12,'Make a vlog for Event','Video','Medium',30,''],
+    ['challenges','Challenges','\u{26A1}',13,'Find a local business open for over 50 years','Photo','Medium',30,''],
+    ['challenges','Challenges','\u{26A1}',14,'Take a picture of money from another country','Photo','Medium',30,'Not LBP / Dollar'],
+    ['challenges','Challenges','\u{26A1}',15,'Like @LSA.S1 comment on @amccocamping post','Screenshot','Medium',30,''],
+    ['challenges','Challenges','\u{26A1}',16,'Find Markit App QR code, scan, download, verify','Screenshot','Hard',50,''],
+    ['challenges','Challenges','\u{26A1}',17,'Go to Makari Engineering and solve the task (10-1:30)','Photo','Hard',50,''],
+    ['challenges','Challenges','\u{26A1}',18,'Take a picture of a foreign car plate','Photo','Hard',50,'Ask the driver first'],
+    ['challenges','Challenges','\u{26A1}',19,'Photo with famous person (1M+ followers)','Photo','Hard',50,''],
+    ['challenges','Challenges','\u{26A1}',20,'Get last year Event bracelet','Photo','Hard',50,''],
+    ['challenges','Challenges','\u{26A1}',21,'Fastest apple eating with no hands at Saida Beach','Video','Rare',70,''],
+    ['challenges','Challenges','\u{26A1}',22,'Biggest car plate number with letter S','Photo','Rare',70,''],
+    ['sport','Sport & Fitness','\u{1F3C3}',1,'Human pyramid with another team','Photo','Medium',30,''],
+    ['sport','Sport & Fitness','\u{1F3C3}',2,'Win tug of war at Saida Beach (11-1:30)','Video','Hard',50,''],
+    ['sport','Sport & Fitness','\u{1F3C3}',3,'Most pull-ups at Saida Stadium (10-1:30)','Video','Rare',70,''],
+    ['sport','Sport & Fitness','\u{1F3C3}',4,'Most push-ups at Saida Stadium (10-1:30)','Video','Rare',70,''],
+    ['sport','Sport & Fitness','\u{1F3C3}',5,'Fastest run at Saida Stadium (10-1:30)','Video','Rare',70,''],
+    ['sport','Sport & Fitness','\u{1F3C3}',6,'Fastest climb at Saida Mall (3:30-5:00)','Video','Rare',70,''],
+    ['saida','Saida City','\u{1F3DB}',1,'Go to Saida Castle and take a picture','Photo','Easy',20,''],
+    ['saida','Saida City','\u{1F3DB}',2,'Take a picture in the Soap Museum','Photo','Easy',20,''],
+    ['saida','Saida City','\u{1F3DB}',3,'Find 5 street names in Saida','Photo','Medium',30,''],
+    ['saida','Saida City','\u{1F3DB}',4,'Go to 3 Khans in Old Saida','Photo','Medium',30,''],
+    ['saida','Saida City','\u{1F3DB}',5,'Visit a traditional bakery, learn about manakish','Video','Medium',30,''],
+    ['saida','Saida City','\u{1F3DB}',6,'Photograph five different doors in the Old Souk','Photo','Medium',30,''],
+    ['saida','Saida City','\u{1F3DB}',7,'Photograph an abandoned building','Photo','Medium',30,''],
+    ['saida','Saida City','\u{1F3DB}',8,'Find mukhtar in Saida and take a picture','Photo','Hard',50,''],
+    ['riddles','Riddles & Treasure Hunt','\u{1F9E9}',1,'Download That Level Again 2 and solve riddles','Screenshot','Medium',30,''],
+    ['riddles','Riddles & Treasure Hunt','\u{1F9E9}',2,'Go to dawar al kanaya, solve the morse code','Photo','Hard',50,'Ask advisor for guide'],
+    ['riddles','Riddles & Treasure Hunt','\u{1F9E9}',3,'Go to Khatib Center, scan QR, complete tasks','Photo','Hard',50,''],
+    ['getfind','Get & Find','\u{1F50D}',1,'Get any stamp','Photo','Easy',20,''],
+    ['getfind','Get & Find','\u{1F50D}',2,'Get a 500 LBP and a 250 LBP coin','Photo','Easy',20,''],
+    ['getfind','Get & Find','\u{1F50D}',3,'Get 5 different screw sizes','Photo','Easy',20,''],
+    ['getfind','Get & Find','\u{1F50D}',4,'Find a street named after a famous person','Photo','Easy',20,''],
+    ['getfind','Get & Find','\u{1F50D}',5,'Find an electric car','Photo','Medium',30,''],
+    ['getfind','Get & Find','\u{1F50D}',6,'Find a local speaking non-Arabic/English/French','Video','Medium',30,''],
+    ['getfind','Get & Find','\u{1F50D}',7,'Find artisan in Old Souk, create handmade souvenir','Photo','Hard',50,''],
+    ['bonus','Bonus','\u{1F31F}',1,'First team to finish all Easy tasks','Advisor','Rare',70,''],
+    ['bonus','Bonus','\u{1F31F}',2,'First team to finish all Medium tasks','Advisor','Rare',70,''],
+    ['bonus','Bonus','\u{1F31F}',3,'First team to finish one entire category','Advisor','Rare',70,''],
+    ['bonus','Bonus','\u{1F31F}',4,'Design a new Event logo','Photo','Rare',70,'Will influence next year event'],
+    ['bonus','Bonus','\u{1F31F}',5,'Make the longest straight line of people','Photo','Rare',70,'']
   ];
 
   for (const t of defaultTasks) {
-    await client.query('INSERT INTO tasks (category_id, category_name, category_icon, task_num, task_name, evidence, level, points, comment) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)', t);
+    await client.query('INSERT INTO tasks (category_id,category_name,category_icon,task_num,task_name,evidence,level,points,comment) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)', t);
   }
 
   await client.query("INSERT INTO activity_log (icon, message) VALUES ('🎉', 'Event initialized with 10 teams and 65 tasks!')");
@@ -261,10 +257,26 @@ async function getTeamsFull() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ADMIN LOGIN
+// ═══════════════════════════════════════════════════════════════
+app.post('/api/admin/login', (req, res) => {
+  try {
+    const { password } = req.body;
+    const adminPass = process.env.ADMIN_PASSWORD || 'ibrahim';
+    if (password === adminPass) {
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ error: 'Wrong password' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // API ROUTES
 // ═══════════════════════════════════════════════════════════════
 
-// GET all state
 app.get('/api/state', async (req, res) => {
   try {
     const teams = await getTeamsFull();
@@ -282,7 +294,6 @@ app.post('/api/teams', async (req, res) => {
     if (!name) return res.status(400).json({ error: 'Name required' });
     if (!members || members.length < 1) return res.status(400).json({ error: 'Need at least 1 member' });
     if (members.length > 8) return res.status(400).json({ error: 'Max 8 members' });
-
     const result = await pool.query('INSERT INTO teams (name, color) VALUES ($1, $2) RETURNING id', [name, color || '#f97316']);
     const teamId = result.rows[0].id;
     for (const m of members) await pool.query('INSERT INTO members (team_id, name) VALUES ($1, $2)', [teamId, m]);
@@ -297,7 +308,6 @@ app.put('/api/teams/:id', async (req, res) => {
     const { name, color, members } = req.body;
     const team = await queryOne('SELECT * FROM teams WHERE id=$1', [id]);
     if (!team) return res.status(404).json({ error: 'Not found' });
-
     await pool.query('UPDATE teams SET name=$1, color=$2 WHERE id=$3', [name||team.name, color||team.color, id]);
     if (members && Array.isArray(members)) {
       await pool.query('DELETE FROM members WHERE team_id=$1', [id]);
@@ -313,7 +323,7 @@ app.delete('/api/teams/:id', async (req, res) => {
     const id = parseInt(req.params.id);
     const team = await queryOne('SELECT * FROM teams WHERE id=$1', [id]);
     if (!team) return res.status(404).json({ error: 'Not found' });
-    await pool.query('DELETE FROM teams WHERE id=$1', [id]); // cascades
+    await pool.query('DELETE FROM teams WHERE id=$1', [id]);
     await addLog(null, '🗑️', 'Team "'+team.name+'" deleted');
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -362,7 +372,7 @@ app.put('/api/teams/:id/disqualify', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Completions (admin manual)
+// Completions toggle
 app.post('/api/completions/toggle', async (req, res) => {
   try {
     const { teamId, categoryId, taskNum } = req.body;
@@ -390,10 +400,8 @@ app.post('/api/submissions', async (req, res) => {
     if (!teamId || !categoryId || !taskNum) return res.status(400).json({ error: 'Missing fields' });
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [teamId]);
     if (!team) return res.status(404).json({ error: 'Team not found' });
-
     const pending = await queryOne("SELECT * FROM submissions WHERE team_id=$1 AND category_id=$2 AND task_num=$3 AND status='pending'", [teamId, categoryId, taskNum]);
     if (pending) return res.status(400).json({ error: 'Already have a pending submission' });
-
     const approved = await queryOne('SELECT * FROM completions WHERE team_id=$1 AND category_id=$2 AND task_num=$3', [teamId, categoryId, taskNum]);
     if (approved) return res.status(400).json({ error: 'Already approved' });
 
@@ -503,7 +511,7 @@ app.delete('/api/advisors/:id', async (req, res) => {
     const id = parseInt(req.params.id);
     const advisor = await queryOne('SELECT * FROM advisors WHERE id=$1', [id]);
     if (!advisor) return res.status(404).json({ error: 'Not found' });
-    await pool.query('DELETE FROM advisors WHERE id=$1', [id]); // cascades
+    await pool.query('DELETE FROM advisors WHERE id=$1', [id]);
     await addLog(null, '🗑️', 'Advisor "'+advisor.name+'" deleted');
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -549,7 +557,7 @@ app.post('/api/verify-pin', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Update team PIN (admin)
+// Update team PIN
 app.put('/api/teams/:id/pin', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -562,13 +570,12 @@ app.put('/api/teams/:id/pin', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Get tasks
+// Tasks
 app.get('/api/tasks', async (req, res) => {
   try { res.json(await query('SELECT * FROM tasks ORDER BY category_id, task_num')); }
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Export tasks as CSV
 app.get('/api/tasks/export', async (req, res) => {
   try {
     const tasks = await query('SELECT * FROM tasks ORDER BY category_id, task_num');
@@ -585,7 +592,6 @@ app.get('/api/tasks/export', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Import tasks from CSV
 const LEVEL_PTS = { easy: 20, medium: 30, hard: 50, rare: 70 };
 const DEFAULT_ICONS = {
   community: '🤝', bonding: '💬', 'available-soon': '⏳', challenges: '⚡',
@@ -600,11 +606,9 @@ app.post('/api/tasks/import', async (req, res) => {
     if (lines.length < 2) return res.status(400).json({ error: 'CSV is empty' });
     const header = lines[0].toLowerCase();
     if (!header.includes('category') || !header.includes('task')) return res.status(400).json({ error: 'Invalid CSV format' });
-
     await pool.query('DELETE FROM tasks');
     const catIcons = { ...DEFAULT_ICONS };
     let imported = 0;
-
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
@@ -651,6 +655,7 @@ app.post('/api/reset', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Fallback
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ═══════════════════════════════════════════════════════════════
