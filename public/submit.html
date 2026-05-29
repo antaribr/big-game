@@ -91,7 +91,7 @@
   .upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer}
   .upload-area .up-icon{font-size:1.8rem;margin-bottom:4px}
   .upload-area .up-text{font-size:.85rem;color:var(--text-dim)}
-  .upload-area .up-text strong{color:var(--orange)}
+  .upload-area .up-text warm{color:var(--orange)}
   .upload-area .up-file{font-size:.82rem;color:var(--green);font-weight:600;margin-top:4px}
   .upload-preview{max-width:160px;max-height:120px;margin:8px auto 0;border-radius:.5rem;display:none}
 
@@ -162,13 +162,10 @@
 <div class="container">
   <div class="header"><h1>🏆 Team Dashboard</h1></div>
 
-  <!-- Team Banner (appears after lock) -->
-  <div id="teamBanner" style="display:none"></div>
+  <div id="teamBanner" class="team-banner" style="display:none"></div>
 
-  <!-- Stats (appears after lock) -->
   <div class="stats-grid" id="myStats" style="display:none"></div>
 
-  <!-- Nav -->
   <div class="nav-bar" id="mainNav" style="display:none">
     <button class="active" onclick="showSec('home',this)">🏠 Home</button>
     <button onclick="showSec('submit',this)">📝 Submit</button>
@@ -177,20 +174,18 @@
     <button onclick="manualRefresh()" style="flex:0;min-width:auto;padding:10px" title="Refresh now">🔄</button>
   </div>
 
-  <!-- HOME: Category Progress -->
   <div class="sec active" id="sec-home">
-    <div class="sec-title">📊 Progress</div>
+    <div class="sec-title">📊 Progress Matrix</div>
     <div class="cat-progress-list" id="catProgressList"></div>
   </div>
 
-  <!-- SUBMIT: Pick Category → Task → Upload -->
   <div class="sec" id="sec-submit">
     <div id="submitStep1">
       <div class="sec-title">📂 Pick a category</div>
       <div class="cat-grid" id="catGrid"></div>
     </div>
     <div id="submitStep2" style="display:none">
-      <div class="sec-title"><div class="st-back" onclick="backToCats()">←</div> <span id="catTitle">Tasks</span></div>
+      <div class="sec-title"><div class="st-back" onclick="backToCats()">←</div> <span id="catTitle">Available Tasks</span></div>
       <div class="task-list" id="taskList"></div>
     </div>
     <div id="submitStep3" style="display:none">
@@ -202,59 +197,94 @@
       <div class="upload-area" id="uploadArea">
         <input type="file" id="evidenceFile" accept="image/*,video/*" onchange="onFileChange()">
         <div class="up-icon">📷</div>
-        <div class="up-text"><strong>Tap to upload</strong> photo or video</div>
+        <div class="up-text"><strong>Tap to upload</strong> photo or video vector</div>
         <div class="up-file" id="fileName"></div>
-        <img class="upload-preview" id="filePreview">
+        <img class="upload-preview" id="filePreview" alt="Evidence Preview">
       </div>
-      <textarea id="note" placeholder="Add a note (optional)..."></textarea>
-      <button class="submit-btn" id="submitBtn" onclick="submitTask()" disabled>Submit for Review</button>
+      <textarea id="note" placeholder="Add custom task note (optional)..."></textarea>
+      <button class="submit-btn" id="submitBtn" onclick="submitTask()" disabled>Submit for Verification</button>
       <div class="msg" id="msg"></div>
     </div>
   </div>
 
-  <!-- HISTORY: All my submissions -->
   <div class="sec" id="sec-history">
-    <div class="sec-title">📋 My Submissions</div>
+    <div class="sec-title">📋 Complete Activity Log</div>
     <div id="historyList"></div>
   </div>
 
-  <!-- LEADERBOARD -->
   <div class="sec" id="sec-leaderboard">
-    <div class="sec-title">🏅 Standings</div>
+    <div class="sec-title">🏅 Event Standings</div>
     <div class="mini-lb" id="miniLB"></div>
   </div>
 
-  <!-- Team Selection (shown if not locked) -->
   <div id="teamSelectScreen" style="display:none">
     <div class="sec-title" style="margin-bottom:14px">👋 Select your team</div>
     <div class="team-grid" id="teamGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
   </div>
 </div>
 
-<!-- PIN Modal -->
 <div class="pin-overlay" id="pinOverlay">
   <div class="pin-box">
     <h3>🔐 Enter Team PIN</h3>
-    <div class="pb-sub">Enter the PIN for</div>
+    <div class="pb-sub">Enter the PIN token for</div>
     <div class="pb-team"><span id="pinTeamDot" style="width:12px;height:12px;border-radius:50%;display:inline-block"></span><span id="pinTeamName"></span></div>
-    <input type="tel" class="pin-input" id="pinInput" maxlength="6" placeholder="• • • •" inputmode="numeric" autocomplete="off">
-    <div class="pin-err" id="pinErr">❌ Wrong PIN</div>
-    <button class="pin-btn" id="pinBtn" onclick="verifyPin()">Unlock</button>
+    <input type="tel" class="pin-input" id="pinInput" maxlength="6" placeholder="••••" inputmode="numeric" autocomplete="off">
+    <div class="pin-err" id="pinErr">❌ Wrong PIN validation code</div>
+    <button class="pin-btn" id="pinBtn" onclick="verifyPin()">Unlock Dashboard</button>
     <button class="pin-cancel" onclick="closePin()">Cancel</button>
   </div>
 </div>
 
 <script>
-const LEVEL_PTS = {easy:20,medium:30,hard:50,rare:70};
 let CATEGORIES = [];
+let teams = [];
+let myTeamId = null;
+let myCatId = null;
+let myTaskNum = null;
+let doneMap = {};
+let pendingMap = {};
+let allSubs = [];
+let totalTasksCount = 0;
+const LOCK_KEY = 'event_team_lock';
+
+async function api(m, p, b) {
+  const o = { method: m, headers: { 'Content-Type': 'application/json' } };
+  if (b) o.body = JSON.stringify(b);
+  const res = await fetch('/api' + p, o);
+  return res.json();
+}
+
+function toast(icon, msg) {
+  const c = document.getElementById('toastContainer');
+  if (!c) return;
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = '<span style="font-size:1rem">' + icon + '</span> ' + msg;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transition = 'opacity .3s';
+    setTimeout(() => t.remove(), 300);
+  }, 3000);
+}
+
+function showSec(id, btn) {
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('sec-' + id);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.nav-bar button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
 
 async function loadCategoriesFromDB() {
   try {
     const res = await fetch('/api/tasks');
     const tasks = await res.json();
-    if (tasks.length === 0) return;
+    if (!tasks || tasks.length === 0) return;
 
     const catMap = {};
+    totalTasksCount = tasks.length;
+    
     tasks.forEach(t => {
       if (!catMap[t.category_id]) {
         catMap[t.category_id] = {
@@ -273,248 +303,269 @@ async function loadCategoriesFromDB() {
         comment: t.comment || ''
       });
     });
+    
     Object.values(catMap).forEach(cat => cat.tasks.sort((a, b) => a.num - b.num));
     CATEGORIES = Object.values(catMap);
   } catch (e) {
-    console.error('Failed to load categories:', e);
+    console.error('Failed to resolve tasks database maps:', e);
   }
-};
-const TOTAL_TASKS = CATEGORIES.reduce((s,c)=>s+c.tasks.length,0);
-
-let teams=[], myTeamId=null, myCatId=null, myTaskNum=null, doneMap={}, pendingMap={}, allSubs=[];
-const LOCK_KEY='event_team_lock';
-
-async function api(m,p,b){const o={method:m,headers:{'Content-Type':'application/json'}};if(b)o.body=JSON.stringify(b);return(await fetch('/api'+p,o)).json();}
-function toast(icon,msg){const c=document.getElementById('toastContainer'),t=document.createElement('div');t.className='toast';t.innerHTML='<span style="font-size:1rem">'+icon+'</span> '+msg;c.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},3000);}
-function showSec(id,btn){document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));document.getElementById('sec-'+id).classList.add('active');document.querySelectorAll('.nav-bar button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');}
+}
 
 // ── INIT ──
-async function init(){
+async function init() {
   await loadCategoriesFromDB();
-  const data=await api('GET','/state');
-  teams=data.teams||[];
-  const lockedId=localStorage.getItem(LOCK_KEY);
-  if(lockedId){
-    const team=teams.find(t=>t.id===parseInt(lockedId));
-    if(team){lockTeam(team.id);return;}
+  const data = await api('GET', '/state');
+  teams = data.teams || [];
+  const lockedId = localStorage.getItem(LOCK_KEY);
+  if (lockedId) {
+    const team = teams.find(t => t.id === parseInt(lockedId));
+    if (team) { lockTeam(team.id); return; }
     else localStorage.removeItem(LOCK_KEY);
   }
   showTeamSelect();
 }
 
-function showTeamSelect(){
-  document.getElementById('teamSelectScreen').style.display='block';
-  document.getElementById('mainNav').style.display='none';
-  document.getElementById('myStats').style.display='none';
-  document.getElementById('teamBanner').style.display='none';
-  document.getElementById('teamGrid').innerHTML=teams.map(t=>
-    '<div style="padding:16px;border:2px solid var(--border);border-radius:.75rem;background:var(--card);cursor:pointer;text-align:center" onclick="pickTeam('+t.id+')">'+
-    '<div style="width:12px;height:12px;border-radius:50%;background:'+t.color+';margin:0 auto 6px"></div>'+
-    '<div style="font-weight:600;font-size:.88rem">'+t.name+'</div>'+
-    '<div style="font-size:.72rem;color:var(--text-muted)">'+t.members.length+' members</div></div>'
+function showTeamSelect() {
+  document.getElementById('teamSelectScreen').style.display = 'block';
+  document.getElementById('mainNav').style.display = 'none';
+  document.getElementById('myStats').style.display = 'none';
+  document.getElementById('teamBanner').style.display = 'none';
+  document.getElementById('teamGrid').innerHTML = teams.map(t =>
+    '<div style="padding:16px;border:2px solid var(--border);border-radius:.75rem;background:var(--card);cursor:pointer;text-align:center" onclick="pickTeam(' + t.id + ')">' +
+    '<div style="width:12px;height:12px;border-radius:50%;background:' + t.color + ';margin:0 auto 6px"></div>' +
+    '<div style="font-weight:600;font-size:.88rem">' + t.name + '</div>' +
+    '<div style="font-size:.72rem;color:var(--text-muted)">' + t.members.length + ' members</div></div>'
   ).join('');
 }
 
-// ── PIN ──
-let pendingTeamId=null;
-function pickTeam(id){
-  pendingTeamId=id;const team=teams.find(t=>t.id===id);
-  document.getElementById('pinTeamDot').style.background=team.color;
-  document.getElementById('pinTeamName').textContent=team.name;
-  document.getElementById('pinInput').value='';document.getElementById('pinErr').style.display='none';
+let pendingTeamId = null;
+function pickTeam(id) {
+  pendingTeamId = id; const team = teams.find(t => t.id === id);
+  document.getElementById('pinTeamDot').style.background = team.color;
+  document.getElementById('pinTeamName').textContent = team.name;
+  document.getElementById('pinInput').value = ''; document.getElementById('pinErr').style.display = 'none';
   document.getElementById('pinInput').classList.remove('error');
   document.getElementById('pinOverlay').classList.add('show');
-  setTimeout(()=>document.getElementById('pinInput').focus(),100);
+  setTimeout(() => document.getElementById('pinInput').focus(), 100);
 }
-function closePin(){document.getElementById('pinOverlay').classList.remove('show');pendingTeamId=null;}
-async function verifyPin(){
-  const pin=document.getElementById('pinInput').value.trim();if(!pin)return;
-  const btn=document.getElementById('pinBtn');btn.disabled=true;btn.textContent='Checking...';
-  try{
-    const res=await api('POST','/verify-pin',{teamId:pendingTeamId,pin});
-    if(res.valid){document.getElementById('pinOverlay').classList.remove('show');localStorage.setItem(LOCK_KEY,pendingTeamId);lockTeam(pendingTeamId);}
-    else{document.getElementById('pinInput').classList.add('error');document.getElementById('pinErr').style.display='block';document.getElementById('pinInput').value='';document.getElementById('pinInput').focus();}
-  }catch(e){document.getElementById('pinErr').textContent='❌ Network error';document.getElementById('pinErr').style.display='block';}
-  btn.disabled=false;btn.textContent='Unlock';
+
+function closePin() { document.getElementById('pinOverlay').classList.remove('show'); pendingTeamId = null; }
+
+async function verifyPin() {
+  const pin = document.getElementById('pinInput').value.trim(); if (!pin) return;
+  const btn = document.getElementById('pinBtn'); btn.disabled = true; btn.textContent = 'Verifying...';
+  try {
+    const res = await api('POST', '/verify-pin', { teamId: pendingTeamId, pin });
+    if (res.valid) { 
+      document.getElementById('pinOverlay').classList.remove('show'); 
+      localStorage.setItem(LOCK_KEY, pendingTeamId); 
+      lockTeam(pendingTeamId); 
+    } else {
+      document.getElementById('pinInput').classList.add('error'); 
+      document.getElementById('pinErr').style.display = 'block'; 
+      document.getElementById('pinInput').value = ''; 
+      document.getElementById('pinInput').focus();
+    }
+  } catch (e) { 
+    document.getElementById('pinErr').textContent = '❌ Connection link timed out'; 
+    document.getElementById('pinErr').style.display = 'block'; 
+  }
+  btn.disabled = false; btn.textContent = 'Unlock';
 }
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('pinOverlay').classList.contains('show'))verifyPin();});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('pinOverlay').classList.contains('show')) verifyPin(); });
 
 // ── LOCK TEAM ──
-async function lockTeam(id){
-  myTeamId=id;const team=teams.find(t=>t.id===id);
-  doneMap={};pendingMap={};
-  if(team.completions)team.completions.forEach(c=>{doneMap[c.categoryId+'-'+c.taskNum]=true;});
-  document.getElementById('teamSelectScreen').style.display='none';
-  document.getElementById('teamBanner').style.display='flex';
-  document.getElementById('myStats').style.display='grid';
-  document.getElementById('mainNav').style.display='flex';
-  document.getElementById('teamBanner').innerHTML=
-    '<div class="tb-dot" style="background:'+team.color+'"></div>'+
-    '<div class="tb-info"><div class="tb-name">'+team.name+'</div>'+
-    '<div class="tb-sub">'+team.members.length+' members</div></div>'+
-    '<span class="tb-badge">🔒 Locked</span>'+
-    '<button style="background:none;border:1px solid var(--border);border-radius:.4rem;padding:3px 8px;font-size:.7rem;color:var(--text-dim);cursor:pointer;font-family:inherit" onclick="if(confirm(\'Change team? Requires new PIN.\')){localStorage.removeItem(\'event_team_lock\');location.reload();}">Change</button>';
-  await loadSubs();renderAll();
+async function lockTeam(id) {
+  myTeamId = id; const team = teams.find(t => t.id === id);
+  doneMap = {}; pendingMap = {};
+  if (team.completions) team.completions.forEach(c => { doneMap[c.categoryId + '-' + c.taskNum] = true; });
+  document.getElementById('teamSelectScreen').style.display = 'none';
+  document.getElementById('teamBanner').style.display = 'flex';
+  document.getElementById('myStats').style.display = 'grid';
+  document.getElementById('mainNav').style.display = 'flex';
+  document.getElementById('teamBanner').innerHTML =
+    '<div class="tb-dot" style="background:' + team.color + '"></div>' +
+    '<div class="tb-info"><div class="tb-name">' + team.name + '</div>' +
+    '<div class="tb-sub">' + team.members.length + ' members</div></div>' +
+    '<span class="tb-badge">🔒 Locked</span>' +
+    '<button style="background:none;border:1px solid var(--border);border-radius:.4rem;padding:3px 8px;font-size:.7rem;color:var(--text-dim);cursor:pointer;font-family:inherit" onclick="if(confirm(\'Change linked workspace? Requires PIN validation.\')){localStorage.removeItem(\'event_team_lock\');location.reload();}">Change</button>';
+  await loadSubs(); renderAll();
 }
 
-async function loadSubs(){
-  const data=await api('GET','/state');teams=data.teams||[];
-  const subData=await fetch('/api/submissions?status=pending').then(r=>r.json());
-  const appr=await fetch('/api/submissions?status=approved').then(r=>r.json());
-  const rej=await fetch('/api/submissions?status=rejected').then(r=>r.json());
-  allSubs=[...subData.filter(s=>s.team_id===myTeamId),...appr.filter(s=>s.team_id===myTeamId),...rej.filter(s=>s.team_id===myTeamId)];
-  allSubs.sort((a,b)=>b.id-a.id);
-  allSubs.forEach(s=>{
-    if(s.status==='pending')pendingMap[s.category_id+'-'+s.task_num]='pending';
-    if(s.status==='rejected')pendingMap[s.category_id+'-'+s.task_num]='rejected';
+async function loadSubs() {
+  const data = await api('GET', '/state'); teams = data.teams || [];
+  const subData = await fetch('/api/submissions?status=pending').then(r => r.json());
+  const appr = await fetch('/api/submissions?status=approved').then(r => r.json());
+  const rej = await fetch('/api/submissions?status=rejected').then(r => r.json());
+  allSubs = [...subData.filter(s => s.team_id === myTeamId), ...appr.filter(s => s.team_id === myTeamId), ...rej.filter(s => s.team_id === myTeamId)];
+  allSubs.sort((a, b) => b.id - a.id);
+  
+  pendingMap = {};
+  allSubs.forEach(s => {
+    if (s.status === 'pending') pendingMap[s.category_id + '-' + s.task_num] = 'pending';
+    if (s.status === 'rejected') pendingMap[s.category_id + '-' + s.task_num] = 'rejected';
   });
 }
 
-function myTeam(){return teams.find(t=>t.id===myTeamId);}
-function myPoints(){
-  const team=myTeam();if(!team)return 0;let pts=0;
-  const done=getDoneMap(team);
-  CATEGORIES.forEach(cat=>cat.tasks.forEach(t=>{if(done[cat.id+'-'+t.num])pts+=t.pts;}));
+function myTeam() { return teams.find(t => t.id === myTeamId); }
+
+function myPoints() {
+  const team = myTeam(); if (!team) return 0; let pts = 0;
+  const done = getDoneMap(team);
+  CATEGORIES.forEach(cat => cat.tasks.forEach(t => { if (done[cat.id + '-' + t.num]) pts += t.pts; }));
   return pts;
 }
-function getDoneMap(team){const m={};if(team.completions)team.completions.forEach(c=>{m[c.categoryId+'-'+c.taskNum]=true;});return m;}
+
+function getDoneMap(team) { 
+  const m = {}; 
+  if (team && team.completions) team.completions.forEach(c => { m[c.categoryId + '-' + c.taskNum] = true; }); 
+  return m; 
+}
 
 // ── RENDER ALL ──
-function renderAll(){
-  const team=myTeam();if(!team)return;
-  const done=getDoneMap(team);const doneCount=Object.keys(done).length;
-  const pts=myPoints();
-  const sorted=[...teams].sort((a,b)=>{const pa=getDoneMap(a);const pb=getDoneMap(b);let sa=0,sb=0;CATEGORIES.forEach(c=>c.tasks.forEach(t=>{if(pa[c.id+'-'+t.num])sa+=t.pts;if(pb[c.id+'-'+t.num])sb+=t.pts;}));return sb-sa;});
-  const rank=sorted.findIndex(t=>t.id===myTeamId)+1;
-  const pendingCount=allSubs.filter(s=>s.status==='pending').length;
+function renderAll() {
+  const team = myTeam(); if (!team) return;
+  const done = getDoneMap(team); const doneCount = Object.keys(done).length;
+  const pts = myPoints();
+  const sorted = [...teams].sort((a, b) => {
+    const pa = getDoneMap(a); const pb = getDoneMap(b); let sa = 0, sb = 0;
+    CATEGORIES.forEach(c => c.tasks.forEach(t => { if (pa[c.id + '-' + t.num]) sa += t.pts; if (pb[c.id + '-' + t.num]) sb += t.pts; }));
+    return sb - sa;
+  });
+  const rank = sorted.findIndex(t => t.id === myTeamId) + 1;
+  const pendingCount = allSubs.filter(s => s.status === 'pending').length;
 
-  // Stats
-  document.getElementById('myStats').innerHTML=
-    '<div class="stat"><div class="s-num" style="color:var(--orange)">'+pts+'</div><div class="s-label">Points</div></div>'+
-    '<div class="stat"><div class="s-num" style="color:var(--green)">'+doneCount+'</div><div class="s-label">Done</div></div>'+
-    '<div class="stat"><div class="s-num" style="color:var(--blue)">'+pendingCount+'</div><div class="s-label">Pending</div></div>'+
-    '<div class="stat"><div class="s-num" style="color:var(--purple)">#'+rank+'</div><div class="s-label">Rank</div></div>';
+  // Stats Display
+  document.getElementById('myStats').innerHTML =
+    '<div class="stat"><div class="s-num" style="color:var(--orange)">' + pts + '</div><div class="s-label">Points</div></div>' +
+    '<div class="stat"><div class="s-num" style="color:var(--green)">' + doneCount + '</div><div class="s-label">Done</div></div>' +
+    '<div class="stat"><div class="s-num" style="color:var(--blue)">' + pendingCount + '</div><div class="s-label">Pending</div></div>' +
+    '<div class="stat"><div class="s-num" style="color:var(--purple)">#' + rank + '</div><div class="s-label">Rank</div></div>';
 
-  renderCatProgress();renderCats();renderHistory();renderLB();
+  renderCatProgress(); renderCats(); renderHistory(); renderLB();
 }
 
 // ── HOME: Category Progress ──
-function renderCatProgress(){
-  const done=getDoneMap(myTeam());
-  document.getElementById('catProgressList').innerHTML=CATEGORIES.map(cat=>{
-    const catDone=cat.tasks.filter(t=>done[cat.id+'-'+t.num]).length;
-    const catMax=cat.tasks.reduce((s,t)=>s+t.pts,0);
-    const catEarned=cat.tasks.reduce((s,t)=>s+(done[cat.id+'-'+t.num]?t.pts:0),0);
-    const pct=Math.round((catDone/cat.tasks.length)*100);
-    return '<div class="cp-card"><div class="cp-top"><div class="cp-name">'+cat.icon+' '+cat.name+'</div><div class="cp-pts">'+catEarned+'/'+catMax+'</div></div>'+
-      '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-muted);margin-bottom:4px"><span>'+catDone+'/'+cat.tasks.length+' tasks</span><span>'+pct+'%</span></div>'+
-      '<div class="cp-bar"><div class="cp-fill" style="width:'+pct+'%;background:'+myTeam().color+'"></div></div></div>';
+function renderCatProgress() {
+  const done = getDoneMap(myTeam());
+  document.getElementById('catProgressList').innerHTML = CATEGORIES.map(cat => {
+    const catDone = cat.tasks.filter(t => done[cat.id + '-' + t.num]).length;
+    const catMax = cat.tasks.reduce((s, t) => s + t.pts, 0);
+    const catEarned = cat.tasks.reduce((s, t) => s + (done[cat.id + '-' + t.num] ? t.pts : 0), 0);
+    const pct = cat.tasks.length ? Math.round((catDone / cat.tasks.length) * 100) : 0;
+    return '<div class="cp-card"><div class="cp-top"><div class="cp-name">' + cat.icon + ' ' + cat.name + '</div><div class="cp-pts">' + catEarned + '/' + catMax + '</div></div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-muted);margin-bottom:4px"><span>' + catDone + '/' + cat.tasks.length + ' tasks</span><span>' + pct + '%</span></div>' +
+      '<div class="cp-bar"><div class="cp-fill" style="width:' + pct + '%;background:' + myTeam().color + '"></div></div></div>';
   }).join('');
 }
 
 // ── SUBMIT: Categories ──
-function renderCats(){
-  const done=getDoneMap(myTeam());
-  document.getElementById('catGrid').innerHTML=CATEGORIES.map(c=>{
-    const total=c.tasks.length;const dn=c.tasks.filter(t=>done[c.id+'-'+t.num]).length;
-    return '<div class="cat-btn" onclick="pickCat(\''+c.id+'\')"><div class="cb-icon">'+c.icon+'</div><div class="cb-name">'+c.name+'</div><div class="cb-meta">'+dn+'/'+total+' done</div></div>';
+function renderCats() {
+  const done = getDoneMap(myTeam());
+  document.getElementById('catGrid').innerHTML = CATEGORIES.map(c => {
+    const total = c.tasks.length; const dn = c.tasks.filter(t => done[c.id + '-' + t.num]).length;
+    return '<div class="cat-btn" onclick="pickCat(\'' + c.id + '\')"><div class="cb-icon">' + c.icon + '</div><div class="cb-name">' + c.name + '</div><div class="cb-meta">' + dn + '/' + total + ' done</div></div>';
   }).join('');
 }
-function pickCat(id){
-  myCatId=id;const cat=CATEGORIES.find(c=>c.id===id);
-  document.getElementById('catTitle').textContent=cat.icon+' '+cat.name;
-  renderTasks();document.getElementById('submitStep1').style.display='none';document.getElementById('submitStep2').style.display='block';
+
+function pickCat(id) {
+  myCatId = id; const cat = CATEGORIES.find(c => c.id === id);
+  document.getElementById('catTitle').textContent = cat.icon + ' ' + cat.name;
+  renderTasks(); document.getElementById('submitStep1').style.display = 'none'; document.getElementById('submitStep2').style.display = 'block';
 }
-function backToCats(){document.getElementById('submitStep1').style.display='block';document.getElementById('submitStep2').style.display='none';document.getElementById('submitStep3').style.display='none';}
+
+function backToCats() { document.getElementById('submitStep1').style.display = 'block'; document.getElementById('submitStep2').style.display = 'none'; document.getElementById('submitStep3').style.display = 'none'; }
 
 // ── SUBMIT: Tasks ──
-function renderTasks(){
-  const cat=CATEGORIES.find(c=>c.id===myCatId);const done=getDoneMap(myTeam());
-  document.getElementById('taskList').innerHTML=cat.tasks.map(t=>{
-    const key=myCatId+'-'+t.num;const isDone=done[key];const subStatus=pendingMap[key];
-    const isPending=subStatus==='pending';const isRejected=subStatus==='rejected';
-    let cls='',status='',clickable=true;
-    if(isDone){cls='done';status='✅ Approved';clickable=false;}
-    else if(isPending){cls='pending';status='⏳ Waiting';clickable=false;}
-    else if(isRejected){cls='rejected';status='❌ Rejected — Tap to retry';clickable=true;}
-    else{status=t.pts+' pts';}
-    const onclick=clickable?' onclick="pickTask('+t.num+')"':'';
-    return '<div class="task-btn '+cls+'"'+onclick+'><div class="tk-num">'+t.num+'</div>'+
-      '<div class="tk-info"><div class="tk-name">'+t.name+'</div><div class="tk-meta"><span class="lvl lvl-'+t.level.toLowerCase()+'">'+t.level+'</span> '+t.evidence+'</div></div>'+
-      '<div class="tk-pts">'+status+'</div></div>';
+function renderTasks() {
+  const cat = CATEGORIES.find(c => c.id === myCatId); const done = getDoneMap(myTeam());
+  if (!cat) return;
+  document.getElementById('taskList').innerHTML = cat.tasks.map(t => {
+    const key = myCatId + '-' + t.num; const isDone = done[key]; const subStatus = pendingMap[key];
+    const isPending = subStatus === 'pending'; const isRejected = subStatus === 'rejected';
+    let cls = '', status = '', clickable = true;
+    if (isDone) { cls = 'done'; status = '✅ Approved'; clickable = false; }
+    else if (isPending) { cls = 'pending'; status = '⏳ Waiting'; clickable = false; }
+    else if (isRejected) { cls = 'rejected'; status = '❌ Rejected — Retry'; clickable = true; }
+    else { status = t.pts + ' pts'; }
+    const onclick = clickable ? ' onclick="pickTask(' + t.num + ')"' : '';
+    return '<div class="task-btn ' + cls + '"' + onclick + '><div class="tk-num">' + t.num + '</div>' +
+      '<div class="tk-info"><div class="tk-name">' + t.name + '</div><div class="tk-meta"><span class="lvl lvl-' + t.level.toLowerCase() + '">' + t.level + '</span> ' + t.evidence + '</div></div>' +
+      '<div class="tk-pts">' + status + '</div></div>';
   }).join('');
 }
-function pickTask(num){
-  myTaskNum=num;const cat=CATEGORIES.find(c=>c.id===myCatId);const task=cat.tasks.find(t=>t.num===num);
-  document.getElementById('selTaskName').textContent=task.name;
-  document.getElementById('selTaskMeta').innerHTML='<span class="lvl lvl-'+task.level.toLowerCase()+'">'+task.level+'</span> • '+task.pts+' pts • Evidence: '+task.evidence;
-  document.getElementById('evidenceFile').value='';document.getElementById('fileName').textContent='';
-  document.getElementById('filePreview').style.display='none';document.getElementById('uploadArea').classList.remove('has-file');
-  document.getElementById('note').value='';document.getElementById('msg').style.display='none';document.getElementById('submitBtn').disabled=true;
-  document.getElementById('submitStep2').style.display='none';document.getElementById('submitStep3').style.display='block';
+
+function pickTask(num) {
+  myTaskNum = num; const cat = CATEGORIES.find(c => c.id === myCatId); const task = cat.tasks.find(t => t.num === num);
+  document.getElementById('selTaskName').textContent = task.name;
+  document.getElementById('selTaskMeta').innerHTML = '<span class="lvl lvl-' + task.level.toLowerCase() + '">' + task.level + '</span> • ' + task.pts + ' pts • Evidence: ' + task.evidence;
+  document.getElementById('evidenceFile').value = ''; document.getElementById('fileName').textContent = '';
+  document.getElementById('filePreview').style.display = 'none'; document.getElementById('uploadArea').classList.remove('has-file');
+  document.getElementById('note').value = ''; document.getElementById('msg').style.display = 'none'; document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitStep2').style.display = 'none'; document.getElementById('submitStep3').style.display = 'block';
 }
-function backToTasks(){document.getElementById('submitStep2').style.display='block';document.getElementById('submitStep3').style.display='none';}
+
+function backToTasks() { document.getElementById('submitStep2').style.display = 'block'; document.getElementById('submitStep3').style.display = 'none'; }
 
 // ── SUBMIT: Upload ──
-function onFileChange(){
-  const f=document.getElementById('evidenceFile').files[0];if(!f)return;
-  document.getElementById('uploadArea').classList.add('has-file');document.getElementById('fileName').textContent='📎 '+f.name;
-  document.getElementById('submitBtn').disabled=false;
-  const p=document.getElementById('filePreview');
-  if(f.type.startsWith('image/')){const r=new FileReader();r.onload=e=>{p.src=e.target.result;p.style.display='block'};r.readAsDataURL(f);}
-  else p.style.display='none';
+function onFileChange() {
+  const f = document.getElementById('evidenceFile').files[0]; if (!f) return;
+  document.getElementById('uploadArea').classList.add('has-file'); document.getElementById('fileName').textContent = '📎 ' + f.name;
+  document.getElementById('submitBtn').disabled = false;
+  const p = document.getElementById('filePreview');
+  if (f.type.startsWith('image/')) { const r = new FileReader(); r.onload = e => { p.src = e.target.result; p.style.display = 'block'; }; r.readAsDataURL(f); }
+  else p.style.display = 'none';
 }
-async function submitTask(){
-  const btn=document.getElementById('submitBtn'),msg=document.getElementById('msg');
-  btn.disabled=true;btn.textContent='Submitting...';
-  try{
-    const file=document.getElementById('evidenceFile').files[0];let fileName='',fileData='';
-    if(file){fileData=await new Promise(r=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.readAsDataURL(file)});fileName=file.name;}
-    const res=await fetch('/api/submissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({teamId:myTeamId,categoryId:myCatId,taskNum:myTaskNum,note:document.getElementById('note').value,fileName,fileData})});
-    const data=await res.json();
-    if(data.success){msg.className='msg ok';msg.textContent='✅ Submitted! Waiting for approval.';msg.style.display='block';await loadSubs();renderAll();}
-    else{msg.className='msg err';msg.textContent='❌ '+(data.error||'Failed');msg.style.display='block';}
-  }catch(e){msg.className='msg err';msg.textContent='❌ Network error';msg.style.display='block';}
-  btn.textContent='Submit for Review';btn.disabled=false;
+
+async function submitTask() {
+  const btn = document.getElementById('submitBtn'), msg = document.getElementById('msg');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  try {
+    const file = document.getElementById('evidenceFile').files[0]; let fileName = '', fileData = '';
+    if (file) { fileData = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(file); }); fileName = file.name; }
+    const res = await fetch('/api/submissions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ teamId: myTeamId, categoryId: myCatId, taskNum: myTaskNum, note: document.getElementById('note').value, fileName, fileData }) });
+    const data = await res.json();
+    if (data.success) { msg.className = 'msg ok'; msg.textContent = '✅ Submitted! Waiting for approval.'; msg.style.display = 'block'; await loadSubs(); renderAll(); }
+    else { msg.className = 'msg err'; msg.textContent = '❌ ' + (data.error || 'Failed validation parameters'); msg.style.display = 'block'; }
+  } catch (e) { msg.className = 'msg err'; msg.textContent = '❌ Internal verification error'; msg.style.display = 'block'; }
+  btn.textContent = 'Submit for Review'; btn.disabled = false;
 }
 
 // ── HISTORY ──
-function renderHistory(){
-  if(!allSubs.length){document.getElementById('historyList').innerHTML='<div class="empty">No submissions yet. Go submit some tasks!</div>';return;}
-  document.getElementById('historyList').innerHTML=allSubs.map(s=>{
-    const cat=CATEGORIES.find(c=>c.id===s.category_id);const task=cat?cat.tasks.find(t=>t.num===s.task_num):null;
-    const name=task?task.name:s.category_id+'-'+s.task_num;const pts=task?task.pts:0;
-    const icon=s.status==='pending'?'⏳':s.status==='approved'?'✅':'❌';
-    const cls=s.status==='pending'?'sub-pending':s.status==='approved'?'sub-approved':'sub-rejected';
-    const ptsHtml=s.status==='approved'?'<span class="sub-pts">+'+pts+' pts</span>':s.status==='rejected'?'<span style="color:var(--red);font-size:.78rem">Rejected</span>':'';
-    const ev=s.evidence_file?'<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎 Evidence</a>':'';
-    return '<div class="sub-item"><div class="sub-top"><span class="sub-icon">'+icon+'</span><span class="sub-task">'+name+'</span><span class="sub-badge '+cls+'">'+s.status+'</span></div>'+
-      '<div class="sub-detail">'+ptsHtml+ev+'</div></div>';
+function renderHistory() {
+  if (!allSubs.length) { document.getElementById('historyList').innerHTML = '<div class="empty">No tasks submitted yet. Choose tasks above!</div>'; return; }
+  document.getElementById('historyList').innerHTML = allSubs.map(s => {
+    const cat = CATEGORIES.find(c => c.id === s.category_id); const task = cat ? cat.tasks.find(t => t.num === s.task_num) : null;
+    const name = task ? task.name : s.category_id + '-' + s.task_num; const pts = task ? task.pts : 0;
+    const icon = s.status === 'pending' ? '⏳' : s.status === 'approved' ? '✅' : '❌';
+    const cls = s.status === 'pending' ? 'sub-pending' : s.status === 'approved' ? 'sub-approved' : 'sub-rejected';
+    const ptsHtml = s.status === 'approved' ? '<span class="sub-pts">+' + pts + ' pts</span>' : s.status === 'rejected' ? '<span style="color:var(--red);font-size:.78rem">Rejected</span>' : '';
+    const ev = s.evidence_file ? '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.75rem; margin-left: 8px;">📎 View Evidence</a>' : '';
+    return '<div class="sub-item"><div class="sub-top"><span class="sub-icon">' + icon + '</span><span class="sub-task">' + name + '</span><span class="sub-badge ' + cls + '">' + s.status + '</span></div>' +
+      '<div class="sub-detail">' + ptsHtml + ev + '</div></div>';
   }).join('');
 }
 
 // ── LEADERBOARD ──
-function renderLB(){
-  const calcPts=t=>{const d=getDoneMap(t);let p=0;CATEGORIES.forEach(c=>c.tasks.forEach(tk=>{if(d[c.id+'-'+tk.num])p+=tk.pts;}));return p;};
-  const sorted=[...teams].sort((a,b)=>calcPts(b)-calcPts(a));
-  const max=sorted.length?calcPts(sorted[0]):1;
-  document.getElementById('miniLB').innerHTML=sorted.map((t,i)=>{
-    const pts=calcPts(t);const isMe=t.id===myTeamId;
-    const rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
-    return '<div class="mlb-entry'+(isMe?' me':'')+'"><div class="mlb-rank '+rc+'">'+(i+1)+'</div>'+
-      '<div class="mlb-dot" style="background:'+t.color+'"></div><div class="mlb-name">'+t.name+(isMe?' (You)':'')+'</div>'+
-      '<div class="mlb-pts">'+pts+'</div></div>';
+function renderLB() {
+  const calcPts = t => { const d = getDoneMap(t); let p = 0; CATEGORIES.forEach(c => c.tasks.forEach(tk => { if (d[c.id + '-' + tk.num]) p += tk.pts; })); return p; };
+  const sorted = [...teams].sort((a, b) => calcPts(b) - calcPts(a));
+  document.getElementById('miniLB').innerHTML = sorted.map((t, i) => {
+    const pts = calcPts(t); const isMe = t.id === myTeamId;
+    const rc = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
+    return '<div class="mlb-entry' + (isMe ? ' me' : '') + '"><div class="mlb-rank ' + rc+'">' + (i + 1) + '</div>' +
+      '<div class="mlb-dot" style="background:' + t.color + '"></div><div class="mlb-name">' + t.name + (isMe ? ' (You)' : '') + '</div>' +
+      '<div class="mlb-pts">' + pts + '</div></div>';
   }).join('');
 }
 
 async function manualRefresh() {
-  if(myTeamId){await loadSubs();renderAll();}
-  toast('🔄','Refreshed!');
+  if (myTeamId) { await loadSubs(); renderAll(); }
+  toast('🔄', 'Refreshed timeline state!');
 }
 
 init();
-setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();}},2000);
+setInterval(async () => { if (myTeamId) { await loadSubs(); renderAll(); } }, 5000);
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a037bedb9f6be16a',t:'MTc4MDA4MTI2Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
