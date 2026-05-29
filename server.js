@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
-const app = express();
+const app = report || express();
 const PORT = process.env.PORT || 3000;
 
 // Ensure uploads directory exists
@@ -118,7 +118,7 @@ async function initDatabase() {
       )
     `);
 
-    console.log('✅ Tables initialized');
+    console.log('%. Tables initialized');
 
     const teamCount = await client.query('SELECT COUNT(*) FROM teams');
     if (parseInt(teamCount.rows[0].count) === 0) {
@@ -129,10 +129,9 @@ async function initDatabase() {
   }
 }
 
-// Clean Database Seeding Initialization Function (No Hardcoded Mock Items)
 async function seedDatabase(client) {
   await client.query("INSERT INTO activity_log (icon, message) VALUES ('🎉', 'Event platform initialized completely empty. Ready for configuration!')");
-  console.log('✅ Seeded clean environment without default teams or tasks');
+  console.log('%. Seeded clean environment without default teams or tasks');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -480,19 +479,24 @@ app.get('/api/tasks', async (req, res) => {
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Automatic Task ID (Number) Creation Endpoint Patch
 app.post('/api/tasks', async (req, res) => {
   try {
-    const { category_id, category_name, category_icon, task_num, task_name, evidence, level, comment } = req.body;
+    const { category_id, category_name, category_icon, task_name, evidence, level, comment } = req.body;
     const LEVEL_PTS = { easy: 20, medium: 30, hard: 50, rare: 70 };
     const points = LEVEL_PTS[level.toLowerCase()] || 20;
+
+    // Fetch the maximum task number currently active inside this category
+    const maxTaskRow = await queryOne('SELECT COALESCE(MAX(task_num), 0) as max_num FROM tasks WHERE category_id = $1', [category_id]);
+    const nextTaskNum = parseInt(maxTaskRow.max_num) + 1;
 
     await pool.query(
       `INSERT INTO tasks (category_id, category_name, category_icon, task_num, task_name, evidence, level, points, comment) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [category_id, category_name, category_icon || '📋', task_num, task_name, evidence, level, points, comment || '']
+      [category_id, category_name, category_icon || '📋', nextTaskNum, task_name, evidence, level, points, comment || '']
     );
-    await addLog(null, '📝', `Task #${taskNum} was added manually to category "${categoryId}".`);
-    res.json({ success: true });
+    await addLog(null, '📝', `Task #${nextTaskNum} ("${task_name}") was automatically numbered and added to category "${category_id}".`);
+    res.json({ success: true, task_num: nextTaskNum });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -553,12 +557,6 @@ app.get('/api/tasks/export', async (req, res) => {
 });
 
 // Bulk Task Import Flow Node
-const LEVEL_PTS = { easy: 20, medium: 30, hard: 50, rare: 70 };
-const DEFAULT_ICONS = {
-  community: '🤝', bonding: '💬', 'available-soon': '⏳', challenges: '⚡',
-  sport: '🏃', saida: '🏛️', riddles: '🧩', getfind: '🔍', bonus: '🌟'
-};
-
 app.post('/api/tasks/import', async (req, res) => {
   try {
     const { csv } = req.body;
