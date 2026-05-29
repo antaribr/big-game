@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/server.js" },
+    { "src": "/uploads/(.*)", "dest": "/server.js" },
+    { "src": "/submit.html", "dest": "/public/submit.html" },
+    { "src": "/advisor.html", "dest": "/public/advisor.html" },
+    { "src": "/(.*\\.(css|js|png|jpg|svg|ico))", "dest": "/public/$1" },
+    { "src": "/(.*)", "dest": "/server.js" }
+  ]
+}
