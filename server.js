@@ -6,10 +6,10 @@ const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DB_PATH = path.join(__dirname, 'event.db');
+const DB_PATH = process.env.VERCEL ? '/tmp/event.db' : path.join(__dirname, 'event.db');
 
 // Ensure uploads directory exists
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const UPLOADS_DIR = process.env.VERCEL ? '/tmp/uploads' : path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 // Middleware
@@ -24,7 +24,16 @@ let db;
 // DATABASE
 // ═══════════════════════════════════════════════════════════════
 async function initDatabase() {
-  const SQL = await initSqlJs();
+  // Try to load sql.js with WASM, fallback to CDN if local file missing
+  let SQL;
+  try {
+    SQL = await initSqlJs();
+  } catch (e) {
+    console.log('⚠️ Local WASM not found, loading from CDN...');
+    SQL = await initSqlJs({
+      locateFile: file => 'https://sql.js.org/dist/' + file
+    });
+  }
   if (fs.existsSync(DB_PATH)) {
     db = new SQL.Database(fs.readFileSync(DB_PATH));
     console.log('📂 Loaded existing database');
@@ -674,9 +683,16 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 // ═══════════════════════════════════════════════════════════════
 // START
 // ═══════════════════════════════════════════════════════════════
-initDatabase().then(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log('\n🏆 Event Dashboard: http://localhost:'+PORT);
-    console.log('📝 Team Submit Page: http://localhost:'+PORT+'/submit.html\n');
-  });
-}).catch(err => { console.error('Failed:', err); process.exit(1); });
+// For Vercel serverless
+if (process.env.VERCEL) {
+  initDatabase().catch(err => console.error('DB init error:', err));
+  module.exports = app;
+} else {
+  // Local development
+  initDatabase().then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log('\n🏆 Event Dashboard: http://localhost:'+PORT);
+      console.log('📝 Team Submit Page: http://localhost:'+PORT+'/submit.html\n');
+    });
+  }).catch(err => { console.error('Failed:', err); process.exit(1); });
+}
