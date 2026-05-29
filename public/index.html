@@ -659,25 +659,19 @@
     <div class="cat-grid" id="dashCatGrid"></div>
   </div>
 
-  <!-- ═══ ALL TASKS ═══ -->
+  <!-- ═══ TASKS ═══ -->
   <div class="section" id="section-tasks">
-    <div class="section-header"><h2>📋 All Tasks</h2></div>
-    <input type="text" class="search-input" placeholder="🔍 Search tasks..." id="taskSearch" oninput="filterTasks()">
-    <div class="team-select-bar">
-      <label>Tasks for:</label>
-      <select id="taskTeamSelect" onchange="renderAllTasks()"></select>
+    <div class="section-header">
+      <h2>📋 All Tasks</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="openAddTaskModal()">+ Add Task</button>
+        <button class="btn btn-sm" onclick="exportTasks()">📤 Export</button>
+        <button class="btn btn-sm" onclick="document.getElementById('importInline').click()">📥 Import</button>
+        <input type="file" id="importInline" accept=".csv" style="display:none" onchange="importTasks(this)">
+      </div>
     </div>
-    <div id="allTasksContainer"></div>
-  </div>
-
-  <!-- ═══ TEAM VIEW ═══ -->
-  <div class="section" id="section-team">
-    <div class="section-header"><h2>👤 Team View</h2></div>
-    <div class="team-select-bar">
-      <label>Select team:</label>
-      <select id="teamViewSelect" onchange="renderTeamView()"></select>
-    </div>
-    <div id="teamViewContent"></div>
+    <input type="text" class="search-input" placeholder="🔍 Search tasks..." id="taskSearch" oninput="renderAllTasksView()">
+    <div id="allTasksView"></div>
   </div>
 
   <!-- ═══ MANAGE TEAMS ═══ -->
@@ -711,18 +705,6 @@
       <button class="btn btn-primary" onclick="openAddAdvisorModal()">+ Add Advisor</button>
     </div>
     <div id="advisorsList"></div>
-  </div>
-
-  <!-- ═══ TASK MANAGEMENT ═══ -->
-  <div class="section" id="section-taskmgmt">
-    <div class="section-header">
-      <h2>📝 Task Management</h2>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-primary" onclick="openAddCategoryModal()">+ Add Category</button>
-        <button class="btn btn-primary" onclick="openAddTaskModal()">+ Add Task</button>
-      </div>
-    </div>
-    <div id="taskMgmtContainer"></div>
   </div>
 
   <!-- ═══ TOOLS ═══ -->
@@ -1490,6 +1472,7 @@ loadState = async function() {
     activityLog = data.log || [];
     window._submissions = data.submissions || { pending: [], reviewed: [] };
     await loadAdvisors();
+    await loadAllTasks();
   } catch (e) { console.error('Load failed:', e); }
 };
 
@@ -1693,7 +1676,7 @@ function renderTaskManagement() {
     html += '<table class="task-table"><thead><tr>';
     html += '<th style="width:40px">#</th><th>Task</th><th>Evidence</th><th>Level</th><th style="width:50px">Pts</th><th style="width:80px;text-align:center">Actions</th>';
     html += '</tr></thead><tbody>';
-    cat.tasks.forEach(t => {
+    filtered.forEach(t => {
       html += '<tr>';
       html += '<td class="task-num">' + t.num + '</td>';
       html += '<td><div class="task-name">' + t.name + '</div>';
@@ -1856,6 +1839,7 @@ async function deleteCategory(catId, catName) {
 
 async function initApp() {
   await loadCategoriesFromDB();
+  await loadAllTasks();
   await loadState();
   refreshAll();
   setInterval(async()=>{ await loadState(); refreshAll(); }, 2000);
@@ -1914,5 +1898,5 @@ if (localStorage.getItem(ADMIN_KEY) === '1') {
 }
 </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a037beabbf0de16a',t:'MTc4MDA4MTI1Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a037e6c23c01e288',t:'MTc4MDA4Mjg5OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
