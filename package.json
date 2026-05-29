@@ -1,0 +1,14 @@
+{
+  "name": "event-dashboard",
+  "version": "1.0.0",
+  "description": "Event Point System Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "sql.js": "^1.11.0"
+  }
+}
