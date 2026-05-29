@@ -292,6 +292,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .03em;
+    text-align: center;
   }
   .level-easy { background: var(--green-light); color: var(--green); }
   .level-medium { background: var(--blue-light); color: var(--blue); }
@@ -299,8 +300,6 @@
   .level-rare { background: var(--purple-light); color: var(--purple); }
   .pts-cell { font-weight: 700; color: var(--orange); }
   .evidence-cell { font-size: .75rem; color: var(--text-muted); }
-  .status-cell { text-align: center; }
-  .checkbox-big { width: 20px; height: 20px; accent-color: var(--green); cursor: pointer; }
 
   /* ── Team Detail ── */
   .team-detail-card {
@@ -462,26 +461,10 @@
     outline: none;
     background: var(--card);
     color: var(--text);
+    margin-bottom: 16px;
   }
   .search-input:focus { border-color: var(--orange); }
   .search-input::placeholder { color: var(--text-muted); }
-
-  /* ── Activity Log ── */
-  .log-list { display: flex; flex-direction: column; gap: 6px; }
-  .log-entry {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: .75rem;
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: .85rem;
-    box-shadow: var(--shadow);
-  }
-  .log-time { font-size: .72rem; color: var(--text-muted); white-space: nowrap; min-width: 70px; }
-  .log-icon { font-size: 1rem; }
-  .log-team-tag { font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 50px; color: #fff; }
 
   /* ── Modals ── */
   .modal-overlay {
@@ -573,28 +556,6 @@
     font-weight: 500;
   }
 
-  /* ── Toast ── */
-  .toast-container { position: fixed; top: 16px; right: 16px; z-index: 500; display: flex; flex-direction: column; gap: 6px; }
-  .toast {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: .75rem;
-    padding: 12px 18px;
-    font-size: .85rem;
-    box-shadow: var(--shadow-md);
-    animation: slideIn .2s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    max-width: 320px;
-  }
-  @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-
-  /* ── Empty State ── */
-  .empty-state { text-align: center; padding: 48px 16px; color: var(--text-muted); }
-  .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 8px; }
-  .empty-state p { font-size: .9rem; }
-
   /* ── Responsive ── */
   @media (max-width: 768px) {
     .hero { padding: 32px 16px 24px; }
@@ -608,6 +569,7 @@
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
 <div id="loginScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:90%;max-width:380px;box-shadow:var(--shadow);text-align:center">
     <div style="font-size:2.5rem;margin-bottom:12px">🔐</div>
@@ -619,10 +581,12 @@
   </div>
 </div>
 
+<!-- MAIN APP (hidden until login) -->
 <div id="mainApp" style="display:none">
 
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- Hero -->
 <div class="hero">
   <h1>🏆 Live Leaderboard</h1>
   <p>The competition is heating up!</p>
@@ -630,21 +594,22 @@
 
 <div class="container">
 
+  <!-- Stats -->
   <div class="stats-row" id="dashStats"></div>
 
+  <!-- Nav -->
   <div class="nav-bar">
     <button class="active" onclick="showSection('leaderboard',this)">🏅 Leaderboard</button>
-    <button onclick="showSection('tasks',this)">📋 All Tasks</button>
+    <button onclick="showSection('taskcenter',this)">📝 Task Center</button>
     <button onclick="showSection('team',this)">👤 Team View</button>
-    <button onclick="showSection('teams',this)">⚙️ Manage</button>
+    <button onclick="showSection('teams',this)">⚙️ Manage Teams</button>
     <button onclick="showSection('activity',this)">📜 Log</button>
     <button onclick="showSection('submissions',this)">📨 Submissions</button>
     <button onclick="showSection('rules',this)">📖 Rules</button>
     <button onclick="showSection('advisors',this)">👥 Advisors</button>
-    <button onclick="showSection('taskmgmt',this)">📝 Tasks</button>
-    <button onclick="showSection('tools',this)">🔧 Tools</button>
   </div>
 
+  <!-- ═══ LEADERBOARD ═══ -->
   <div class="section active" id="section-leaderboard">
     <div class="section-header"><h2>🏅 Leaderboard</h2></div>
     <div class="leaderboard" id="fullLeaderboard"></div>
@@ -653,20 +618,34 @@
     <div class="cat-grid" id="dashCatGrid"></div>
   </div>
 
-  <div class="section" id="section-tasks">
+  <!-- ═══ CONSOLIDATED TASK CENTER ═══ -->
+  <div class="section" id="section-taskcenter">
+    <!-- Top Action Headers -->
     <div class="section-header">
-      <h2>📋 All Tasks</h2>
+      <h2>📝 Task Configuration & Tools</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" onclick="openAddTaskModal()">+ Add Task</button>
-        <button class="btn btn-sm" onclick="exportTasks()">📤 Export</button>
-        <button class="btn btn-sm" onclick="document.getElementById('importInline').click()">📥 Import</button>
-        <input type="file" id="importInline" accept=".csv" style="display:none" onchange="importTasks(this)">
+        <button class="btn btn-sm" onclick="exportTasks()">📤 Export CSV</button>
+        <button class="btn btn-sm" onclick="document.getElementById('importCenterFile').click()">📥 Import CSV</button>
+        <input type="file" id="importCenterFile" accept=".csv" style="display:none" onchange="importTasks(this)">
       </div>
     </div>
-    <input type="text" class="search-input" placeholder="🔍 Search tasks..." id="taskSearch" oninput="renderAllTasks()">
-    <div id="allTasksContainer"></div>
+
+    <!-- Alert Context Box for Imports -->
+    <div id="importResult" style="display:none; margin-bottom: 16px;"></div>
+
+    <!-- Live Search input -->
+    <input type="text" class="search-input" placeholder="🔍 Live filter tasks across categories..." id="taskSearch" oninput="renderAllTasks()">
+
+    <!-- Real-time Interactive Task Checklists (Old All Tasks View Content) -->
+    <div id="allTasksContainer" style="margin-bottom: 32px;"></div>
+
+    <!-- Admin Task Configuration Table List (Old Tasks Config View Content) -->
+    <div class="section-header"><h3>⚙️ Modify Categories & Task Database</h3></div>
+    <div id="taskMgmtContainer"></div>
   </div>
 
+  <!-- ═══ TEAM VIEW ═══ -->
   <div class="section" id="section-team">
     <div class="section-header"><h2>👤 Team View</h2></div>
     <div class="team-select-bar">
@@ -676,6 +655,7 @@
     <div id="teamViewContent"></div>
   </div>
 
+  <!-- ═══ MANAGE TEAMS ═══ -->
   <div class="section" id="section-teams">
     <div class="section-header">
       <h2>⚙️ Manage Teams</h2>
@@ -684,11 +664,13 @@
     <div class="team-manage-grid" id="teamManageGrid"></div>
   </div>
 
+  <!-- ═══ ACTIVITY LOG ═══ -->
   <div class="section" id="section-activity">
     <div class="section-header"><h2>📜 Activity Log</h2></div>
     <div class="log-list" id="activityLog"></div>
   </div>
 
+  <!-- ═══ SUBMISSIONS ═══ -->
   <div class="section" id="section-submissions">
     <div class="section-header"><h2>📨 Submissions</h2></div>
     <div id="pendingCount" style="margin-bottom:16px;font-size:.9rem;color:var(--text-dim)"></div>
@@ -697,6 +679,7 @@
     <div id="reviewedSubmissions"></div>
   </div>
 
+  <!-- ═══ ADVISORS ═══ -->
   <div class="section" id="section-advisors">
     <div class="section-header">
       <h2>👥 Advisors</h2>
@@ -705,47 +688,7 @@
     <div id="advisorsList"></div>
   </div>
 
-  <div class="section" id="section-taskmgmt">
-    <div class="section-header">
-      <h2>📝 Task Configuration</h2>
-      <button class="btn btn-primary" onclick="openAddTaskModal()">+ Add Task</button>
-    </div>
-    <div id="taskMgmtContainer"></div>
-  </div>
-
-  <div class="section" id="section-tools">
-    <div class="section-header"><h2>🔧 Export / Import Tasks</h2></div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
-      <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px" onclick="exportTasks()">
-        <div style="font-size:1.5rem;margin-bottom:6px">📤</div>
-        <div style="font-weight:700;font-size:.95rem">Export Tasks</div>
-        <div style="font-size:.78rem;color:var(--text-muted);margin-top:4px">Download all tasks as CSV file</div>
-      </div>
-      <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px;position:relative" onclick="document.getElementById('importFile').click()">
-        <div style="font-size:1.5rem;margin-bottom:6px">📥</div>
-        <div style="font-weight:700;font-size:.95rem">Import Tasks</div>
-        <div style="font-size:.78rem;color:var(--text-muted);margin-top:4px">Upload CSV to replace all tasks</div>
-        <input type="file" id="importFile" accept=".csv" style="display:none" onchange="importTasks(this)">
-      </div>
-    </div>
-
-    <div class="stat-card" style="padding:20px;text-align:left;margin-bottom:16px">
-      <div style="font-weight:700;font-size:.95rem;margin-bottom:8px">📋 CSV Format</div>
-      <div style="font-size:.82rem;color:var(--text-dim);line-height:1.6">
-        <strong>Export first</strong> to get the correct template. The CSV has these columns:<br>
-        <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:.78rem">Category ID, Category Name, Task ID, Task Name, Evidence, Level, Comment</code><br><br>
-        <strong>Points are automatic</strong> — Easy: 20, Medium: 30, Hard: 50, Rare: 70<br><br>
-        <strong>To add tasks:</strong> Add new rows, keep same Category ID for existing category.<br>
-        <strong>To edit tasks:</strong> Change values in the CSV and re-import.<br>
-        <strong>To delete tasks:</strong> Remove the row and re-import.<br><br>
-        ⚠️ <strong>Import replaces ALL tasks</strong> — make sure your CSV has everything.
-      </div>
-    </div>
-
-    <div id="importResult" style="display:none"></div>
-  </div>
-
+  <!-- ═══ RULES ═══ -->
   <div class="section" id="section-rules">
     <div class="section-header"><h2>📖 Rules & Notes</h2></div>
     <div class="rules-grid">
@@ -772,6 +715,7 @@
 
 </div>
 
+<!-- ═══ MODALS ═══ -->
 <div class="modal-overlay" id="addTeamModal">
   <div class="modal">
     <h2>➕ Add New Team</h2>
@@ -806,6 +750,7 @@
   </div>
 </div>
 
+<!-- Add Advisor Modal -->
 <div class="modal-overlay" id="addAdvisorModal">
   <div class="modal">
     <h2>➕ Add Advisor</h2>
@@ -824,6 +769,7 @@
   </div>
 </div>
 
+<!-- Edit Advisor Modal -->
 <div class="modal-overlay" id="editAdvisorModal">
   <div class="modal">
     <h2>✏️ Edit Advisor</h2>
@@ -842,6 +788,7 @@
   </div>
 </div>
 
+<!-- Add Task Modal -->
 <div class="modal-overlay" id="addTaskModal">
   <div class="modal">
     <h2>➕ Add New Task</h2>
@@ -886,6 +833,7 @@
   </div>
 </div>
 
+<!-- Edit Task Modal -->
 <div class="modal-overlay" id="editTaskModal">
   <div class="modal">
     <h2>✏️ Edit Task</h2>
@@ -917,7 +865,9 @@
   </div>
 </div>
 
-</div><script>
+</div><!-- end mainApp -->
+
+<script>
 let CATEGORIES = [];
 let teams = [];
 let activityLog = [];
@@ -969,7 +919,7 @@ async function loadCategoriesFromDB() {
 }
 
 function getFallbackCategories() {
-  return []; // Blank start fallback when database rows are absent
+  return []; 
 }
 
 // ── API ──
@@ -1004,6 +954,7 @@ function teamPoints(teamId) {
   CATEGORIES.forEach(cat => cat.tasks.forEach(t => { if (done[cat.id+'-'+t.num]) pts += t.pts; }));
   return pts;
 }
+// Combined helper tracking done
 function teamCompletedCount(teamId) {
   const team = teams.find(t => t.id === teamId);
   return team ? (team.completions || []).length : 0;
@@ -1038,7 +989,7 @@ function showToast(icon, msg) {
 function showSection(id, btn) {
   const targetSection = document.getElementById('section-'+id);
   if (!targetSection) {
-    console.warn(`Target wrapper layer "section-${id}" does not exist in standard DOM template.`);
+    console.warn(`Target section wrapper "section-${id}" does not exist inside layout setup.`);
     return;
   }
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -1100,15 +1051,9 @@ function renderCategories() {
 
 // ── Populate Selects ──
 function populateTeamSelects() {
-  const taskSel = document.getElementById('taskTeamSelect');
   const teamSel = document.getElementById('teamViewSelect');
   const opts = teams.map(t=>'<option value="'+t.id+'">'+t.name+'</option>').join('');
   
-  if (taskSel) {
-    const sv1 = taskSel.value;
-    taskSel.innerHTML = opts;
-    if (sv1 && taskSel.querySelector('option[value="'+sv1+'"]')) taskSel.value = sv1;
-  }
   if (teamSel) {
     const sv2 = teamSel.value;
     teamSel.innerHTML = opts;
@@ -1116,7 +1061,7 @@ function populateTeamSelects() {
   }
 }
 
-// ── All Tasks ──
+// ── Consolidated Interactive Display Checklist ──
 function renderAllTasks() {
   const c = document.getElementById('allTasksContainer');
   if (!c) return;
@@ -1140,9 +1085,8 @@ function renderAllTasks() {
     });
     html += '</tbody></table></div>';
   });
-  c.innerHTML = html || '<div class="empty-state"><div class="empty-icon">🔍</div><p>No tasks match your search.</p></div>';
+  c.innerHTML = html || '<div class="empty-state"><div class="empty-icon">🔍</div><p>No active event tasks found.</p></div>';
 }
-function filterTasks() { renderAllTasks(); }
 
 async function toggleTask(teamId, catId, taskNum, checked) {
   const cat = CATEGORIES.find(c=>c.id===catId);
@@ -1153,7 +1097,7 @@ async function toggleTask(teamId, catId, taskNum, checked) {
     showToast(checked?'✅':'↩️', '<strong>'+team.name+'</strong> '+(checked?'+':'-')+task.pts+' pts');
     await loadState();
     refreshAll();
-  } catch(e) { showToast('❌','Error updating task'); }
+  } catch(e) { showToast('❌','Error updating completion node.'); }
 }
 
 // ── Team View ──
@@ -1218,6 +1162,7 @@ function renderTeamView() {
 }
 
 // ── Manage Teams ──
+// Renders the unpopulated manage layout securely
 function renderManageTeams() {
   const container = document.getElementById('teamManageGrid');
   if (!container) return;
@@ -1343,7 +1288,7 @@ async function deleteTeam() {
 
 // ── Helpers ──
 function showTasksForCat(catId) {
-  showSection('tasks', document.querySelectorAll('.nav-bar button')[1]);
+  showSection('taskcenter', document.querySelectorAll('.nav-bar button')[1]);
   setTimeout(()=>{ const el=document.getElementById('cat-'+catId); if(el) el.scrollIntoView({behavior:'smooth'}); },100);
 }
 
@@ -1358,6 +1303,8 @@ function refreshAll() {
   renderTeamView();
   renderManageTeams();
   renderActivityLog();
+  renderSubmissions();
+  renderAdvisors();
 }
 
 // ── Submissions ──
@@ -1437,7 +1384,7 @@ async function rejectSubmission(id) {
   refreshAll();
 }
 
-// Override loadState to also fetch submissions
+// Override state retrieval structure 
 loadState = async function() {
   try {
     const data = await api('GET', '/state');
@@ -1448,24 +1395,9 @@ loadState = async function() {
   } catch (e) { console.error('Load failed:', e); }
 };
 
-// Override refreshAll to include submissions template triggers
-refreshAll = function() {
-  renderStats();
-  renderLeaderboard();
-  renderCategories();
-  populateTeamSelects();
-  renderAllTasks();
-  renderTeamView();
-  renderManageTeams();
-  renderActivityLog();
-  renderSubmissions();
-  renderTaskManagement();
-  renderAdvisors();
-};
-
 async function exportTasks() {
   window.open('/api/tasks/export', '_blank');
-  showToast('📤', 'Downloading tasks CSV...');
+  showToast('📤', 'Downloading configuration file...');
 }
 
 async function importTasks(input) {
@@ -1475,20 +1407,22 @@ async function importTasks(input) {
   const result = document.getElementById('importResult');
   if (!result) return;
   result.style.display = 'block';
-  result.innerHTML = '<div style="padding:12px;background:var(--blue-light);color:var(--blue);border-radius:.75rem;font-size:.85rem">⏳ Importing...</div>';
+  result.innerHTML = '<div style="padding:12px;background:var(--blue-light);color:var(--blue);border-radius:.75rem;font-size:.85rem">⏳ Overwriting layout context...</div>';
 
   try {
     const res = await api('POST', '/tasks/import', { csv: text });
     if (res.success) {
-      result.innerHTML = '<div style="padding:12px;background:var(--green-light);color:#15803d;border-radius:.75rem;font-size:.85rem">✅ ' + res.imported + ' tasks imported successfully! Refresh the page to see changes.</div>';
-      showToast('📥', res.imported + ' tasks imported!');
+      result.innerHTML = '<div style="padding:12px;background:var(--green-light);color:#15803d;border-radius:.75rem;font-size:.85rem">✅ ' + res.imported + ' dataset configurations loaded.</div>';
+      showToast('📥', res.imported + ' database entries updated!');
     } else {
-      result.innerHTML = '<div style="padding:12px;background:var(--red-light);color:#b91c1c;border-radius:.75rem;font-size:.85rem">❌ ' + (res.error || 'Import failed') + '</div>';
+      result.innerHTML = '<div style="padding:12px;background:var(--red-light);color:#b91c1c;border-radius:.75rem;font-size:.85rem">❌ ' + (res.error || 'Import parsed layout error') + '</div>';
     }
   } catch(e) {
-    result.innerHTML = '<div style="padding:12px;background:var(--red-light);color:#b91c1c;border-radius:.75rem;font-size:.85rem">❌ Network error</div>';
+    result.innerHTML = '<div style="padding:12px;background:var(--red-light);color:#b91c1c;border-radius:.75rem;font-size:.85rem">❌ Gateway Timeout</div>';
   }
   input.value = '';
+  await loadCategoriesFromDB();
+  refreshAll();
 }
 
 async function changePin(teamId, teamName) {
@@ -1513,7 +1447,7 @@ function renderAdvisors() {
   const container = document.getElementById('advisorsList');
   if (!container) return;
   if (!advisors || !advisors.length) {
-    container.innerHTML = '<div class="empty-state" style="padding:24px"><p>No advisors yet. Add one to get started.</p></div>';
+    container.innerHTML = '<div class="empty-state" style="padding:24px"><p>No active monitors assigned.</p></div>';
     return;
   }
   container.innerHTML = advisors.map(a => {
@@ -1631,12 +1565,12 @@ async function deleteAdvisor() {
   await loadAdvisors(); refreshAll();
 }
 
-// ── Task Management View ──
+// ── Consolidated Internal Render Layout View ──
 function renderTaskManagement() {
   const container = document.getElementById('taskMgmtContainer');
   if (!container) return;
   if (!CATEGORIES || !CATEGORIES.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><p>No tasks yet. Import tasks from the Tools tab or add them manually.</p></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Task configuration database is empty.</p></div>';
     return;
   }
 
@@ -1652,7 +1586,7 @@ function renderTaskManagement() {
     html += '<button class="btn btn-sm btn-danger" onclick="deleteCategory(\'' + cat.id + '\',\'' + cat.name.replace(/'/g, "\\'") + '\')">🗑️ Delete Category</button>';
     html += '</div></div>';
     html += '<table class="task-table"><thead><tr>';
-    html += '<th style="width:40px">#</th><th>Task</th><th>Evidence</th><th>Level</th><th style="width:50px">Pts</th><th style="width:80px;text-align:center">Actions</th>';
+    html += '<th style="width:40px">#</th><th>Task Name</th><th>Evidence</th><th>Level</th><th style="width:50px">Pts</th><th style="width:80px;text-align:center">Actions</th>';
     html += '</tr></thead><tbody>';
     
     cat.tasks.forEach(t => {
