@@ -491,6 +491,7 @@ app.post('/api/tasks', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [category_id, category_name, category_icon || '📋', task_num, task_name, evidence, level, points, comment || '']
     );
+    await addLog(null, '📝', `Task #${taskNum} was added manually to category "${categoryId}".`);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -513,6 +514,11 @@ app.put('/api/tasks/:id', async (req, res) => {
 app.delete('/api/tasks/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    const task = await queryOne('SELECT category_id, task_num FROM tasks WHERE id=$1', [id]);
+    if (task) {
+      await pool.query('DELETE FROM completions WHERE category_id=$1 AND task_num=$2', [task.category_id, task.task_num]);
+      await pool.query('DELETE FROM submissions WHERE category_id=$1 AND task_num=$2', [task.category_id, task.task_num]);
+    }
     await pool.query('DELETE FROM tasks WHERE id=$1', [id]);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -521,7 +527,10 @@ app.delete('/api/tasks/:id', async (req, res) => {
 app.delete('/api/categories/:catId', async (req, res) => {
   try {
     const { catId } = req.params;
+    await pool.query('DELETE FROM completions WHERE category_id=$1', [catId]);
+    await pool.query('DELETE FROM submissions WHERE category_id=$1', [catId]);
     await pool.query('DELETE FROM tasks WHERE category_id=$1', [catId]);
+    await addLog(null, '🗑', `Category "${catId}" and all related team submissions were successfully removed.`);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -583,7 +592,7 @@ app.post('/api/tasks/import', async (req, res) => {
         [catId, catName, icon, taskNum, taskName, evidence, level, pts, comment]);
       imported++;
     }
-    await addLog(null, '📥', imported+' tasks imported from CSV');
+    await addLog(null, '📥', `Bulk task replacement: ${imported} tasks imported via Task Center CSV, overriding active configurations.`);
     res.json({ success: true, imported });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
