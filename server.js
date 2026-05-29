@@ -484,6 +484,64 @@ app.get('/api/tasks', async (req, res) => {
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Add a new task
+app.post('/api/tasks', async (req, res) => {
+  try {
+    const { category_id, category_name, category_icon, task_num, task_name, evidence, level, comment } = req.body;
+    if (!category_id || !task_num || !task_name) return res.status(400).json({ error: 'Category ID, task number, and task name required' });
+    const pts = LEVEL_PTS[(level || 'easy').toLowerCase()] || 20;
+    const icon = category_icon || DEFAULT_ICONS[category_id] || '📋';
+    await pool.query(
+      'INSERT INTO tasks (category_id, category_name, category_icon, task_num, task_name, evidence, level, points, comment) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+      [category_id, category_name || category_id, icon, parseInt(task_num), task_name, evidence || '', level || 'Easy', pts, comment || '']
+    );
+    await addLog(null, '➕', 'Task added: ' + task_name);
+    saveDatabase && saveDatabase();
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Update a task
+app.put('/api/tasks/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { category_name, category_icon, task_num, task_name, evidence, level, comment } = req.body;
+    const existing = await queryOne('SELECT * FROM tasks WHERE id=$1', [id]);
+    if (!existing) return res.status(404).json({ error: 'Task not found' });
+    const pts = LEVEL_PTS[(level || existing.level).toLowerCase()] || 20;
+    await pool.query(
+      'UPDATE tasks SET category_name=$1, category_icon=$2, task_num=$3, task_name=$4, evidence=$5, level=$6, points=$7, comment=$8 WHERE id=$9',
+      [category_name || existing.category_name, category_icon || existing.category_icon, parseInt(task_num) || existing.task_num, task_name || existing.task_name, evidence || '', level || existing.level, pts, comment || '', id]
+    );
+    await addLog(null, '✏️', 'Task updated: ' + (task_name || existing.task_name));
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Delete a task
+app.delete('/api/tasks/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const task = await queryOne('SELECT * FROM tasks WHERE id=$1', [id]);
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    await pool.query('DELETE FROM tasks WHERE id=$1', [id]);
+    await addLog(null, '🗑️', 'Task deleted: ' + task.task_name);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Delete all tasks in a category
+app.delete('/api/categories/:catId', async (req, res) => {
+  try {
+    const catId = req.params.catId;
+    const tasks = await query('SELECT * FROM tasks WHERE category_id=$1', [catId]);
+    if (tasks.length === 0) return res.status(404).json({ error: 'Category not found' });
+    await pool.query('DELETE FROM tasks WHERE category_id=$1', [catId]);
+    await addLog(null, '🗑️', 'Category deleted: ' + (tasks[0].category_name || catId) + ' (' + tasks.length + ' tasks)');
+    res.json({ success: true, deleted: tasks.length });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/tasks/export', async (req, res) => {
   try {
     const tasks = await query('SELECT * FROM tasks ORDER BY category_id, task_num');
