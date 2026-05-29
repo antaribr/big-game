@@ -1087,7 +1087,7 @@ function renderStats() {
   const active = teams.filter(t => !t.disqualified).length;
   const done = teams.reduce((s,t) => s + teamCompletedCount(t.id), 0);
   const pts = teams.reduce((s,t) => s + teamPoints(t.id), 0);
-  document.getElementById('dashStats').innerHTML =
+  statsEl.innerHTML =
     '<div class="stat-card"><div class="stat-num" style="color:var(--orange)">'+teams.length+'</div><div class="stat-label">Teams</div></div>'+
     '<div class="stat-card"><div class="stat-num" style="color:var(--blue)">'+totalTasks()+'</div><div class="stat-label">Tasks</div></div>'+
     '<div class="stat-card"><div class="stat-num" style="color:var(--green)">'+done+'</div><div class="stat-label">Submissions</div></div>'+
@@ -1096,9 +1096,11 @@ function renderStats() {
 
 // ── Leaderboard ──
 function renderLeaderboard() {
+  const container = document.getElementById('fullLeaderboard');
+  if (!container) return;
   const sorted = [...teams].sort((a,b) => teamPoints(b.id) - teamPoints(a.id));
   const maxPts = sorted.length ? Math.max(teamPoints(sorted[0].id), 1) : 1;
-  document.getElementById('fullLeaderboard').innerHTML = sorted.map((t,i) => {
+  container.innerHTML = sorted.map((t,i) => {
     const pts = teamPoints(t.id);
     const pct = maxPts > 0 ? (pts/maxPts)*100 : 0;
     const rc = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
@@ -1115,7 +1117,7 @@ function renderLeaderboard() {
 
 // ── Categories ──
 function renderCategories() {
-  document.getElementById('dashCatGrid').innerHTML = CATEGORIES.map(cat => {
+  catGrid.innerHTML = CATEGORIES.map(cat => {
     const catMax = cat.tasks.reduce((s,t)=>s+t.pts,0);
     const catTotal = teams.reduce((s,t)=>s+catPointsForTeam(t.id,cat.id),0);
     const pct = Math.round((catTotal/(catMax*teams.length))*100);
@@ -1191,8 +1193,8 @@ async function toggleTask(teamId, catId, taskNum, checked) {
 
 // ── Team View ──
 function selectTeamView(teamId) {
-  document.getElementById('teamViewSelect').value = teamId;
-  showSection('team', document.querySelectorAll('.nav-bar button')[2]);
+  // Navigate to Teams section
+  showSection('teams', document.querySelectorAll('.nav-bar button')[3]);
 }
 function renderTeamView() {
   const sel = document.getElementById('teamViewSelect');
@@ -1388,10 +1390,10 @@ function refreshAll() {
 
 // ── Submissions ──
 function renderSubmissions() {
-  // Pending
   const pendingContainer = document.getElementById('pendingSubmissions');
   const reviewedContainer = document.getElementById('reviewedSubmissions');
   const pendingCount = document.getElementById('pendingCount');
+  if (!pendingContainer || !reviewedContainer || !pendingCount) return;
 
   if (!window._submissions) { window._submissions = { pending: [], reviewed: [] }; }
   const { pending, reviewed } = window._submissions;
@@ -1537,6 +1539,7 @@ async function loadAdvisors() {
 
 function renderAdvisors() {
   const container = document.getElementById('advisorsList');
+  if (!container) return;
   if (!advisors.length) {
     container.innerHTML = '<div class="empty-state" style="padding:24px"><p>No advisors yet. Add one to get started.</p></div>';
     return;
@@ -1898,5 +1901,5 @@ if (localStorage.getItem(ADMIN_KEY) === '1') {
 }
 </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a037e6c23c01e288',t:'MTc4MDA4Mjg5OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
