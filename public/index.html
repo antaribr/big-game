@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Event — Point System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafafa;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --text-dim: #6b7280;
+    --text-muted: #9ca3af;
+    --border: #e5e7eb;
+    --orange: #f97316;
+    --orange-light: #fff7ed;
+    --orange-dark: #ea580c;
+    --green: #22c55e;
+    --green-light: #f0fdf4;
+    --red: #ef4444;
+    --red-light: #fef2f2;
+    --blue: #3b82f6;
+    --blue-light: #eff6ff;
+    --purple: #8b5cf6;
+    --purple-light: #f5f3ff;
+    --radius: 1rem;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+
+  /* ── Hero ── */
+  .hero {
+    text-align: center;
+    padding: 48px 16px 32px;
+  }
+  .hero h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .hero p {
+    font-size: 1rem;
+    color: var(--text-dim);
+  }
+
+  /* ── Stats Row ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 600px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-card .stat-num {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-card .stat-label {
+    font-size: .8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-weight: 500;
+  }
+
+  /* ── Navigation Tabs ── */
+  .nav-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding: 4px;
+    background: var(--card);
+    border-radius: .75rem;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .nav-bar button {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 14px;
+    border: none;
+    border-radius: .5rem;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: .85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .nav-bar button:hover { background: var(--orange-light); color: var(--orange); }
+  .nav-bar button.active { background: var(--orange); color: #fff; font-weight: 600; }
+
+  /* ── Sections ── */
+  .section { display: none; animation: fadeIn .25s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Section Title ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .section-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* ── Leaderboard ── */
+  .leaderboard { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+  .lb-entry {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: var(--shadow);
+    transition: all .15s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .lb-entry:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .lb-rank {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .9rem;
+    flex-shrink: 0;
+    background: var(--bg);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .lb-rank.rank-1 { background: #fef3c7; color: #b45309; border-color: #fcd34d; }
+  .lb-rank.rank-2 { background: #f3f4f6; color: #4b5563; border-color: #d1d5db; }
+  .lb-rank.rank-3 { background: #fed7aa; color: #c2410c; border-color: #fdba74; }
+  .lb-team-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .lb-info { flex: 1; min-width: 0; }
+  .lb-team-name { font-weight: 600; font-size: .95rem; }
+  .lb-team-meta { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+  .lb-points {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--orange);
+    flex-shrink: 0;
+  }
+  .lb-bar-bg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--border);
+  }
+  .lb-bar { height: 100%; border-radius: 0 2px 0 0; background: var(--orange); transition: width .4s ease; }
+
+  /* ── Category Cards ── */
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .cat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    cursor: pointer;
+    transition: all .15s;
+    box-shadow: var(--shadow);
+  }
+  .cat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .cat-card .cat-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .cat-card .cat-icon { font-size: 1.5rem; }
+  .cat-card .cat-name { font-weight: 600; font-size: .95rem; }
+  .cat-card .cat-meta { font-size: .78rem; color: var(--text-muted); margin-bottom: 10px; }
+  .cat-card .cat-pts {
+    display: inline-block;
+    background: var(--orange-light);
+    color: var(--orange);
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: .78rem;
+    font-weight: 600;
+  }
+  .cat-progress {
+    margin-top: 12px;
+    height: 6px;
+    background: var(--bg);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .cat-progress-bar { height: 100%; background: var(--orange); border-radius: 3px; transition: width .4s; }
+
+  /* ── Task Table ── */
+  .task-table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .task-table-header {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .task-table-header .th-left { display: flex; align-items: center; gap: 10px; }
+  .task-table-header .th-icon { font-size: 1.2rem; }
+  .task-table-header .th-name { font-weight: 600; font-size: .9rem; }
+  .task-table-header .th-meta { font-size: .75rem; color: var(--text-muted); }
+  .task-table-header .th-pts { font-weight: 700; color: var(--orange); font-size: .9rem; }
+  .task-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+  }
+  .task-table thead th {
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .task-table tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  .task-table tbody tr:last-child { border-bottom: none; }
+  .task-table tbody tr:hover { background: #f9fafb; }
+  .task-table tbody tr.done { background: var(--green-light); }
+  .task-table td { padding: 10px 16px; vertical-align: middle; }
+  .task-num { font-weight: 700; color: var(--orange); width: 30px; }
+  .task-name { font-weight: 500; }
+  .task-comment { font-size: .75rem; color: var(--text-muted); margin-top: 2px; }
+  .level-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 50px;
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+  .level-easy { background: var(--green-light); color: var(--green); }
+  .level-medium { background: var(--blue-light); color: var(--blue); }
+  .level-hard { background: var(--orange-light); color: var(--orange-dark); }
+  .level-rare { background: var(--purple-light); color: var(--purple); }
+  .pts-cell { font-weight: 700; color: var(--orange); }
+  .evidence-cell { font-size: .75rem; color: var(--text-muted); }
+  .status-cell { text-align: center; }
+  .checkbox-big { width: 20px; height: 20px; accent-color: var(--green); cursor: pointer; }
+
+  /* ── Team Detail ── */
+  .team-detail-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .team-detail-card .td-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .team-detail-card .td-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .team-detail-card .td-meta { font-size: .82rem; color: var(--text-muted); margin-top: 4px; }
+  .team-detail-card .td-pts { text-align: right; }
+  .team-detail-card .td-pts-num { font-size: 2rem; font-weight: 700; color: var(--orange); line-height: 1; }
+  .team-detail-card .td-pts-label { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  .members-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+  .member-chip {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: .78rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .member-chip .remove-btn {
+    background: none;
+    border: none;
+    color: var(--red);
+    cursor: pointer;
+    font-size: .85rem;
+    padding: 0;
+    display: none;
+  }
+  .member-chip:hover .remove-btn { display: inline; }
+  .progress-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: .82rem;
+    margin-bottom: 6px;
+  }
+  .progress-bar-bg {
+    height: 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--orange);
+    border-radius: 4px;
+    transition: width .4s;
+  }
+
+  /* ── Team Management ── */
+  .team-manage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+  }
+  .team-manage-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border-top: 3px solid var(--orange);
+  }
+  .team-manage-card h4 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .team-manage-card .tm-meta { font-size: .78rem; color: var(--text-muted); margin-bottom: 10px; }
+  .team-manage-card .tm-members { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+  .add-member-inline { display: flex; gap: 6px; margin-bottom: 10px; }
+  .add-member-inline input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: .82rem;
+    font-family: inherit;
+    outline: none;
+  }
+  .add-member-inline input:focus { border-color: var(--orange); }
+  .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ── Buttons ── */
+  .btn {
+    padding: 8px 16px;
+    border-radius: .5rem;
+    border: 1px solid var(--border);
+    font-size: .82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+    background: var(--card);
+    color: var(--text);
+  }
+  .btn:hover { background: var(--bg); }
+  .btn-primary { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .btn-primary:hover { background: var(--orange-dark); }
+  .btn-sm { padding: 5px 12px; font-size: .78rem; }
+  .btn-danger { background: var(--red-light); color: var(--red); border-color: #fecaca; }
+  .btn-danger:hover { background: #fee2e2; }
+
+  /* ── Select ── */
+  .team-select-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .team-select-bar label { font-size: .85rem; color: var(--text-dim); font-weight: 500; }
+  .team-select-bar select {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: .5rem;
+    font-size: .85rem;
+    font-family: inherit;
+    background: var(--card);
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+  }
+  .team-select-bar select:focus { border-color: var(--orange); }
+
+  /* ── Search ── */
+  .search-input {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: .5rem;
+    font-size: .85rem;
+    font-family: inherit;
+    width: 100%;
+    max-width: 360px;
+    outline: none;
+    background: var(--card);
+    color: var(--text);
+  }
+  .search-input:focus { border-color: var(--orange); }
+  .search-input::placeholder { color: var(--text-muted); }
+
+  /* ── Activity Log ── */
+  .log-list { display: flex; flex-direction: column; gap: 6px; }
+  .log-entry {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: .75rem;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: .85rem;
+    box-shadow: var(--shadow);
+  }
+  .log-time { font-size: .72rem; color: var(--text-muted); white-space: nowrap; min-width: 70px; }
+  .log-icon { font-size: 1rem; }
+  .log-team-tag { font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 50px; color: #fff; }
+
+  /* ── Modals ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 200;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 85vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+    animation: fadeIn .2s ease;
+  }
+  .modal h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; }
+  .modal label { display: block; font-size: .82rem; color: var(--text-dim); margin-bottom: 4px; margin-top: 12px; font-weight: 500; }
+  .modal input[type="text"],
+  .modal textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: .5rem;
+    font-size: .9rem;
+    font-family: inherit;
+    outline: none;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .modal input:focus, .modal textarea:focus { border-color: var(--orange); }
+  .modal textarea { resize: vertical; min-height: 80px; }
+  .color-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .color-swatch:hover, .color-swatch.selected { border-color: var(--text); transform: scale(1.1); }
+  .btn-row { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+
+  /* ── Rules ── */
+  .rules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .rule-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .rule-card h4 { font-size: .95rem; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .rule-card ul { list-style: none; padding: 0; }
+  .rule-card li {
+    padding: 6px 0;
+    font-size: .82rem;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .rule-card li:last-child { border: none; }
+  .rule-card li::before { content: '•'; color: var(--orange); font-weight: bold; flex-shrink: 0; }
+
+  /* ── DQ Banner ── */
+  .disq-banner {
+    background: var(--red-light);
+    border: 1px solid #fecaca;
+    border-radius: .75rem;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: .85rem;
+    color: var(--red);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+
+  /* ── Toast ── */
+  .toast-container { position: fixed; top: 16px; right: 16px; z-index: 500; display: flex; flex-direction: column; gap: 6px; }
+  .toast {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: .75rem;
+    padding: 12px 18px;
+    font-size: .85rem;
+    box-shadow: var(--shadow-md);
+    animation: slideIn .2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 320px;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+
+  /* ── Empty State ── */
+  .empty-state { text-align: center; padding: 48px 16px; color: var(--text-muted); }
+  .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .empty-state p { font-size: .9rem; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .hero { padding: 32px 16px 24px; }
+    .hero h1 { font-size: 1.75rem; }
+    .cat-grid { grid-template-columns: 1fr; }
+    .team-manage-grid { grid-template-columns: 1fr; }
+    .rules-grid { grid-template-columns: 1fr; }
+    .nav-bar button { padding: 8px 10px; font-size: .78rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>🏆 Live Leaderboard</h1>
+  <p>The competition is heating up!</p>
+</div>
+
+<div class="container">
+
+  <!-- Stats -->
+  <div class="stats-row" id="dashStats"></div>
+
+  <!-- Nav -->
+  <div class="nav-bar">
+    <button class="active" onclick="showSection('leaderboard',this)">🏅 Leaderboard</button>
+    <button onclick="showSection('tasks',this)">📋 All Tasks</button>
+    <button onclick="showSection('team',this)">👤 Team View</button>
+    <button onclick="showSection('teams',this)">⚙️ Manage</button>
+    <button onclick="showSection('activity',this)">📜 Log</button>
+    <button onclick="showSection('submissions',this)">📨 Submissions</button>
+    <button onclick="showSection('rules',this)">📖 Rules</button>
+    <button onclick="showSection('advisors',this)">👥 Advisors</button>
+    <button onclick="showSection('tools',this)">🔧 Tools</button>
+  </div>
+
+  <!-- ═══ LEADERBOARD ═══ -->
+  <div class="section active" id="section-leaderboard">
+    <div class="section-header"><h2>🏅 Leaderboard</h2></div>
+    <div class="leaderboard" id="fullLeaderboard"></div>
+
+    <div class="section-header" style="margin-top:24px;"><h2>📂 Categories</h2></div>
+    <div class="cat-grid" id="dashCatGrid"></div>
+  </div>
+
+  <!-- ═══ ALL TASKS ═══ -->
+  <div class="section" id="section-tasks">
+    <div class="section-header"><h2>📋 All Tasks</h2></div>
+    <input type="text" class="search-input" placeholder="🔍 Search tasks..." id="taskSearch" oninput="filterTasks()">
+    <div class="team-select-bar">
+      <label>Tasks for:</label>
+      <select id="taskTeamSelect" onchange="renderAllTasks()"></select>
+    </div>
+    <div id="allTasksContainer"></div>
+  </div>
+
+  <!-- ═══ TEAM VIEW ═══ -->
+  <div class="section" id="section-team">
+    <div class="section-header"><h2>👤 Team View</h2></div>
+    <div class="team-select-bar">
+      <label>Select team:</label>
+      <select id="teamViewSelect" onchange="renderTeamView()"></select>
+    </div>
+    <div id="teamViewContent"></div>
+  </div>
+
+  <!-- ═══ MANAGE TEAMS ═══ -->
+  <div class="section" id="section-teams">
+    <div class="section-header">
+      <h2>⚙️ Manage Teams</h2>
+      <button class="btn btn-primary" onclick="openAddTeamModal()">+ Add Team</button>
+    </div>
+    <div class="team-manage-grid" id="teamManageGrid"></div>
+  </div>
+
+  <!-- ═══ ACTIVITY LOG ═══ -->
+  <div class="section" id="section-activity">
+    <div class="section-header"><h2>📜 Activity Log</h2></div>
+    <div class="log-list" id="activityLog"></div>
+  </div>
+
+  <!-- ═══ SUBMISSIONS ═══ -->
+  <div class="section" id="section-submissions">
+    <div class="section-header"><h2>📨 Submissions</h2></div>
+    <div id="pendingCount" style="margin-bottom:16px;font-size:.9rem;color:var(--text-dim)"></div>
+    <div id="pendingSubmissions"></div>
+    <div class="section-header" style="margin-top:24px"><h2 style="font-size:1rem;color:var(--text-muted)">📋 Reviewed</h2></div>
+    <div id="reviewedSubmissions"></div>
+  </div>
+
+  <!-- ═══ ADVISORS ═══ -->
+  <div class="section" id="section-advisors">
+    <div class="section-header">
+      <h2>👥 Advisors</h2>
+      <button class="btn btn-primary" onclick="openAddAdvisorModal()">+ Add Advisor</button>
+    </div>
+    <div id="advisorsList"></div>
+  </div>
+
+  <!-- ═══ TOOLS ═══ -->
+  <div class="section" id="section-tools">
+    <div class="section-header"><h2>🔧 Export / Import Tasks</h2></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+      <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px" onclick="exportTasks()">
+        <div style="font-size:1.5rem;margin-bottom:6px">📤</div>
+        <div style="font-weight:700;font-size:.95rem">Export Tasks</div>
+        <div style="font-size:.78rem;color:var(--text-muted);margin-top:4px">Download all tasks as CSV file</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px;position:relative" onclick="document.getElementById('importFile').click()">
+        <div style="font-size:1.5rem;margin-bottom:6px">📥</div>
+        <div style="font-weight:700;font-size:.95rem">Import Tasks</div>
+        <div style="font-size:.78rem;color:var(--text-muted);margin-top:4px">Upload CSV to replace all tasks</div>
+        <input type="file" id="importFile" accept=".csv" style="display:none" onchange="importTasks(this)">
+      </div>
+    </div>
+
+    <div class="stat-card" style="padding:20px;text-align:left;margin-bottom:16px">
+      <div style="font-weight:700;font-size:.95rem;margin-bottom:8px">📋 CSV Format</div>
+      <div style="font-size:.82rem;color:var(--text-dim);line-height:1.6">
+        <strong>Export first</strong> to get the correct template. The CSV has these columns:<br>
+        <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:.78rem">Category ID, Category Name, Task ID, Task Name, Evidence, Level, Comment</code><br><br>
+        <strong>Points are automatic</strong> — Easy: 20, Medium: 30, Hard: 50, Rare: 70<br><br>
+        <strong>To add tasks:</strong> Add new rows, keep same Category ID for existing category.<br>
+        <strong>To edit tasks:</strong> Change values in the CSV and re-import.<br>
+        <strong>To delete tasks:</strong> Remove the row and re-import.<br><br>
+        ⚠️ <strong>Import replaces ALL tasks</strong> — make sure your CSV has everything.
+      </div>
+    </div>
+
+    <div id="importResult" style="display:none"></div>
+  </div>
+
+  <!-- ═══ RULES ═══ -->
+  <div class="section" id="section-rules">
+    <div class="section-header"><h2>📖 Rules & Notes</h2></div>
+    <div class="rules-grid">
+      <div class="rule-card"><h4>📤 Submitting Tasks</h4><ul>
+        <li>Team leader submits to the designated advisor</li>
+        <li>Must provide: Task Category, Task Number, Evidence</li>
+        <li>All team members must be in the photo/video</li>
+      </ul></div>
+      <div class="rule-card"><h4>🚫 Disqualification</h4><ul>
+        <li>2+ members leave = disqualification</li>
+        <li>Cheating = point reduction or DQ</li>
+        <li>Disputes may result in DQ for both teams</li>
+      </ul></div>
+      <div class="rule-card"><h4>🚶 Transportation</h4><ul>
+        <li>Walking ONLY — anything else = immediate DQ</li>
+      </ul></div>
+      <div class="rule-card"><h4>⚠️ Important</h4><ul>
+        <li>Air strike/security incident = game stops immediately</li>
+        <li>Scores calculated at time of stop</li>
+        <li>Respect the environment — leave no trace</li>
+      </ul></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ MODALS ═══ -->
+<div class="modal-overlay" id="addTeamModal">
+  <div class="modal">
+    <h2>➕ Add New Team</h2>
+    <label>Team Name</label>
+    <input type="text" id="newTeamName" placeholder="e.g. Thunder Bolts">
+    <label>Team Color</label>
+    <div class="color-picker" id="colorPicker"></div>
+    <label>Members (one per line)</label>
+    <textarea id="newTeamMembers" placeholder="Member 1
+Member 2
+Member 3"></textarea>
+    <div class="btn-row">
+      <button class="btn" onclick="closeModal('addTeamModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addTeam()">Create Team</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editTeamModal">
+  <div class="modal">
+    <h2>✏️ Edit Team</h2>
+    <input type="hidden" id="editTeamId">
+    <label>Team Name</label>
+    <input type="text" id="editTeamName">
+    <label>Team Color</label>
+    <div class="color-picker" id="editColorPicker"></div>
+    <label>Members (one per line)</label>
+    <textarea id="editTeamMembers"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-danger btn-sm" onclick="deleteTeam()">Delete</button>
+      <button class="btn" onclick="closeModal('editTeamModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTeamEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Advisor Modal -->
+<div class="modal-overlay" id="addAdvisorModal">
+  <div class="modal">
+    <h2>➕ Add Advisor</h2>
+    <label>Name</label>
+    <input type="text" id="advName" placeholder="e.g. Ahmad">
+    <label>Username</label>
+    <input type="text" id="advUsername" placeholder="e.g. ahmad123">
+    <label>Password</label>
+    <input type="text" id="advPassword" placeholder="e.g. pass123">
+    <label>Assign Teams (select up to 4)</label>
+    <div id="advTeamCheckboxes" style="margin-top:6px;max-height:200px;overflow-y:auto"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="closeModal('addAdvisorModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addAdvisor()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Advisor Modal -->
+<div class="modal-overlay" id="editAdvisorModal">
+  <div class="modal">
+    <h2>✏️ Edit Advisor</h2>
+    <input type="hidden" id="editAdvId">
+    <label>Name</label>
+    <input type="text" id="editAdvName">
+    <label>New Password (leave empty to keep current)</label>
+    <input type="text" id="editAdvPassword" placeholder="Leave empty to keep current">
+    <label>Assign Teams (select up to 4)</label>
+    <div id="editAdvTeamCheckboxes" style="margin-top:6px;max-height:200px;overflow-y:auto"></div>
+    <div class="btn-row">
+      <button class="btn btn-danger btn-sm" onclick="deleteAdvisor()">Delete</button>
+      <button class="btn" onclick="closeModal('editAdvisorModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAdvisor()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = [
+  { id:'community', name:'Community Service', icon:'🤝', tasks:[
+    {num:1,name:'Collect 5 recyclable materials from around the city',evidence:'Video',level:'Easy',pts:20},
+    {num:2,name:'Go feed 4 different animals',evidence:'Photo',level:'Medium',pts:30},
+    {num:3,name:'Find 3 plants and make a presentation about them',evidence:'Video',level:'Medium',pts:30},
+    {num:4,name:'Make an awareness campaign about street cleanliness in public',evidence:'Video',level:'Hard',pts:50}
+  ]},
+  { id:'bonding', name:'Bonding & Public Communication', icon:'💬', tasks:[
+    {num:1,name:'Organize a small Dabke performance with the help of locals',evidence:'Video',level:'Easy',pts:20},
+    {num:2,name:'Take a picture with another team',evidence:'Photo',level:'Easy',pts:20},
+    {num:3,name:'Capture 5 people while smiling (not your team)',evidence:'Photo',level:'Medium',pts:30,comment:'Get their approval — pics added to @lsa.s1 Instagram'},
+    {num:4,name:'Interview a local about their favorite place in Saida and film their answer',evidence:'Video',level:'Medium',pts:30},
+    {num:5,name:'Engage with a local vendor and learn how to make their signature dish',evidence:'Video',level:'Hard',pts:50}
+  ]},
+  { id:'available-soon', name:'Available Soon Tasks', icon:'⏳', tasks:[
+    {num:1,name:'Go to Hunchies and find ch. Majed',evidence:'Photo',level:'Medium',pts:30,comment:'Wait for the advisor'},
+    {num:2,name:"Go to Pioneer's wall and type anything (saydewe)",evidence:'Photo',level:'Medium',pts:30,comment:'Wait for the advisor'},
+    {num:3,name:'Go to BOB Juice and find ch. Ahmad',evidence:'Photo',level:'Medium',pts:30,comment:'Wait for location'},
+    {num:4,name:'Hidden task',evidence:'Photo',level:'Hard',pts:50,comment:'Wait for the advisor'},
+    {num:5,name:'Catch the flag',evidence:'Photo',level:'Rare',pts:70,comment:'Wait for location'}
+  ]},
+  { id:'challenges', name:'Challenges', icon:'⚡', tasks:[
+    {num:1,name:'Get a camel-hair with a proof, just one',evidence:'Photo',level:'Easy',pts:20},
+    {num:2,name:'Get a signature from someone wearing a red hat',evidence:'Video',level:'Easy',pts:20},
+    {num:3,name:'Take a pic with animal at Pets N Claws',evidence:'Photo',level:'Easy',pts:20},
+    {num:4,name:'Try to fish',evidence:'Photo',level:'Easy',pts:20},
+    {num:5,name:'Collect 5 ants in a bottle',evidence:'Photo',level:'Easy',pts:20},
+    {num:6,name:'All members must follow @vip.bob.taxi on Instagram',evidence:'Photo',level:'Easy',pts:20},
+    {num:7,name:'Take a picture with a BOB taxi car',evidence:'Photo',level:'Medium',pts:30},
+    {num:8,name:'Buy anything with 1000 Lira',evidence:'Fatoora',level:'Medium',pts:30},
+    {num:9,name:'Find a Markit Driver, selfie, tag @markit on insta story',evidence:'Photo',level:'Medium',pts:30,comment:"Don't forget to smile!"},
+    {num:10,name:'Help anyone who needs to change a tire',evidence:'Photo',level:'Medium',pts:30},
+    {num:11,name:'Trade anything — start with a pen, end with something more valuable',evidence:'Video',level:'Medium',pts:30},
+    {num:12,name:'Make a vlog for Event',evidence:'Video',level:'Medium',pts:30},
+    {num:13,name:'Find a local business open for over 50 years',evidence:'Photo',level:'Medium',pts:30},
+    {num:14,name:'Take a picture of money from another country',evidence:'Photo',level:'Medium',pts:30,comment:'Not LBP / Dollar'},
+    {num:15,name:"Go to @amccocamping, find post (خيم معنا), like @LSA.S1's comment",evidence:'Screenshot',level:'Medium',pts:30},
+    {num:16,name:'Find Markit App QR code, scan, download, verify number',evidence:'Screenshot',level:'Hard',pts:50},
+    {num:17,name:'From 10:00–1:30, go to Makari Engineering and solve the task',evidence:'Photo',level:'Hard',pts:50},
+    {num:18,name:'Take a picture of a Car Plate from another country',evidence:'Photo',level:'Hard',pts:50,comment:'Ask the driver first'},
+    {num:19,name:'Take a photo with a Famous person (1M+ followers)',evidence:'Photo',level:'Hard',pts:50},
+    {num:20,name:"Get last year's Event bracelet",evidence:'Photo',level:'Hard',pts:50},
+    {num:21,name:'Fastest eating apple with no hands at Saida Beach',evidence:'Voice',level:'Rare',pts:70},
+    {num:22,name:'Send picture of biggest car plate number with letter S',evidence:'Photo',level:'Rare',pts:70}
+  ]},
+  { id:'sport', name:'Sport & Fitness', icon:'🏃', tasks:[
+    {num:1,name:'Find another team and make a human pyramid',evidence:'Photo',level:'Medium',pts:30},
+    {num:2,name:'From 11:00–1:30, win tug of war at Saida Beach',evidence:'Voice',level:'Hard',pts:50},
+    {num:3,name:'From 10:00–1:30, most pull-ups at Saida Stadium',evidence:'Voice',level:'Rare',pts:70},
+    {num:4,name:'From 10:00–1:30, most push-ups at Saida Stadium',evidence:'Voice',level:'Rare',pts:70},
+    {num:5,name:'From 10:00–1:30, fastest run at Saida Stadium',evidence:'Voice',level:'Rare',pts:70},
+    {num:6,name:'From 3:30–5:00 PM, fastest climb at Saida Mall',evidence:'Voice',level:'Rare',pts:70}
+  ]},
+  { id:'saida', name:'Saida City', icon:'🏛️', tasks:[
+    {num:1,name:'Go to Saida Castle and take a picture',evidence:'Photo',level:'Easy',pts:20},
+    {num:2,name:'Take a picture in the Soap Museum',evidence:'Photo',level:'Easy',pts:20},
+    {num:3,name:'Find 5 street names in Saida',evidence:'Photo',level:'Medium',pts:30},
+    {num:4,name:'Go to 3 Khans in Old Saida',evidence:'3 photos',level:'Medium',pts:30},
+    {num:5,name:'Visit a traditional bakery, learn about making manakish',evidence:'Video',level:'Medium',pts:30},
+    {num:6,name:'Photograph five different types of doors in the Old Souk',evidence:'Photo',level:'Medium',pts:30},
+    {num:7,name:'Photograph an abandoned building',evidence:'Photo',level:'Medium',pts:30},
+    {num:8,name:'Find مختار in Saida and take a picture with him',evidence:'Photo',level:'Hard',pts:50}
+  ]},
+  { id:'riddles', name:'Riddles & Treasure Hunt', icon:'🧩', tasks:[
+    {num:1,name:'Download "That Level Again 2" and solve the riddles',evidence:'Screenshot',level:'Medium',pts:30},
+    {num:2,name:'Go to دوار القناية, find and solve the morse code',evidence:'Photo',level:'Hard',pts:50,comment:'Ask advisor for morse code guide'},
+    {num:3,name:'Go to Khatib Center, scan QR code, complete tasks',evidence:'Photo',level:'Hard',pts:50}
+  ]},
+  { id:'getfind', name:'Get & Find', icon:'🔍', tasks:[
+    {num:1,name:'Get any stamp (طابع)',evidence:'Photo',level:'Easy',pts:20},
+    {num:2,name:'Get a 500 LBP and a 250 LBP coin',evidence:'Photo',level:'Easy',pts:20},
+    {num:3,name:'Get 5 different screw sizes',evidence:'Photo',level:'Easy',pts:20},
+    {num:4,name:'Find a street named after a famous person',evidence:'Photo',level:'Easy',pts:20},
+    {num:5,name:'Find an electrical car',evidence:'Photo',level:'Medium',pts:30},
+    {num:6,name:'Find a local who speaks a different language (not Arabic/English/French)',evidence:'Video',level:'Medium',pts:30},
+    {num:7,name:'Find artisan in Old Souk and create a handmade souvenir',evidence:'Photo',level:'Hard',pts:50}
+  ]},
+  { id:'bonus', name:'Bonus', icon:'🌟', tasks:[
+    {num:1,name:'First team to finish all Easy level tasks',evidence:'Advisor',level:'Rare',pts:70},
+    {num:2,name:'First team to finish all Medium level tasks',evidence:'Advisor',level:'Rare',pts:70},
+    {num:3,name:'First team to finish one entire category',evidence:'Advisor',level:'Rare',pts:70},
+    {num:4,name:'Make a new Event logo with iconic elements',evidence:'Photo',level:'Rare',pts:70,comment:"Will influence next year's event"},
+    {num:5,name:'Make the longest straight line of people',evidence:'Photo',level:'Rare',pts:70}
+  ]}
+];
+
+const TEAM_COLORS = ['#f97316','#3b82f6','#22c55e','#ef4444','#8b5cf6','#06b6d4','#ec4899','#eab308','#14b8a6','#f43f5e','#84cc16','#6366f1','#f97316','#a855f7','#0ea5e9'];
+
+let teams = [];
+let activityLog = [];
+let selectedColor = TEAM_COLORS[0];
+let editSelectedColor = '';
+
+// ── API ──
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch('/api' + path, opts);
+  return res.json();
+}
+
+async function loadState() {
+  try {
+    const data = await api('GET', '/state');
+    teams = data.teams || [];
+    activityLog = data.log || [];
+  } catch (e) { console.error('Load failed:', e); }
+}
+
+function getCompletedMap(team) {
+  const map = {};
+  if (team.completions) team.completions.forEach(c => { map[c.categoryId + '-' + c.taskNum] = true; });
+  return map;
+}
+
+function totalTasks()  { return CATEGORIES.reduce((s,c) => s + c.tasks.length, 0); }
+function totalPoints() { return CATEGORIES.reduce((s,c) => s + c.tasks.reduce((s2,t) => s2 + t.pts, 0), 0); }
+function teamPoints(teamId) {
+  const team = teams.find(t => t.id === teamId);
+  if (!team) return 0;
+  const done = getCompletedMap(team);
+  let pts = 0;
+  CATEGORIES.forEach(cat => cat.tasks.forEach(t => { if (done[cat.id+'-'+t.num]) pts += t.pts; }));
+  return pts;
+}
+function teamCompletedCount(teamId) {
+  const team = teams.find(t => t.id === teamId);
+  return team ? (team.completions || []).length : 0;
+}
+function catPointsForTeam(teamId, catId) {
+  const team = teams.find(t => t.id === teamId);
+  if (!team) return 0;
+  const done = getCompletedMap(team);
+  const cat = CATEGORIES.find(c => c.id === catId);
+  return cat ? cat.tasks.reduce((s,t) => s + (done[catId+'-'+t.num] ? t.pts : 0), 0) : 0;
+}
+function catDoneCount(teamId, catId) {
+  const team = teams.find(t => t.id === teamId);
+  if (!team) return 0;
+  const done = getCompletedMap(team);
+  const cat = CATEGORIES.find(c => c.id === catId);
+  return cat ? cat.tasks.filter(t => done[catId+'-'+t.num]).length : 0;
+}
+
+// ── Toast ──
+function showToast(icon, msg) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = '<span style="font-size:1.1rem">'+icon+'</span> '+msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+// ── Navigation ──
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  document.querySelectorAll('.nav-bar button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  refreshAll();
+}
+
+// ── Stats ──
+function renderStats() {
+  const active = teams.filter(t => !t.disqualified).length;
+  const done = teams.reduce((s,t) => s + teamCompletedCount(t.id), 0);
+  const pts = teams.reduce((s,t) => s + teamPoints(t.id), 0);
+  document.getElementById('dashStats').innerHTML =
+    '<div class="stat-card"><div class="stat-num" style="color:var(--orange)">'+teams.length+'</div><div class="stat-label">Teams</div></div>'+
+    '<div class="stat-card"><div class="stat-num" style="color:var(--blue)">'+totalTasks()+'</div><div class="stat-label">Tasks</div></div>'+
+    '<div class="stat-card"><div class="stat-num" style="color:var(--green)">'+done+'</div><div class="stat-label">Submissions</div></div>'+
+    '<div class="stat-card"><div class="stat-num" style="color:var(--purple)">'+pts+'</div><div class="stat-label">Total Points</div></div>';
+}
+
+// ── Leaderboard ──
+function renderLeaderboard() {
+  const sorted = [...teams].sort((a,b) => teamPoints(b.id) - teamPoints(a.id));
+  const maxPts = sorted.length ? Math.max(teamPoints(sorted[0].id), 1) : 1;
+  document.getElementById('fullLeaderboard').innerHTML = sorted.map((t,i) => {
+    const pts = teamPoints(t.id);
+    const pct = maxPts > 0 ? (pts/maxPts)*100 : 0;
+    const rc = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+    const dq = t.disqualified ? ' <span style="color:var(--red);font-size:.72rem;">🚫 DQ</span>' : '';
+    return '<div class="lb-entry" onclick="selectTeamView('+t.id+')">'+
+      '<div class="lb-rank '+rc+'">'+(i+1)+'</div>'+
+      '<div class="lb-team-color" style="background:'+t.color+'"></div>'+
+      '<div class="lb-info"><div class="lb-team-name">'+t.name+dq+'</div>'+
+      '<div class="lb-team-meta">'+t.members.length+' members • '+teamCompletedCount(t.id)+' tasks done</div></div>'+
+      '<div class="lb-points">'+pts+'</div>'+
+      '<div class="lb-bar-bg"><div class="lb-bar" style="width:'+pct+'%;background:'+t.color+'"></div></div></div>';
+  }).join('');
+}
+
+// ── Categories ──
+function renderCategories() {
+  document.getElementById('dashCatGrid').innerHTML = CATEGORIES.map(cat => {
+    const catMax = cat.tasks.reduce((s,t)=>s+t.pts,0);
+    const catTotal = teams.reduce((s,t)=>s+catPointsForTeam(t.id,cat.id),0);
+    const pct = Math.round((catTotal/(catMax*teams.length))*100);
+    return '<div class="cat-card" onclick="showTasksForCat(\''+cat.id+'\')">'+
+      '<div class="cat-top"><span class="cat-icon">'+cat.icon+'</span><span class="cat-name">'+cat.name+'</span></div>'+
+      '<div class="cat-meta">'+cat.tasks.length+' tasks • '+catMax+' max pts</div>'+
+      '<span class="cat-pts">'+catMax+' pts</span>'+
+      '<div class="cat-progress"><div class="cat-progress-bar" style="width:'+pct+'%"></div></div></div>';
+  }).join('');
+}
+
+// ── Populate Selects ──
+function populateTeamSelects() {
+  const taskSel = document.getElementById('taskTeamSelect');
+  const teamSel = document.getElementById('teamViewSelect');
+  const sv1 = taskSel.value, sv2 = teamSel.value;
+  const opts = teams.map(t=>'<option value="'+t.id+'">'+t.name+'</option>').join('');
+  taskSel.innerHTML = opts;
+  teamSel.innerHTML = opts;
+  if (sv1 && taskSel.querySelector('option[value="'+sv1+'"]')) taskSel.value = sv1;
+  if (sv2 && teamSel.querySelector('option[value="'+sv2+'"]')) teamSel.value = sv2;
+}
+
+// ── All Tasks ──
+function renderAllTasks() {
+  const sel = document.getElementById('taskTeamSelect');
+  if (!sel.value) return;
+  const teamId = parseInt(sel.value);
+  const team = teams.find(t=>t.id===teamId);
+  if (!team) return;
+  const done = getCompletedMap(team);
+  const search = (document.getElementById('taskSearch').value||'').toLowerCase();
+  const c = document.getElementById('allTasksContainer');
+  let html = '';
+  CATEGORIES.forEach(cat => {
+    const filtered = cat.tasks.filter(t => !search || t.name.toLowerCase().includes(search) || t.level.toLowerCase().includes(search));
+    if (!filtered.length) return;
+    const catDone = filtered.filter(t=>done[cat.id+'-'+t.num]).length;
+    html += '<div class="task-table-wrap" id="cat-'+cat.id+'">'+
+      '<div class="task-table-header"><div class="th-left"><span class="th-icon">'+cat.icon+'</span>'+
+      '<div><div class="th-name">'+cat.name+'</div><div class="th-meta">'+cat.tasks.length+' tasks • '+catDone+'/'+filtered.length+' done</div></div></div>'+
+      '<div class="th-pts">'+catPointsForTeam(teamId,cat.id)+' pts</div></div>'+
+      '<table class="task-table"><thead><tr><th>#</th><th>Task</th><th>Evidence</th><th>Level</th><th>Pts</th><th style="text-align:center">✓</th></tr></thead><tbody>';
+    filtered.forEach(t => {
+      const key = cat.id+'-'+t.num;
+      const ck = done[key]?'checked':'';
+      const cls = done[key]?'done':'';
+      const cm = t.comment?'<div class="task-comment">💡 '+t.comment+'</div>':'';
+      html += '<tr class="'+cls+'"><td class="task-num">'+t.num+'</td>'+
+        '<td><div class="task-name">'+t.name+'</div>'+cm+'</td>'+
+        '<td class="evidence-cell">'+t.evidence+'</td>'+
+        '<td><span class="level-badge level-'+t.level.toLowerCase()+'">'+t.level+'</span></td>'+
+        '<td class="pts-cell">'+t.pts+'</td>'+
+        '<td class="status-cell"><input type="checkbox" class="checkbox-big" '+ck+' onchange="toggleTask('+teamId+',\''+cat.id+'\','+t.num+',this.checked)"></td></tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  c.innerHTML = html || '<div class="empty-state"><div class="empty-icon">🔍</div><p>No tasks match your search.</p></div>';
+}
+function filterTasks() { renderAllTasks(); }
+
+async function toggleTask(teamId, catId, taskNum, checked) {
+  const cat = CATEGORIES.find(c=>c.id===catId);
+  const task = cat.tasks.find(t=>t.num===taskNum);
+  const team = teams.find(t=>t.id===teamId);
+  try {
+    await api('POST','/completions/toggle',{teamId,categoryId:catId,taskNum});
+    showToast(checked?'✅':'↩️', '<strong>'+team.name+'</strong> '+(checked?'+':'-')+task.pts+' pts');
+    await loadState();
+    refreshAll();
+  } catch(e) { showToast('❌','Error updating task'); }
+}
+
+// ── Team View ──
+function selectTeamView(teamId) {
+  document.getElementById('teamViewSelect').value = teamId;
+  showSection('team', document.querySelectorAll('.nav-bar button')[2]);
+}
+function renderTeamView() {
+  const sel = document.getElementById('teamViewSelect');
+  if (!sel.value) return;
+  const teamId = parseInt(sel.value);
+  const team = teams.find(t=>t.id===teamId);
+  if (!team) return;
+  const pts = teamPoints(teamId);
+  const done = getCompletedMap(team);
+  const totalDone = Object.keys(done).length;
+  const total = totalTasks();
+  const pct = Math.round((totalDone/total)*100);
+  const sorted = [...teams].sort((a,b)=>teamPoints(b.id)-teamPoints(a.id));
+  const rank = sorted.findIndex(t=>t.id===teamId)+1;
+
+  let html = (team.disqualified?'<div class="disq-banner">🚫 This team has been disqualified</div>':'')+
+    '<div class="team-detail-card">'+
+      '<div class="td-header"><div>'+
+        '<div class="td-name"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:'+team.color+'"></span>'+team.name+'</div>'+
+        '<div class="td-meta">'+team.members.length+' members • Rank #'+rank+'</div></div>'+
+        '<div class="td-pts"><div class="td-pts-num">'+pts+'</div><div class="td-pts-label">Total Points</div></div></div>'+
+      '<div class="members-list">'+team.members.map(m=>'<div class="member-chip">👤 '+m+'</div>').join('')+'</div>'+
+      '<div class="progress-row"><span>'+totalDone+' / '+total+' tasks</span><span>'+pct+'%</span></div>'+
+      '<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:'+pct+'%"></div></div></div>';
+
+  html += '<div class="section-header"><h2>📂 Category Progress</h2></div><div class="cat-grid">'+
+    CATEGORIES.map(cat=>{
+      const catMax = cat.tasks.reduce((s,t)=>s+t.pts,0);
+      const earned = catPointsForTeam(teamId,cat.id);
+      const cd = catDoneCount(teamId,cat.id);
+      const cp = Math.round((cd/cat.tasks.length)*100);
+      return '<div class="cat-card"><div class="cat-top"><span class="cat-icon">'+cat.icon+'</span><span class="cat-name">'+cat.name+'</span></div>'+
+        '<div class="cat-meta">'+cd+'/'+cat.tasks.length+' tasks • '+earned+'/'+catMax+' pts</div>'+
+        '<div class="cat-progress"><div class="cat-progress-bar" style="width:'+cp+'%;background:'+team.color+'"></div></div></div>';
+    }).join('')+'</div>';
+
+  html += '<div class="section-header" style="margin-top:16px"><h2>✅ Task Checklist</h2></div>';
+  CATEGORIES.forEach(cat=>{
+    html += '<div class="task-table-wrap"><div class="task-table-header"><div class="th-left"><span class="th-icon">'+cat.icon+'</span><span class="th-name">'+cat.name+'</span></div></div>'+
+      '<table class="task-table"><thead><tr><th>#</th><th>Task</th><th>Level</th><th>Pts</th><th style="text-align:center">✓</th></tr></thead><tbody>';
+    cat.tasks.forEach(t=>{
+      const key=cat.id+'-'+t.num;
+      const ck=done[key]?'checked':'';
+      const cls=done[key]?'done':'';
+      html+='<tr class="'+cls+'"><td class="task-num">'+t.num+'</td><td class="task-name">'+t.name+'</td>'+
+        '<td><span class="level-badge level-'+t.level.toLowerCase()+'">'+t.level+'</span></td>'+
+        '<td class="pts-cell">'+t.pts+'</td>'+
+        '<td class="status-cell"><input type="checkbox" class="checkbox-big" '+ck+' onchange="toggleTask('+teamId+',\''+cat.id+'\','+t.num+',this.checked)"></td></tr>';
+    });
+    html+='</tbody></table></div>';
+  });
+  document.getElementById('teamViewContent').innerHTML = html;
+}
+
+// ── Manage Teams ──
+function renderManageTeams() {
+  document.getElementById('teamManageGrid').innerHTML = teams.map(t=>{
+    const pts = teamPoints(t.id);
+    return '<div class="team-manage-card" style="border-top-color:'+t.color+'">'+
+      '<h4><span style="width:10px;height:10px;border-radius:50%;background:'+t.color+';display:inline-block"></span>'+
+      t.name+(t.disqualified?' <span style="color:var(--red);font-size:.72rem">🚫 DQ</span>':'')+
+      '<span style="margin-left:auto;font-size:.85rem;color:var(--orange);font-weight:700">'+pts+' pts</span></h4>'+
+      '<div class="tm-meta">'+t.members.length+' members • '+teamCompletedCount(t.id)+' tasks done</div>'+
+      '<div class="tm-members">'+t.members.map((m,i)=>'<div class="member-chip">'+m+'<button class="remove-btn" onclick="removeMember('+t.id+','+i+')">×</button></div>').join('')+'</div>'+
+      '<div class="add-member-inline"><input placeholder="Add member..." id="addMember-'+t.id+'" onkeydown="if(event.key===\'Enter\')addMember('+t.id+')">'+
+      '<button class="btn btn-primary btn-sm" onclick="addMember('+t.id+')">+</button></div>'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:var(--bg);border-radius:.5rem;border:1px solid var(--border)">'+
+        '<span style="font-size:.85rem">🔑 PIN:</span>'+
+        '<strong style="font-size:1rem;letter-spacing:.1em;color:var(--orange)">'+(t.pin||'0000')+'</strong>'+
+        '<button class="btn btn-sm" style="margin-left:auto;padding:3px 8px;font-size:.72rem" onclick="changePin('+t.id+',\''+t.name+'\')">Change</button></div>'+
+      '<div class="card-actions">'+
+        '<button class="btn btn-sm" onclick="openEditTeamModal('+t.id+')">✏️ Edit</button>'+
+        '<button class="btn btn-sm '+(t.disqualified?'btn-primary':'btn-danger')+'" onclick="toggleDQ('+t.id+')">'+(t.disqualified?'✅ Reinstate':'🚫 Disqualify')+'</button></div></div>';
+  }).join('');
+}
+async function addMember(teamId) {
+  const input = document.getElementById('addMember-'+teamId);
+  const name = input.value.trim();
+  if (!name) return;
+  const res = await api('POST','/teams/'+teamId+'/members',{name});
+  if (res.error) { showToast('⚠️',res.error); return; }
+  showToast('👤',name+' added!');
+  await loadState(); refreshAll();
+}
+async function removeMember(teamId, idx) {
+  const res = await api('DELETE','/teams/'+teamId+'/members/'+idx);
+  if (res.error) { showToast('⚠️',res.error); return; }
+  showToast('👤','Member removed');
+  await loadState(); refreshAll();
+}
+async function toggleDQ(teamId) {
+  const res = await api('PUT','/teams/'+teamId+'/disqualify');
+  showToast(res.disqualified?'🚫':'✅', res.disqualified?'Disqualified!':'Reinstated!');
+  await loadState(); refreshAll();
+}
+
+// ── Activity Log ──
+function renderActivityLog() {
+  const c = document.getElementById('activityLog');
+  if (!activityLog.length) { c.innerHTML='<div class="empty-state"><div class="empty-icon">📜</div><p>No activity yet.</p></div>'; return; }
+  c.innerHTML = activityLog.slice(0,100).map(log=>{
+    const team = log.team_id ? teams.find(t=>t.id===log.team_id) : null;
+    const time = new Date(log.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    const tag = team ? '<span class="log-team-tag" style="background:'+team.color+'">'+team.name+'</span>' : '';
+    return '<div class="log-entry"><span class="log-time">'+time+'</span><span class="log-icon">'+log.icon+'</span>'+
+      '<span style="flex:1">'+log.message+'</span>'+tag+'</div>';
+  }).join('');
+}
+
+// ── Modals ──
+function openAddTeamModal() {
+  document.getElementById('newTeamName').value='';
+  document.getElementById('newTeamMembers').value='';
+  renderColorPicker('colorPicker',TEAM_COLORS[teams.length%TEAM_COLORS.length]);
+  document.getElementById('addTeamModal').classList.add('show');
+}
+function openEditTeamModal(teamId) {
+  const team = teams.find(t=>t.id===teamId);
+  document.getElementById('editTeamId').value=teamId;
+  document.getElementById('editTeamName').value=team.name;
+  document.getElementById('editTeamMembers').value=team.members.join('\n');
+  renderColorPicker('editColorPicker',team.color,true);
+  document.getElementById('editTeamModal').classList.add('show');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function renderColorPicker(cid, def, isEdit) {
+  document.getElementById(cid).innerHTML = TEAM_COLORS.map(c=>{
+    return '<div class="color-swatch'+(c===def?' selected':'')+'" style="background:'+c+'" onclick="pickColor(\''+c+'\','+!!isEdit+',this)"></div>';
+  }).join('');
+  if (isEdit) editSelectedColor=def; else selectedColor=def;
+}
+function pickColor(color, isEdit, el) {
+  el.parentElement.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+  if (isEdit) editSelectedColor=color; else selectedColor=color;
+}
+async function addTeam() {
+  const name = document.getElementById('newTeamName').value.trim();
+  if (!name) { showToast('⚠️','Enter a team name!'); return; }
+  const raw = document.getElementById('newTeamMembers').value.trim();
+  const members = raw ? raw.split(/[\n,]+/).map(m=>m.trim()).filter(Boolean) : [];
+  if (members.length<1) { showToast('⚠️','Add at least 1 member!'); return; }
+  if (members.length>8) { showToast('⚠️','Max 8 members!'); return; }
+  const res = await api('POST','/teams',{name,color:selectedColor,members});
+  if (res.error) { showToast('❌',res.error); return; }
+  showToast('🆕','<strong>'+name+'</strong> created!');
+  closeModal('addTeamModal');
+  await loadState(); refreshAll();
+}
+async function saveTeamEdit() {
+  const teamId = parseInt(document.getElementById('editTeamId').value);
+  const name = document.getElementById('editTeamName').value.trim();
+  if (!name) { showToast('⚠️','Name required!'); return; }
+  const raw = document.getElementById('editTeamMembers').value.trim();
+  const members = raw ? raw.split(/[\n,]+/).map(m=>m.trim()).filter(Boolean) : [];
+  if (members.length<1) { showToast('⚠️','At least 1 member!'); return; }
+  if (members.length>8) { showToast('⚠️','Max 8 members!'); return; }
+  await api('PUT','/teams/'+teamId,{name,color:editSelectedColor,members});
+  showToast('✏️','<strong>'+name+'</strong> saved!');
+  closeModal('editTeamModal');
+  await loadState(); refreshAll();
+}
+async function deleteTeam() {
+  const teamId = parseInt(document.getElementById('editTeamId').value);
+  const team = teams.find(t=>t.id===teamId);
+  if (!confirm('Delete "'+team.name+'"?')) return;
+  await api('DELETE','/teams/'+teamId);
+  showToast('🗑️','Team deleted');
+  closeModal('editTeamModal');
+  await loadState(); refreshAll();
+}
+
+// ── Helpers ──
+function showTasksForCat(catId) {
+  const sel = document.getElementById('taskTeamSelect');
+  if (!sel.value && teams.length) sel.value = teams[0].id;
+  showSection('tasks', document.querySelectorAll('.nav-bar button')[1]);
+  setTimeout(()=>{ const el=document.getElementById('cat-'+catId); if(el) el.scrollIntoView({behavior:'smooth'}); },100);
+}
+
+// ── Refresh ──
+function refreshAll() {
+  renderStats();
+  renderLeaderboard();
+  renderCategories();
+  populateTeamSelects();
+  renderAllTasks();
+  renderTeamView();
+  renderManageTeams();
+  renderActivityLog();
+}
+
+// ── Submissions ──
+function renderSubmissions() {
+  // Pending
+  const pendingContainer = document.getElementById('pendingSubmissions');
+  const reviewedContainer = document.getElementById('reviewedSubmissions');
+  const pendingCount = document.getElementById('pendingCount');
+
+  if (!window._submissions) { window._submissions = { pending: [], reviewed: [] }; }
+  const { pending, reviewed } = window._submissions;
+
+  pendingCount.textContent = pending.length + ' pending submission' + (pending.length !== 1 ? 's' : '');
+
+  if (!pending.length) {
+    pendingContainer.innerHTML = '<div class="empty-state" style="padding:24px"><p>No pending submissions</p></div>';
+  } else {
+    pendingContainer.innerHTML = pending.map(s => {
+      const cat = CATEGORIES.find(c => c.id === s.category_id);
+      const task = cat ? cat.tasks.find(t => t.num === s.task_num) : null;
+      const taskName = task ? task.name : s.category_id + '-' + s.task_num;
+      const pts = task ? task.pts : 0;
+      const evidenceLink = s.evidence_file ? '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.82rem;text-decoration:none;font-weight:500">📎 View Evidence</a>' : '<span style="font-size:.78rem;color:var(--text-muted)">No file attached</span>';
+      return '<div class="lb-entry" style="cursor:default;flex-wrap:wrap;gap:10px">' +
+        '<div style="flex:1;min-width:200px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+            '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + s.team_color + '"></span>' +
+            '<span style="font-weight:700">' + s.team_name + '</span>' +
+            '<span style="font-size:.72rem;color:var(--text-muted)">• ' + s.submitted_at + '</span></div>' +
+          '<div style="font-weight:600;font-size:.9rem;margin-bottom:4px">' + taskName + '</div>' +
+          '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+            '<span class="level-badge level-' + (task ? task.level.toLowerCase() : 'medium') + '">' + (task ? task.level : '?') + '</span>' +
+            '<span style="font-weight:700;color:var(--orange);font-size:.85rem">' + pts + ' pts</span>' +
+            evidenceLink +
+          '</div>' +
+          (s.note ? '<div style="font-size:.82rem;color:var(--text-dim);margin-top:6px;font-style:italic">"' + s.note + '"</div>' : '') +
+        '</div>' +
+        '<div style="display:flex;gap:8px;flex-shrink:0">' +
+          '<button class="btn btn-primary btn-sm" onclick="approveSubmission(' + s.id + ')">✅ Approve</button>' +
+          '<button class="btn btn-danger btn-sm" onclick="rejectSubmission(' + s.id + ')">❌ Reject</button>' +
+        '</div></div>';
+    }).join('');
+  }
+
+  if (!reviewed.length) {
+    reviewedContainer.innerHTML = '<div class="empty-state" style="padding:24px"><p>No reviewed submissions yet</p></div>';
+  } else {
+    reviewedContainer.innerHTML = reviewed.map(s => {
+      const cat = CATEGORIES.find(c => c.id === s.category_id);
+      const task = cat ? cat.tasks.find(t => t.num === s.task_num) : null;
+      const taskName = task ? task.name : s.category_id + '-' + s.task_num;
+      const icon = s.status === 'approved' ? '✅' : '❌';
+      const tag = s.status === 'approved'
+        ? '<span style="background:var(--green-light);color:#15803d;padding:2px 10px;border-radius:50px;font-size:.72rem;font-weight:600">Approved</span>'
+        : '<span style="background:var(--red-light);color:#b91c1c;padding:2px 10px;border-radius:50px;font-size:.72rem;font-weight:600">Rejected</span>';
+      return '<div class="lb-entry" style="cursor:default;opacity:.7">' +
+        '<span style="font-size:1rem">' + icon + '</span>' +
+        '<div style="flex:1"><div style="font-weight:600;font-size:.88rem">' + s.team_name + ' — ' + taskName + '</div>' +
+        (s.evidence_file ? '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.75rem">📎 Evidence</a>' : '') +
+        '</div>' + tag + '</div>';
+    }).join('');
+  }
+}
+
+async function approveSubmission(id) {
+  await api('PUT', '/submissions/' + id + '/approve');
+  showToast('✅', 'Submission approved!');
+  await loadState();
+  refreshAll();
+}
+
+async function rejectSubmission(id) {
+  const reason = prompt('Rejection reason (optional):') || '';
+  await api('PUT', '/submissions/' + id + '/reject', { reason });
+  showToast('❌', 'Submission rejected');
+  await loadState();
+  refreshAll();
+}
+
+// Override loadState to also fetch submissions
+const _origLoadState = loadState;
+loadState = async function() {
+  try {
+    const data = await api('GET', '/state');
+    teams = data.teams || [];
+    activityLog = data.log || [];
+    window._submissions = data.submissions || { pending: [], reviewed: [] };
+    await loadAdvisors();
+  } catch (e) { console.error('Load failed:', e); }
+};
+
+// Override refreshAll to include submissions
+const _origRefreshAll = refreshAll;
+refreshAll = function() {
+  renderStats();
+  renderLeaderboard();
+  renderCategories();
+  populateTeamSelects();
+  renderAllTasks();
+  renderTeamView();
+  renderManageTeams();
+  renderActivityLog();
+  renderSubmissions();
+};
+
+async function exportTasks() {
+  window.open('/api/tasks/export', '_blank');
+  showToast('📤', 'Downloading tasks CSV...');
+}
+
+async function importTasks(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const text = await file.text();
+  const result = document.getElementById('importResult');
+  result.style.display = 'block';
+  result.innerHTML = '<div style="padding:12px;background:var(--blue-light);color:var(--blue);border-radius:.75rem;font-size:.85rem">⏳ Importing...</div>';
+
+  try {
+    const res = await api('POST', '/tasks/import', { csv: text });
+    if (res.success) {
+      result.innerHTML = '<div style="padding:12px;background:var(--green-light);color:#15803d;border-radius:.75rem;font-size:.85rem">✅ ' + res.imported + ' tasks imported successfully! Refresh the page to see changes.</div>';
+      showToast('📥', res.imported + ' tasks imported!');
+    } else {
+      result.innerHTML = '<div style="padding:12px;background:var(--red-light);color:#b91c1c;border-radius:.75rem;font-size:.85rem">❌ ' + (res.error || 'Import failed') + '</div>';
+    }
+  } catch(e) {
+    result.innerHTML = '<div style="padding:12px;background:var(--red-light);color:#b91c1c;border-radius:.75rem;font-size:.85rem">❌ Network error</div>';
+  }
+  input.value = '';
+}
+
+async function changePin(teamId, teamName) {
+  const newPin = prompt('New PIN for ' + teamName + ' (4-6 digits):');
+  if (!newPin) return;
+  if (newPin.length < 4) { showToast('⚠️', 'PIN must be at least 4 digits'); return; }
+  const res = await api('PUT', '/teams/' + teamId + '/pin', { pin: newPin });
+  if (res.error) { showToast('❌', res.error); return; }
+  showToast('🔑', 'PIN updated for ' + teamName);
+  await loadState();
+  refreshAll();
+}
+
+// ── Advisors ──
+let advisors = [];
+
+async function loadAdvisors() {
+  advisors = await api('GET', '/advisors');
+}
+
+function renderAdvisors() {
+  const container = document.getElementById('advisorsList');
+  if (!advisors.length) {
+    container.innerHTML = '<div class="empty-state" style="padding:24px"><p>No advisors yet. Add one to get started.</p></div>';
+    return;
+  }
+  container.innerHTML = advisors.map(a => {
+    const teamNames = a.teams.map(tid => {
+      const t = teams.find(t => t.id === tid);
+      return t ? '<span style="display:inline-block;padding:2px 10px;border-radius:50px;font-size:.75rem;font-weight:600;color:#fff;background:'+t.color+';margin:2px">'+t.name+'</span>' : '';
+    }).join(' ');
+    return '<div class="lb-entry" style="cursor:default">'+
+      '<div style="width:40px;height:40px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">👤</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-weight:700;font-size:.95rem">'+a.name+(a.active?'':' <span style="color:var(--red);font-size:.72rem">INACTIVE</span>')+'</div>'+
+        '<div style="font-size:.78rem;color:var(--text-muted);margin-bottom:6px">@'+a.username+'</div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:2px">'+teamNames+'</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;flex-shrink:0">'+
+        '<button class="btn btn-sm" onclick="openEditAdvisorModal('+a.id+')">✏️</button>'+
+        '<button class="btn btn-sm '+(a.active?'btn-danger':'btn-primary')+'" onclick="toggleAdvisor('+a.id+','+!a.active+')">'+(a.active?'🚫':'✅')+'</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+function renderTeamCheckboxes(containerId, selectedIds) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = teams.map(t => {
+    const checked = selectedIds.includes(t.id) ? 'checked' : '';
+    return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:.5rem;margin-bottom:4px;cursor:pointer;font-size:.85rem">'+
+      '<input type="checkbox" value="'+t.id+'" '+checked+' style="width:18px;height:18px;accent-color:var(--orange)" class="team-cb" data-cid="'+containerId+'">'+
+      '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+t.color+'"></span>'+
+      t.name+'</label>';
+  }).join('');
+}
+
+document.addEventListener('change', function(e) {
+  if (e.target.classList.contains('team-cb')) {
+    const cid = e.target.dataset.cid;
+    const container = document.getElementById(cid);
+    if (container.querySelectorAll('input:checked').length > 4) {
+      e.target.checked = false;
+      showToast('⚠️', 'Maximum 4 teams per advisor');
+    }
+  }
+});
+
+function getCheckedTeams(containerId) {
+  return Array.from(document.getElementById(containerId).querySelectorAll('input:checked')).map(el => parseInt(el.value));
+}
+
+function openAddAdvisorModal() {
+  document.getElementById('advName').value = '';
+  document.getElementById('advUsername').value = '';
+  document.getElementById('advPassword').value = '';
+  renderTeamCheckboxes('advTeamCheckboxes', []);
+  document.getElementById('addAdvisorModal').classList.add('show');
+}
+
+async function addAdvisor() {
+  const name = document.getElementById('advName').value.trim();
+  const username = document.getElementById('advUsername').value.trim();
+  const password = document.getElementById('advPassword').value.trim();
+  const selectedTeams = getCheckedTeams('advTeamCheckboxes');
+  if (!name || !username || !password) { showToast('⚠️', 'All fields required'); return; }
+  if (selectedTeams.length < 1) { showToast('⚠️', 'Select at least 1 team'); return; }
+  if (selectedTeams.length > 4) { showToast('⚠️', 'Max 4 teams'); return; }
+
+  const res = await api('POST', '/advisors', { name, username, password, teams: selectedTeams });
+  if (res.error) { showToast('❌', res.error); return; }
+  showToast('✅', 'Advisor "'+name+'" created!');
+  closeModal('addAdvisorModal');
+  await loadAdvisors(); renderAdvisors();
+}
+
+function openEditAdvisorModal(id) {
+  const a = advisors.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('editAdvId').value = id;
+  document.getElementById('editAdvName').value = a.name;
+  document.getElementById('editAdvPassword').value = '';
+  renderTeamCheckboxes('editAdvTeamCheckboxes', a.teams);
+  document.getElementById('editAdvisorModal').classList.add('show');
+}
+
+async function saveAdvisor() {
+  const id = parseInt(document.getElementById('editAdvId').value);
+  const name = document.getElementById('editAdvName').value.trim();
+  const password = document.getElementById('editAdvPassword').value.trim();
+  const selectedTeams = getCheckedTeams('editAdvTeamCheckboxes');
+  if (!name) { showToast('⚠️', 'Name required'); return; }
+  if (selectedTeams.length < 1) { showToast('⚠️', 'Select at least 1 team'); return; }
+  if (selectedTeams.length > 4) { showToast('⚠️', 'Max 4 teams'); return; }
+
+  const body = { name, teams: selectedTeams };
+  if (password) body.password = password;
+  await api('PUT', '/advisors/'+id, body);
+  showToast('✅', 'Advisor updated!');
+  closeModal('editAdvisorModal');
+  await loadAdvisors(); renderAdvisors();
+}
+
+async function toggleAdvisor(id, active) {
+  await api('PUT', '/advisors/'+id, { active });
+  showToast(active?'✅':'🚫', active?'Advisor activated':'Advisor deactivated');
+  await loadAdvisors(); renderAdvisors();
+}
+
+async function deleteAdvisor() {
+  const id = parseInt(document.getElementById('editAdvId').value);
+  const a = advisors.find(x => x.id === id);
+  if (!confirm('Delete advisor "'+a.name+'"?')) return;
+  await api('DELETE', '/advisors/'+id);
+  showToast('🗑️', 'Advisor deleted');
+  closeModal('editAdvisorModal');
+  await loadAdvisors(); renderAdvisors();
+}
+
+// ── Init ──
+(async function() {
+  await loadState();
+  refreshAll();
+  setInterval(async()=>{ await loadState(); refreshAll(); }, 5000);
+})();
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a035febd9e72e28c',t:'MTc4MDA2MjkwOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
