@@ -1,0 +1,7 @@
+node_modules/
+event.db
+event.db-wal
+event.db-shm
+uploads/
+*.log
+.vercel
