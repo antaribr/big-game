@@ -608,7 +608,6 @@
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
 <div id="loginScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:90%;max-width:380px;box-shadow:var(--shadow);text-align:center">
     <div style="font-size:2.5rem;margin-bottom:12px">🔐</div>
@@ -620,12 +619,10 @@
   </div>
 </div>
 
-<!-- MAIN APP (hidden until login) -->
 <div id="mainApp" style="display:none">
 
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- Hero -->
 <div class="hero">
   <h1>🏆 Live Leaderboard</h1>
   <p>The competition is heating up!</p>
@@ -633,10 +630,8 @@
 
 <div class="container">
 
-  <!-- Stats -->
   <div class="stats-row" id="dashStats"></div>
 
-  <!-- Nav -->
   <div class="nav-bar">
     <button class="active" onclick="showSection('leaderboard',this)">🏅 Leaderboard</button>
     <button onclick="showSection('tasks',this)">📋 All Tasks</button>
@@ -650,7 +645,6 @@
     <button onclick="showSection('tools',this)">🔧 Tools</button>
   </div>
 
-  <!-- ═══ LEADERBOARD ═══ -->
   <div class="section active" id="section-leaderboard">
     <div class="section-header"><h2>🏅 Leaderboard</h2></div>
     <div class="leaderboard" id="fullLeaderboard"></div>
@@ -659,7 +653,6 @@
     <div class="cat-grid" id="dashCatGrid"></div>
   </div>
 
-  <!-- ═══ TASKS ═══ -->
   <div class="section" id="section-tasks">
     <div class="section-header">
       <h2>📋 All Tasks</h2>
@@ -670,11 +663,19 @@
         <input type="file" id="importInline" accept=".csv" style="display:none" onchange="importTasks(this)">
       </div>
     </div>
-    <input type="text" class="search-input" placeholder="🔍 Search tasks..." id="taskSearch" oninput="renderAllTasksView()">
-    <div id="allTasksView"></div>
+    <input type="text" class="search-input" placeholder="🔍 Search tasks..." id="taskSearch" oninput="renderAllTasks()">
+    <div id="allTasksContainer"></div>
   </div>
 
-  <!-- ═══ MANAGE TEAMS ═══ -->
+  <div class="section" id="section-team">
+    <div class="section-header"><h2>👤 Team View</h2></div>
+    <div class="team-select-bar">
+      <label for="teamViewSelect">Select Team Layout:</label>
+      <select id="teamViewSelect" onchange="renderTeamView()"></select>
+    </div>
+    <div id="teamViewContent"></div>
+  </div>
+
   <div class="section" id="section-teams">
     <div class="section-header">
       <h2>⚙️ Manage Teams</h2>
@@ -683,13 +684,11 @@
     <div class="team-manage-grid" id="teamManageGrid"></div>
   </div>
 
-  <!-- ═══ ACTIVITY LOG ═══ -->
   <div class="section" id="section-activity">
     <div class="section-header"><h2>📜 Activity Log</h2></div>
     <div class="log-list" id="activityLog"></div>
   </div>
 
-  <!-- ═══ SUBMISSIONS ═══ -->
   <div class="section" id="section-submissions">
     <div class="section-header"><h2>📨 Submissions</h2></div>
     <div id="pendingCount" style="margin-bottom:16px;font-size:.9rem;color:var(--text-dim)"></div>
@@ -698,7 +697,6 @@
     <div id="reviewedSubmissions"></div>
   </div>
 
-  <!-- ═══ ADVISORS ═══ -->
   <div class="section" id="section-advisors">
     <div class="section-header">
       <h2>👥 Advisors</h2>
@@ -707,7 +705,14 @@
     <div id="advisorsList"></div>
   </div>
 
-  <!-- ═══ TOOLS ═══ -->
+  <div class="section" id="section-taskmgmt">
+    <div class="section-header">
+      <h2>📝 Task Configuration</h2>
+      <button class="btn btn-primary" onclick="openAddTaskModal()">+ Add Task</button>
+    </div>
+    <div id="taskMgmtContainer"></div>
+  </div>
+
   <div class="section" id="section-tools">
     <div class="section-header"><h2>🔧 Export / Import Tasks</h2></div>
 
@@ -741,7 +746,6 @@
     <div id="importResult" style="display:none"></div>
   </div>
 
-  <!-- ═══ RULES ═══ -->
   <div class="section" id="section-rules">
     <div class="section-header"><h2>📖 Rules & Notes</h2></div>
     <div class="rules-grid">
@@ -768,7 +772,6 @@
 
 </div>
 
-<!-- ═══ MODALS ═══ -->
 <div class="modal-overlay" id="addTeamModal">
   <div class="modal">
     <h2>➕ Add New Team</h2>
@@ -777,9 +780,7 @@
     <label>Team Color</label>
     <div class="color-picker" id="colorPicker"></div>
     <label>Members (one per line)</label>
-    <textarea id="newTeamMembers" placeholder="Member 1
-Member 2
-Member 3"></textarea>
+    <textarea id="newTeamMembers" placeholder="Member 1&#10;Member 2&#10;Member 3"></textarea>
     <div class="btn-row">
       <button class="btn" onclick="closeModal('addTeamModal')">Cancel</button>
       <button class="btn btn-primary" onclick="addTeam()">Create Team</button>
@@ -805,7 +806,6 @@ Member 3"></textarea>
   </div>
 </div>
 
-<!-- Add Advisor Modal -->
 <div class="modal-overlay" id="addAdvisorModal">
   <div class="modal">
     <h2>➕ Add Advisor</h2>
@@ -824,7 +824,6 @@ Member 3"></textarea>
   </div>
 </div>
 
-<!-- Edit Advisor Modal -->
 <div class="modal-overlay" id="editAdvisorModal">
   <div class="modal">
     <h2>✏️ Edit Advisor</h2>
@@ -841,7 +840,8 @@ Member 3"></textarea>
       <button class="btn btn-primary" onclick="saveAdvisor()">Save</button>
     </div>
   </div>
-<!-- Add Task Modal -->
+</div>
+
 <div class="modal-overlay" id="addTaskModal">
   <div class="modal">
     <h2>➕ Add New Task</h2>
@@ -886,7 +886,6 @@ Member 3"></textarea>
   </div>
 </div>
 
-<!-- Edit Task Modal -->
 <div class="modal-overlay" id="editTaskModal">
   <div class="modal">
     <h2>✏️ Edit Task</h2>
@@ -918,15 +917,16 @@ Member 3"></textarea>
   </div>
 </div>
 
-</div><!-- end mainApp -->
-
-<script>
+</div><script>
 let CATEGORIES = [];
 
 async function loadCategoriesFromDB() {
   try {
     const tasks = await api('GET', '/tasks');
-    if (tasks.length === 0) return;
+    if (!tasks || tasks.length === 0) {
+      CATEGORIES = getFallbackCategories();
+      return;
+    }
 
     // Group tasks by category
     const catMap = {};
@@ -957,7 +957,6 @@ async function loadCategoriesFromDB() {
     CATEGORIES = Object.values(catMap);
   } catch (e) {
     console.error('Failed to load categories from DB:', e);
-    // Fallback to hardcoded if DB fails
     CATEGORIES = getFallbackCategories();
   }
 }
@@ -1003,7 +1002,7 @@ function getFallbackCategories() {
       {num:1,name:'First team to finish all Easy tasks',evidence:'Advisor',level:'Rare',pts:70},{num:2,name:'First team to finish all Medium tasks',evidence:'Advisor',level:'Rare',pts:70},{num:3,name:'First team to finish one entire category',evidence:'Advisor',level:'Rare',pts:70},{num:4,name:'Design a new Event logo',evidence:'Photo',level:'Rare',pts:70,comment:'Will influence next year event'},{num:5,name:'Make the longest straight line of people',evidence:'Photo',level:'Rare',pts:70}
     ]}
   ];
-};
+}
 
 const TEAM_COLORS = ['#f97316','#3b82f6','#22c55e','#ef4444','#8b5cf6','#06b6d4','#ec4899','#eab308','#14b8a6','#f43f5e','#84cc16','#6366f1','#f97316','#a855f7','#0ea5e9'];
 
@@ -1030,7 +1029,7 @@ async function loadState() {
 
 function getCompletedMap(team) {
   const map = {};
-  if (team.completions) team.completions.forEach(c => { map[c.categoryId + '-' + c.taskNum] = true; });
+  if (team && team.completions) team.completions.forEach(c => { map[c.categoryId + '-' + c.taskNum] = true; });
   return map;
 }
 
@@ -1066,6 +1065,7 @@ function catDoneCount(teamId, catId) {
 // ── Toast ──
 function showToast(icon, msg) {
   const c = document.getElementById('toastContainer');
+  if (!c) return;
   const t = document.createElement('div');
   t.className = 'toast';
   t.innerHTML = '<span style="font-size:1.1rem">'+icon+'</span> '+msg;
@@ -1075,8 +1075,13 @@ function showToast(icon, msg) {
 
 // ── Navigation ──
 function showSection(id, btn) {
+  const targetSection = document.getElementById('section-'+id);
+  if (!targetSection) {
+    console.warn(`Target wrapper layer "section-${id}" does not exist in standard DOM template.`);
+    return;
+  }
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById('section-'+id).classList.add('active');
+  targetSection.classList.add('active');
   document.querySelectorAll('.nav-bar button').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   refreshAll();
@@ -1084,7 +1089,8 @@ function showSection(id, btn) {
 
 // ── Stats ──
 function renderStats() {
-  const active = teams.filter(t => !t.disqualified).length;
+  const statsEl = document.getElementById('dashStats');
+  if (!statsEl) return;
   const done = teams.reduce((s,t) => s + teamCompletedCount(t.id), 0);
   const pts = teams.reduce((s,t) => s + teamPoints(t.id), 0);
   statsEl.innerHTML =
@@ -1117,10 +1123,12 @@ function renderLeaderboard() {
 
 // ── Categories ──
 function renderCategories() {
+  const catGrid = document.getElementById('dashCatGrid');
+  if (!catGrid) return;
   catGrid.innerHTML = CATEGORIES.map(cat => {
     const catMax = cat.tasks.reduce((s,t)=>s+t.pts,0);
     const catTotal = teams.reduce((s,t)=>s+catPointsForTeam(t.id,cat.id),0);
-    const pct = Math.round((catTotal/(catMax*teams.length))*100);
+    const pct = teams.length ? Math.round((catTotal/(catMax*teams.length))*100) : 0;
     return '<div class="cat-card" onclick="showTasksForCat(\''+cat.id+'\')">'+
       '<div class="cat-top"><span class="cat-icon">'+cat.icon+'</span><span class="cat-name">'+cat.name+'</span></div>'+
       '<div class="cat-meta">'+cat.tasks.length+' tasks • '+catMax+' max pts</div>'+
@@ -1133,45 +1141,42 @@ function renderCategories() {
 function populateTeamSelects() {
   const taskSel = document.getElementById('taskTeamSelect');
   const teamSel = document.getElementById('teamViewSelect');
-  const sv1 = taskSel.value, sv2 = teamSel.value;
   const opts = teams.map(t=>'<option value="'+t.id+'">'+t.name+'</option>').join('');
-  taskSel.innerHTML = opts;
-  teamSel.innerHTML = opts;
-  if (sv1 && taskSel.querySelector('option[value="'+sv1+'"]')) taskSel.value = sv1;
-  if (sv2 && teamSel.querySelector('option[value="'+sv2+'"]')) teamSel.value = sv2;
+  
+  if (taskSel) {
+    const sv1 = taskSel.value;
+    taskSel.innerHTML = opts;
+    if (sv1 && taskSel.querySelector('option[value="'+sv1+'"]')) taskSel.value = sv1;
+  }
+  if (teamSel) {
+    const sv2 = teamSel.value;
+    teamSel.innerHTML = opts;
+    if (sv2 && teamSel.querySelector('option[value="'+sv2+'"]')) teamSel.value = sv2;
+  }
 }
 
 // ── All Tasks ──
 function renderAllTasks() {
-  const sel = document.getElementById('taskTeamSelect');
-  if (!sel.value) return;
-  const teamId = parseInt(sel.value);
-  const team = teams.find(t=>t.id===teamId);
-  if (!team) return;
-  const done = getCompletedMap(team);
-  const search = (document.getElementById('taskSearch').value||'').toLowerCase();
   const c = document.getElementById('allTasksContainer');
+  if (!c) return;
+
+  // Render option list globally fallback if select configuration is loaded
+  const search = (document.getElementById('taskSearch').value||'').toLowerCase();
   let html = '';
   CATEGORIES.forEach(cat => {
     const filtered = cat.tasks.filter(t => !search || t.name.toLowerCase().includes(search) || t.level.toLowerCase().includes(search));
     if (!filtered.length) return;
-    const catDone = filtered.filter(t=>done[cat.id+'-'+t.num]).length;
     html += '<div class="task-table-wrap" id="cat-'+cat.id+'">'+
       '<div class="task-table-header"><div class="th-left"><span class="th-icon">'+cat.icon+'</span>'+
-      '<div><div class="th-name">'+cat.name+'</div><div class="th-meta">'+cat.tasks.length+' tasks • '+catDone+'/'+filtered.length+' done</div></div></div>'+
-      '<div class="th-pts">'+catPointsForTeam(teamId,cat.id)+' pts</div></div>'+
-      '<table class="task-table"><thead><tr><th>#</th><th>Task</th><th>Evidence</th><th>Level</th><th>Pts</th><th style="text-align:center">✓</th></tr></thead><tbody>';
+      '<div><div class="th-name">'+cat.name+'</div><div class="th-meta">'+cat.tasks.length+' tasks total</div></div></div></div>'+
+      '<table class="task-table"><thead><tr><th>#</th><th>Task</th><th>Evidence</th><th>Level</th><th>Pts</th></tr></thead><tbody>';
     filtered.forEach(t => {
-      const key = cat.id+'-'+t.num;
-      const ck = done[key]?'checked':'';
-      const cls = done[key]?'done':'';
       const cm = t.comment?'<div class="task-comment">💡 '+t.comment+'</div>':'';
-      html += '<tr class="'+cls+'"><td class="task-num">'+t.num+'</td>'+
+      html += '<tr><td class="task-num">'+t.num+'</td>'+
         '<td><div class="task-name">'+t.name+'</div>'+cm+'</td>'+
         '<td class="evidence-cell">'+t.evidence+'</td>'+
         '<td><span class="level-badge level-'+t.level.toLowerCase()+'">'+t.level+'</span></td>'+
-        '<td class="pts-cell">'+t.pts+'</td>'+
-        '<td class="status-cell"><input type="checkbox" class="checkbox-big" '+ck+' onchange="toggleTask('+teamId+',\''+cat.id+'\','+t.num+',this.checked)"></td></tr>';
+        '<td class="pts-cell">'+t.pts+'</td></tr>';
     });
     html += '</tbody></table></div>';
   });
@@ -1193,12 +1198,14 @@ async function toggleTask(teamId, catId, taskNum, checked) {
 
 // ── Team View ──
 function selectTeamView(teamId) {
-  // Navigate to Teams section
-  showSection('teams', document.querySelectorAll('.nav-bar button')[3]);
+  const teamSel = document.getElementById('teamViewSelect');
+  if (teamSel) teamSel.value = teamId;
+  showSection('team', document.querySelectorAll('.nav-bar button')[2]);
 }
 function renderTeamView() {
   const sel = document.getElementById('teamViewSelect');
-  if (!sel.value) return;
+  const targetContainer = document.getElementById('teamViewContent');
+  if (!sel || !targetContainer || !sel.value) return;
   const teamId = parseInt(sel.value);
   const team = teams.find(t=>t.id===teamId);
   if (!team) return;
@@ -1206,7 +1213,7 @@ function renderTeamView() {
   const done = getCompletedMap(team);
   const totalDone = Object.keys(done).length;
   const total = totalTasks();
-  const pct = Math.round((totalDone/total)*100);
+  const pct = total > 0 ? Math.round((totalDone/total)*100) : 0;
   const sorted = [...teams].sort((a,b)=>teamPoints(b.id)-teamPoints(a.id));
   const rank = sorted.findIndex(t=>t.id===teamId)+1;
 
@@ -1220,16 +1227,17 @@ function renderTeamView() {
       '<div class="progress-row"><span>'+totalDone+' / '+total+' tasks</span><span>'+pct+'%</span></div>'+
       '<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:'+pct+'%"></div></div></div>';
 
-  html += '<div class="section-header"><h2>📂 Category Progress</h2></div><div class="cat-grid">'+
-    CATEGORIES.map(cat=>{
+  html += '<div class="section-header"><h2>📂 Category Progress</h2></div><div class="cat-grid">';
+  CATEGORIES.forEach(cat=>{
       const catMax = cat.tasks.reduce((s,t)=>s+t.pts,0);
       const earned = catPointsForTeam(teamId,cat.id);
       const cd = catDoneCount(teamId,cat.id);
-      const cp = Math.round((cd/cat.tasks.length)*100);
-      return '<div class="cat-card"><div class="cat-top"><span class="cat-icon">'+cat.icon+'</span><span class="cat-name">'+cat.name+'</span></div>'+
+      const cp = cat.tasks.length ? Math.round((cd/cat.tasks.length)*100) : 0;
+      html += '<div class="cat-card"><div class="cat-top"><span class="cat-icon">'+cat.icon+'</span><span class="cat-name">'+cat.name+'</span></div>'+
         '<div class="cat-meta">'+cd+'/'+cat.tasks.length+' tasks • '+earned+'/'+catMax+' pts</div>'+
         '<div class="cat-progress"><div class="cat-progress-bar" style="width:'+cp+'%;background:'+team.color+'"></div></div></div>';
-    }).join('')+'</div>';
+  });
+  html += '</div>';
 
   html += '<div class="section-header" style="margin-top:16px"><h2>✅ Task Checklist</h2></div>';
   CATEGORIES.forEach(cat=>{
@@ -1246,12 +1254,14 @@ function renderTeamView() {
     });
     html+='</tbody></table></div>';
   });
-  document.getElementById('teamViewContent').innerHTML = html;
+  targetContainer.innerHTML = html;
 }
 
 // ── Manage Teams ──
 function renderManageTeams() {
-  document.getElementById('teamManageGrid').innerHTML = teams.map(t=>{
+  const container = document.getElementById('teamManageGrid');
+  if (!container) return;
+  container.innerHTML = teams.map(t=>{
     const pts = teamPoints(t.id);
     return '<div class="team-manage-card" style="border-top-color:'+t.color+'">'+
       '<h4><span style="width:10px;height:10px;border-radius:50%;background:'+t.color+';display:inline-block"></span>'+
@@ -1272,6 +1282,7 @@ function renderManageTeams() {
 }
 async function addMember(teamId) {
   const input = document.getElementById('addMember-'+teamId);
+  if (!input) return;
   const name = input.value.trim();
   if (!name) return;
   const res = await api('POST','/teams/'+teamId+'/members',{name});
@@ -1294,6 +1305,7 @@ async function toggleDQ(teamId) {
 // ── Activity Log ──
 function renderActivityLog() {
   const c = document.getElementById('activityLog');
+  if (!c) return;
   if (!activityLog.length) { c.innerHTML='<div class="empty-state"><div class="empty-icon">📜</div><p>No activity yet.</p></div>'; return; }
   c.innerHTML = activityLog.slice(0,100).map(log=>{
     const team = log.team_id ? teams.find(t=>t.id===log.team_id) : null;
@@ -1321,7 +1333,9 @@ function openEditTeamModal(teamId) {
 }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 function renderColorPicker(cid, def, isEdit) {
-  document.getElementById(cid).innerHTML = TEAM_COLORS.map(c=>{
+  const el = document.getElementById(cid);
+  if (!el) return;
+  el.innerHTML = TEAM_COLORS.map(c=>{
     return '<div class="color-swatch'+(c===def?' selected':'')+'" style="background:'+c+'" onclick="pickColor(\''+c+'\','+!!isEdit+',this)"></div>';
   }).join('');
   if (isEdit) editSelectedColor=def; else selectedColor=def;
@@ -1369,16 +1383,14 @@ async function deleteTeam() {
 
 // ── Helpers ──
 function showTasksForCat(catId) {
-  const sel = document.getElementById('taskTeamSelect');
-  if (!sel.value && teams.length) sel.value = teams[0].id;
   showSection('tasks', document.querySelectorAll('.nav-bar button')[1]);
   setTimeout(()=>{ const el=document.getElementById('cat-'+catId); if(el) el.scrollIntoView({behavior:'smooth'}); },100);
 }
 
-// ── Refresh ──
+// ── Refresh All Views ──
 function refreshAll() {
   renderStats();
-  if (typeof renderTaskManagement === 'function') renderTaskManagement();
+  renderTaskManagement();
   renderLeaderboard();
   renderCategories();
   populateTeamSelects();
@@ -1466,7 +1478,6 @@ async function rejectSubmission(id) {
 }
 
 // Override loadState to also fetch submissions
-const _origLoadState = loadState;
 loadState = async function() {
   try {
     const data = await api('GET', '/state');
@@ -1474,12 +1485,10 @@ loadState = async function() {
     activityLog = data.log || [];
     window._submissions = data.submissions || { pending: [], reviewed: [] };
     await loadAdvisors();
-    await loadAllTasks();
   } catch (e) { console.error('Load failed:', e); }
 };
 
-// Override refreshAll to include submissions
-const _origRefreshAll = refreshAll;
+// Override refreshAll to include submissions template triggers
 refreshAll = function() {
   renderStats();
   renderLeaderboard();
@@ -1490,6 +1499,8 @@ refreshAll = function() {
   renderManageTeams();
   renderActivityLog();
   renderSubmissions();
+  renderTaskManagement();
+  renderAdvisors();
 };
 
 async function exportTasks() {
@@ -1502,6 +1513,7 @@ async function importTasks(input) {
   if (!file) return;
   const text = await file.text();
   const result = document.getElementById('importResult');
+  if (!result) return;
   result.style.display = 'block';
   result.innerHTML = '<div style="padding:12px;background:var(--blue-light);color:var(--blue);border-radius:.75rem;font-size:.85rem">⏳ Importing...</div>';
 
@@ -1534,13 +1546,15 @@ async function changePin(teamId, teamName) {
 let advisors = [];
 
 async function loadAdvisors() {
-  advisors = await api('GET', '/advisors');
+  try {
+    advisors = await api('GET', '/advisors') || [];
+  } catch(e) { advisors = []; }
 }
 
 function renderAdvisors() {
   const container = document.getElementById('advisorsList');
   if (!container) return;
-  if (!advisors.length) {
+  if (!advisors || !advisors.length) {
     container.innerHTML = '<div class="empty-state" style="padding:24px"><p>No advisors yet. Add one to get started.</p></div>';
     return;
   }
@@ -1565,6 +1579,7 @@ function renderAdvisors() {
 
 function renderTeamCheckboxes(containerId, selectedIds) {
   const container = document.getElementById(containerId);
+  if (!container) return;
   container.innerHTML = teams.map(t => {
     const checked = selectedIds.includes(t.id) ? 'checked' : '';
     return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:.5rem;margin-bottom:4px;cursor:pointer;font-size:.85rem">'+
@@ -1578,7 +1593,7 @@ document.addEventListener('change', function(e) {
   if (e.target.classList.contains('team-cb')) {
     const cid = e.target.dataset.cid;
     const container = document.getElementById(cid);
-    if (container.querySelectorAll('input:checked').length > 4) {
+    if (container && container.querySelectorAll('input:checked').length > 4) {
       e.target.checked = false;
       showToast('⚠️', 'Maximum 4 teams per advisor');
     }
@@ -1586,7 +1601,9 @@ document.addEventListener('change', function(e) {
 });
 
 function getCheckedTeams(containerId) {
-  return Array.from(document.getElementById(containerId).querySelectorAll('input:checked')).map(el => parseInt(el.value));
+  const container = document.getElementById(containerId);
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('input:checked')).map(el => parseInt(el.value));
 }
 
 function openAddAdvisorModal() {
@@ -1610,7 +1627,7 @@ async function addAdvisor() {
   if (res.error) { showToast('❌', res.error); return; }
   showToast('✅', 'Advisor "'+name+'" created!');
   closeModal('addAdvisorModal');
-  await loadAdvisors(); renderAdvisors();
+  await loadAdvisors(); refreshAll();
 }
 
 function openEditAdvisorModal(id) {
@@ -1637,13 +1654,13 @@ async function saveAdvisor() {
   await api('PUT', '/advisors/'+id, body);
   showToast('✅', 'Advisor updated!');
   closeModal('editAdvisorModal');
-  await loadAdvisors(); renderAdvisors();
+  await loadAdvisors(); refreshAll();
 }
 
 async function toggleAdvisor(id, active) {
   await api('PUT', '/advisors/'+id, { active });
   showToast(active?'✅':'🚫', active?'Advisor activated':'Advisor deactivated');
-  await loadAdvisors(); renderAdvisors();
+  await loadAdvisors(); refreshAll();
 }
 
 async function deleteAdvisor() {
@@ -1653,14 +1670,14 @@ async function deleteAdvisor() {
   await api('DELETE', '/advisors/'+id);
   showToast('🗑️', 'Advisor deleted');
   closeModal('editAdvisorModal');
-  await loadAdvisors(); renderAdvisors();
+  await loadAdvisors(); refreshAll();
 }
 
-// ── Init ──
-// ── Task Management ──
+// ── Task Management View ──
 function renderTaskManagement() {
   const container = document.getElementById('taskMgmtContainer');
-  if (!CATEGORIES.length) {
+  if (!container) return;
+  if (!CATEGORIES || !CATEGORIES.length) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><p>No tasks yet. Import tasks from the Tools tab or add them manually.</p></div>';
     return;
   }
@@ -1679,7 +1696,8 @@ function renderTaskManagement() {
     html += '<table class="task-table"><thead><tr>';
     html += '<th style="width:40px">#</th><th>Task</th><th>Evidence</th><th>Level</th><th style="width:50px">Pts</th><th style="width:80px;text-align:center">Actions</th>';
     html += '</tr></thead><tbody>';
-    filtered.forEach(t => {
+    
+    cat.tasks.forEach(t => {
       html += '<tr>';
       html += '<td class="task-num">' + t.num + '</td>';
       html += '<td><div class="task-name">' + t.name + '</div>';
@@ -1705,8 +1723,8 @@ function openAddCategoryModal() {
 }
 
 function openAddTaskModal() {
-  // Populate category dropdown
   const sel = document.getElementById('newTaskCat');
+  if (!sel) return;
   sel.innerHTML = '<option value="">— Select category —</option><option value="_new">➕ Create new category...</option>' +
     CATEGORIES.map(c => '<option value="' + c.id + '">' + c.icon + ' ' + c.name + '</option>').join('');
   document.getElementById('newCatFields').style.display = 'none';
@@ -1785,7 +1803,6 @@ async function saveEditTask() {
   const catId = idParts[0];
   const taskNum = parseInt(idParts[1]);
 
-  // Find the task in DB by matching category_id and task_num
   const allTasks = await api('GET', '/tasks');
   const dbTask = allTasks.find(t => t.category_id === catId && t.task_num === taskNum);
   if (!dbTask) { showToast('❌', 'Task not found'); return; }
@@ -1842,7 +1859,6 @@ async function deleteCategory(catId, catName) {
 
 async function initApp() {
   await loadCategoriesFromDB();
-  await loadAllTasks();
   await loadState();
   refreshAll();
   setInterval(async()=>{ await loadState(); refreshAll(); }, 2000);
@@ -1873,7 +1889,6 @@ async function adminLogin() {
       localStorage.setItem(ADMIN_KEY, '1');
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('mainApp').style.display = 'block';
-      // Trigger app init
       if (typeof initApp === 'function') initApp();
     } else {
       errEl.textContent = '❌ Wrong password';
@@ -1894,12 +1909,6 @@ async function adminLogin() {
     document.getElementById('mainApp').style.display = 'block';
   }
 })();
-
-// Auto-run if already logged in
-if (localStorage.getItem(ADMIN_KEY) === '1') {
-  initApp();
-}
 </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
