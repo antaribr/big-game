@@ -304,6 +304,31 @@
   </div>
 </div>
 
+<!-- ── EDIT ADVISOR MODAL OVERLAY ── -->
+<div class="modal-overlay" id="editAdvisorModal">
+  <div class="modal">
+    <h2>✏️ Edit Field Monitor Settings</h2>
+    <input type="hidden" id="editAdvId">
+    
+    <label>Advisor Display Name</label>
+    <input type="text" id="editAdvName">
+    
+    <label>Security Login Username</label>
+    <input type="text" id="editAdvUsername">
+    
+    <label>Access Password</label>
+    <input type="text" id="editAdvPassword">
+    
+    <label style="margin-bottom:6px;">Re-assign Monitored Teams Layout</label>
+    <div id="editAdvTeamCheckboxes" style="max-height:120px;overflow-y:auto;border:1px solid var(--border);padding:8px;border-radius:.4rem;background:var(--bg)"></div>
+    
+    <div class="btn-row">
+      <button class="btn" onclick="closeModal('editAdvisorModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAdvisorEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+  
 </div>
 
 <script>
@@ -385,7 +410,28 @@ function refreshAll() {
   renderTeamView();
   renderTeamManagement();
   renderSubmissions();
-  renderAdvisors();
+  renderAdvisors() {
+  const container = document.getElementById('advisorsList');
+  container.innerHTML = advisors.length ? advisors.map(a => `
+    <div class="lb-entry" style="cursor:default;justify-content:space-between;padding:16px 20px;">
+      <div>
+        <strong style="font-size:0.95rem;color:var(--text)">👤 ${a.name}</strong> <span style="color:var(--text-muted);font-size:0.8rem;font-weight:500;">(@${a.username})</span>
+        <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+          <span style="font-weight:600">Monitored Layouts:</span> ${a.teams.length ? a.teams.map(tid => {
+            const t = teams.find(team => team.id === tid);
+            return t ? `<span style="background:var(--orange-light);padding:2px 8px;border-radius:4px;color:var(--orange-dark);font-weight:600;font-size:0.72rem;border:1px solid #ffedd5">${t.name}</span>` : '';
+          }).join('') : '<span style="color:var(--text-muted);font-style:italic">None assigned</span>'}
+        </div>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-sm" onclick="openEditAdvisorModal(${a.id}, '${escapeHtml(a.name)}', '${escapeHtml(a.username)}', '${escapeHtml(a.password)}', ${JSON.stringify(a.teams)})">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAdvisor(${a.id})">Delete</button>
+      </div>
+    </div>
+  `).join('') : '<div class="empty-state">No advisor node monitors configured.</div>';
+}
+
+  
   renderActivityLogs();
 }
 
@@ -867,6 +913,56 @@ function openAddAdvisorModal() {
   openModal('addAdvisorModal');
 }
 
+// Opens the modal and pre-fills it with the current advisor data
+function openEditAdvisorModal(id, name, username, password, assignedTeams) {
+  document.getElementById('editAdvId').value = id;
+  document.getElementById('editAdvName').value = name;
+  document.getElementById('editAdvUsername').value = username;
+  document.getElementById('editAdvPassword').value = password;
+
+  // Dynamically render the checkboxes with the assigned ones checked
+  document.getElementById('editAdvTeamCheckboxes').innerHTML = teams.map(t => {
+    const isChecked = assignedTeams.includes(t.id) ? 'checked' : '';
+    return `
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;margin:2px 0;font-weight:600;color:var(--text-dim);cursor:pointer">
+        <input type="checkbox" name="editAdvTeams" value="${t.id}" ${isChecked}> ${t.name}
+      </label>
+    `;
+  }).join('');
+
+  openModal('editAdvisorModal');
+}
+
+// Packages the edited data and fires it over to your backend API
+async function saveAdvisorEdit() {
+  const id = document.getElementById('editAdvId').value;
+  const checkboxes = document.querySelectorAll('input[name="editAdvTeams"]:checked');
+  const tIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+  const payload = {
+    name: document.getElementById('editAdvName').value.trim(),
+    username: document.getElementById('editAdvUsername').value.trim(),
+    password: document.getElementById('editAdvPassword').value.trim(),
+    teams: tIds
+  };
+
+  if(!payload.name || !payload.username || !payload.password) {
+    alert('All parameter fields are required!');
+    return;
+  }
+
+  // Assumes your backend target routes use standard REST PUT patterns for advisors
+  const res = await api('PUT', '/advisors/' + id, payload);
+  if(res.success) {
+    closeModal('editAdvisorModal');
+    showToast('✏️', 'Advisor configuration updated successfully');
+    await loadState(); 
+    refreshAll();
+  } else {
+    alert('Operation error: ' + (res.error || 'Could not update changes.'));
+  }
+}
+  
 async function addAdvisor() {
   const checkboxes = document.querySelectorAll('input[name="advTeams"]:checked');
   const tIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
