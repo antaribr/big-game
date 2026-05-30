@@ -64,41 +64,40 @@
     color: var(--text);
   }
 
-  /* Pro Team Banner */
+  /* Fixed Team Banner Layout using CSS Grid */
   .team-banner {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    padding: 14px 16px;
+    padding: 16px 20px;
     margin-bottom: 20px;
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
     align-items: center;
-    justify-content: space-between; /* Keeps the status/disconnect on the right */
     gap: 12px;
     box-shadow: var(--shadow-sm);
   }
-  .team-banner .tb-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0; /* Critical fix to let text truncate/wrap elegantly instead of pushing items */
-  }
   .team-banner .tb-dot {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    flex-shrink: 0;
     box-shadow: 0 0 0 4px var(--bg);
   }
-  .team-banner .tb-info { min-width: 0; }
-  .team-banner .tb-name { font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .team-banner .tb-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 1px; }
-  
-  .team-banner .tb-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
+  .team-banner .tb-info {
+    min-width: 0;
+  }
+  .team-banner .tb-name { 
+    font-weight: 700; 
+    font-size: 1.05rem; 
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .team-banner .tb-sub { 
+    font-size: 0.8rem; 
+    color: var(--text-dim); 
+    white-space: nowrap;
   }
   .team-banner .tb-badge {
     background: var(--bg);
@@ -108,6 +107,7 @@
     border-radius: 30px;
     font-size: 0.72rem;
     font-weight: 600;
+    white-space: nowrap;
   }
   .team-banner .disconnect-btn {
     background: none;
@@ -120,6 +120,7 @@
     font-family: inherit;
     font-weight: 600;
     transition: all 0.2s;
+    white-space: nowrap;
   }
   .team-banner .disconnect-btn:hover {
     background: var(--red-light);
@@ -127,6 +128,7 @@
     border-color: #fecdd3;
   }
 
+  /* Stats Grid */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -140,11 +142,11 @@
     padding: 14px 8px;
     text-align: center;
     box-shadow: var(--shadow-sm);
-    transition: transform 0.2s;
   }
   .stat .s-num { font-size: 1.6rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
   .stat .s-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-top: 2px; }
 
+  /* Tab Navigation */
   .nav-bar {
     display: flex;
     gap: 4px;
@@ -171,7 +173,6 @@
     justify-content: center;
     gap: 6px;
   }
-  .nav-bar button:hover { color: var(--text); }
   .nav-bar button.active {
     background: var(--card);
     color: var(--text);
@@ -207,8 +208,8 @@
     transition: all 0.2s;
     box-shadow: var(--shadow-sm);
   }
-  .sec-title .st-back:hover { background: var(--bg); transform: scale(1.05); }
 
+  /* Category Layout */
   .cat-progress-list { display: flex; flex-direction: column; gap: 12px; }
   .cp-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm); }
   .cp-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -217,6 +218,7 @@
   .cp-bar { height: 6px; background: #f1f5f9; border-radius: 100px; overflow: hidden; }
   .cp-fill { height: 100%; border-radius: 100px; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
 
+  /* Matrices and Grids */
   .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .cat-btn { padding: 20px 16px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); cursor: pointer; text-align: left; transition: all 0.2s; font-family: inherit; box-shadow: var(--shadow-sm); }
   .cat-btn:hover { border-color: var(--orange); transform: translateY(-2px); box-shadow: var(--shadow-md); }
@@ -224,6 +226,7 @@
   .cat-btn .cb-name { font-weight: 700; font-size: 0.95rem; line-height: 1.2; color: var(--text); }
   .cat-btn .cb-meta { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; font-weight: 500; }
 
+  /* Task Buttons */
   .task-list { display: flex; flex-direction: column; gap: 10px; }
   .task-btn { padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); cursor: pointer; text-align: left; transition: all 0.2s; display: flex; align-items: center; gap: 14px; font-family: inherit; box-shadow: var(--shadow-sm); }
   .task-btn:hover { border-color: var(--orange); box-shadow: var(--shadow-md); }
@@ -250,21 +253,21 @@
   .lvl-hard { background: var(--orange-light); color: var(--orange-dark); }
   .lvl-rare { background: var(--purple-light); color: var(--purple); }
 
+  /* Drag and Drop Zone Layout Engine */
   .upload-area { border: 2px dashed #cbd5e1; border-radius: var(--radius-md); padding: 36px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--card); position: relative; box-shadow: var(--shadow-sm); }
   .upload-area:hover { border-color: var(--orange); background: var(--orange-light); }
   .upload-area.has-file { border-color: var(--green); background: var(--card); border-style: solid; }
   .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 10; }
-  .upload-area .up-icon { font-size: 2.2rem; margin-bottom: 8px; transition: transform 0.2s; }
-  .upload-area:hover .up-icon { transform: scale(1.1); }
+  .upload-area .up-icon { font-size: 2.2rem; margin-bottom: 8px; }
   .upload-area .up-text { font-size: 0.9rem; color: var(--text-dim); font-weight: 500; }
   .upload-area .up-text strong { color: var(--orange); font-weight: 600; }
   .upload-area .up-file { font-size: 0.85rem; color: var(--green); font-weight: 700; margin-top: 8px; background: var(--green-light); display: inline-block; padding: 4px 12px; border-radius: 30px; border: 1px solid #bbf7d0; }
   .upload-preview { max-width: 100%; max-height: 140px; margin: 12px auto 0; border-radius: var(--radius-sm); display: none; box-shadow: var(--shadow-md); object-fit: contain; }
 
-  textarea { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.9rem; font-family: inherit; background: var(--card); color: var(--text); outline: none; resize: vertical; min-height: 80px; margin-top: 14px; box-shadow: var(--shadow-sm); transition: border-color 0.2s; }
+  textarea { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.9rem; font-family: inherit; background: var(--card); color: var(--text); outline: none; resize: vertical; min-height: 80px; margin-top: 14px; box-shadow: var(--shadow-sm); }
   textarea:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1); }
 
-  .submit-btn { width: 100%; padding: 16px; border: none; border-radius: var(--radius-md); background: var(--orange); color: #fff; font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-top: 16px; font-family: inherit; transition: all 0.2s; box-shadow: var(--shadow-md); }
+  .submit-btn { width: 100%; padding: 16px; border: none; border-radius: var(--radius-md); background: var(--orange); color: #fff; font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-top: 16px; font-family: inherit; box-shadow: var(--shadow-md); }
   .submit-btn:hover { background: var(--orange-dark); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
   .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
@@ -272,6 +275,7 @@
   .msg.ok { display: block; background: var(--green-light); color: #065f46; border: 1px solid #a7f3d0; }
   .msg.err { display: block; background: var(--red-light); color: #9f1239; border: 1px solid #fecdd3; }
 
+  /* History Cards */
   .sub-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
   .sub-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
   .sub-icon { font-size: 1.1rem; flex-shrink: 0; }
@@ -284,37 +288,36 @@
   .sub-pts { font-weight: 700; color: var(--orange); }
   .sub-timestamps { font-size: 0.75rem; color: var(--text-muted); width: 100%; margin-top: 10px; display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed var(--border); padding-top: 10px; }
 
+  /* Mini Leaderboard */
   .mini-lb { display: flex; flex-direction: column; gap: 8px; }
-  .mlb-entry { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 16px; display: flex; align-items: center; gap: 14px; font-size: 0.9rem; box-shadow: var(--shadow-sm); transition: transform 0.2s; }
+  .mlb-entry { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 16px; display: flex; align-items: center; gap: 14px; font-size: 0.9rem; box-shadow: var(--shadow-sm); }
   .mlb-entry.me { border-color: var(--orange); background: var(--orange-light); }
   .mlb-rank { width: 32px; height: 32px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; border: 1px solid var(--border); color: var(--text-dim); }
   .mlb-rank.r1 { background: #fef3c7; color: #b45309; border-color: #fcd34d; }
   .mlb-rank.r2 { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
   .mlb-rank.r3 { background: #ffedd5; color: #c2410c; border-color: #fed7aa; }
-  .mlb-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1); }
+  .mlb-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
   .mlb-name { flex: 1; font-weight: 600; color: var(--text); }
-  .mlb-entry.me .mlb-name { font-weight: 700; }
   .mlb-pts { font-weight: 700; color: var(--text); }
 
+  /* Overlay Panels */
   .pin-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.3); z-index: 200; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
   .pin-overlay.show { display: flex; }
   .pin-box { background: var(--card); border-radius: var(--radius-lg); padding: 32px 24px; width: 90%; max-width: 360px; text-align: center; box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
-  .pin-box h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.02em; }
+  .pin-box h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
   .pin-box .pb-sub { font-size: 0.85rem; color: var(--text-dim); margin-top: 4px; }
   .pin-box .pb-team { display: flex; align-items: center; gap: 8px; justify-content: center; margin-bottom: 20px; font-weight: 700; font-size: 1rem; }
-  .pin-input { width: 100%; padding: 14px; text-align: center; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.3em; border: 2px solid var(--border); border-radius: var(--radius-md); background: var(--bg); color: var(--text); outline: none; font-family: inherit; transition: border-color 0.2s; }
-  .pin-input:focus { border-color: var(--orange); }
+  .pin-input { width: 100%; padding: 14px; text-align: center; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.3em; border: 2px solid var(--border); border-radius: var(--radius-md); background: var(--bg); color: var(--text); outline: none; font-family: inherit; }
   .pin-input.error { border-color: var(--red); animation: shake 0.3s ease; }
   @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
   .pin-err { color: var(--red); font-size: 0.8rem; margin-top: 8px; font-weight: 600; display: none; }
   .pin-btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius-md); background: var(--orange); color: #fff; font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-top: 16px; font-family: inherit; box-shadow: var(--shadow-md); }
-  .pin-btn:hover { background: var(--orange-dark); }
   .pin-cancel { background: none; border: none; color: var(--text-muted); font-size: 0.85rem; cursor: pointer; margin-top: 12px; font-family: inherit; font-weight: 500; }
-  .pin-cancel:hover { color: var(--text-dim); }
 
   .toast-container { position: fixed; top: 16px; right: 16px; z-index: 500; display: flex; flex-direction: column; gap: 8px; }
   .toast { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 18px; font-size: 0.85rem; font-weight: 600; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; max-width: 320px; animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
   @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+  .empty { text-align: center; padding: 32px; color: var(--text-muted); font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -324,7 +327,7 @@
 <div class="container">
   <div class="header-panel"><h1>🏆 Team Hub</h1></div>
 
-  <div id="teamBanner" style="display:none"></div>
+  <div id="teamBanner" class="team-banner" style="display:none"></div>
   <div class="stats-grid" id="myStats" style="display:none"></div>
 
   <div class="nav-bar" id="mainNav" style="display:none">
@@ -339,11 +342,13 @@
     <button onclick="manualRefresh()" style="flex:0;min-width:auto;padding:12px; background: transparent; box-shadow: none;" title="Refresh now">🔄</button>
   </div>
 
+  <!-- HOME VIEW -->
   <div class="sec active" id="sec-home">
     <div class="sec-title">📊 Category Progress</div>
     <div class="cat-progress-list" id="catProgressList"></div>
   </div>
 
+  <!-- SUBMIT VIEW -->
   <div class="sec" id="sec-submit">
     <div id="submitStep1">
       <div class="sec-title">📂 Select Challenge Category</div>
@@ -372,11 +377,13 @@
     </div>
   </div>
 
+  <!-- HISTORY MODULE -->
   <div class="sec" id="sec-history">
     <div class="sec-title">📋 My Activity Log</div>
     <div id="historyList"></div>
   </div>
 
+  <!-- STANDINGS OVERVIEW -->
   <div class="sec" id="sec-leaderboard">
     <div class="sec-title">🏅 Event Standings</div>
     <div class="mini-lb" id="miniLB"></div>
@@ -508,23 +515,18 @@ async function lockTeam(id){
   doneMap={};pendingMap={};
   if(team.completions)team.completions.forEach(c=>{doneMap[c.categoryId+'-'+c.taskNum]=true;});
   document.getElementById('teamSelectScreen').style.display='none';
-  document.getElementById('teamBanner').style.display='flex';
+  document.getElementById('teamBanner').style.display='grid';
   document.getElementById('myStats').style.display='grid';
   document.getElementById('mainNav').style.display='flex';
   
-  // Cleaned layout split into structural flex boxes
   document.getElementById('teamBanner').innerHTML =
-    '<div class="tb-left">' +
-      '<div class="tb-dot" style="background:'+team.color+'"></div>' +
-      '<div class="tb-info">' +
-        '<div class="tb-name">'+team.name+'</div>' +
-        '<div class="tb-sub">'+team.members.length+' participants</div>' +
-      '</div>' +
+    '<div class="tb-dot" style="background:'+team.color+'"></div>' +
+    '<div class="tb-info">' +
+      '<div class="tb-name">'+team.name+'</div>' +
+      '<div class="tb-sub">'+team.members.length+' participants</div>' +
     '</div>' +
-    '<div class="tb-right">' +
-      '<span class="tb-badge">🔒 Linked</span>' +
-      '<button class="disconnect-btn" onclick="if(confirm(\'De-synchronize identity layout profile? Requires valid target verification pin.\')){localStorage.removeItem(\'event_team_lock\');localStorage.removeItem(SEEN_SUBS_KEY);location.reload();}">Disconnect</button>' +
-    '</div>';
+    '<span class="tb-badge">🔒 Linked</span>' +
+    '<button class="disconnect-btn" onclick="if(confirm(\'De-synchronize identity layout profile? Requires valid target verification pin.\')){localStorage.removeItem(\'event_team_lock\');localStorage.removeItem(SEEN_SUBS_KEY);location.reload();}">Disconnect</button>';
 
   await loadSubs();renderAll();
 }
@@ -590,7 +592,7 @@ function myPoints(){
   CATEGORIES.forEach(cat=>cat.tasks.forEach(t=>{if(done[cat.id+'-'+t.num])pts+=t.pts;}));
   return pts;
 }
-function getDoneMap(team){const m={};if(team.completions)team.completions.forEach(c=>{m[c.categoryId+'-'+c.taskNum]=true;});return m;}
+UX big-game-7b4eddf219d35ce8f138f05f201149e167c13317/uploads/1779993227909-362891.jpgUT function getDoneMap(team){const m={};if(team.completions)team.completions.forEach(c=>{m[c.categoryId+'-'+c.taskNum]=true;});return m;}
 
 function renderAll(){
   const team=myTeam();if(!team)return;
