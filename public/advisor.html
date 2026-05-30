@@ -199,21 +199,25 @@ async function rejectSub(id) {
   try {
     const res = await fetch('/api/submissions/' + id + '/reject', {
       method: 'PUT', 
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json' 
+      },
       body: JSON.stringify({ reason: reason.trim() })
     });
     
-    if (res.ok) {
+    const data = await res.json();
+    
+    if (res.ok && data.success) {
       await loadAdvisorData(); 
       renderAll();
     } else {
-      alert('Failed to update submission on server.');
+      alert('Failed to update submission on server: ' + (data.error || 'Unknown error'));
     }
   } catch (err) {
     console.error('Network Error:', err);
+    alert('Network error occurred while updating the server.');
   }
-}
-(async function autoLogin() {
+}(async function autoLogin() {
   const id = localStorage.getItem('adv_id');
   if (id) {
     advisor = { id, name: localStorage.getItem('adv_user') };
