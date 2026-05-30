@@ -64,12 +64,12 @@
     color: var(--text);
   }
 
-  /* Fixed Team Banner Layout using CSS Grid */
+  /* Robust Team Banner CSS Grid Layout Container */
   .team-banner {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    padding: 16px 20px;
+    padding: 14px 16px;
     margin-bottom: 20px;
     display: grid;
     grid-template-columns: auto 1fr auto auto;
@@ -82,6 +82,7 @@
     height: 12px;
     border-radius: 50%;
     box-shadow: 0 0 0 4px var(--bg);
+    flex-shrink: 0;
   }
   .team-banner .tb-info {
     min-width: 0;
@@ -128,7 +129,6 @@
     border-color: #fecdd3;
   }
 
-  /* Stats Grid */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -146,7 +146,6 @@
   .stat .s-num { font-size: 1.6rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
   .stat .s-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-top: 2px; }
 
-  /* Tab Navigation */
   .nav-bar {
     display: flex;
     gap: 4px;
@@ -209,7 +208,6 @@
     box-shadow: var(--shadow-sm);
   }
 
-  /* Category Layout */
   .cat-progress-list { display: flex; flex-direction: column; gap: 12px; }
   .cp-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm); }
   .cp-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -218,7 +216,6 @@
   .cp-bar { height: 6px; background: #f1f5f9; border-radius: 100px; overflow: hidden; }
   .cp-fill { height: 100%; border-radius: 100px; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
 
-  /* Matrices and Grids */
   .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .cat-btn { padding: 20px 16px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); cursor: pointer; text-align: left; transition: all 0.2s; font-family: inherit; box-shadow: var(--shadow-sm); }
   .cat-btn:hover { border-color: var(--orange); transform: translateY(-2px); box-shadow: var(--shadow-md); }
@@ -226,7 +223,6 @@
   .cat-btn .cb-name { font-weight: 700; font-size: 0.95rem; line-height: 1.2; color: var(--text); }
   .cat-btn .cb-meta { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; font-weight: 500; }
 
-  /* Task Buttons */
   .task-list { display: flex; flex-direction: column; gap: 10px; }
   .task-btn { padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); cursor: pointer; text-align: left; transition: all 0.2s; display: flex; align-items: center; gap: 14px; font-family: inherit; box-shadow: var(--shadow-sm); }
   .task-btn:hover { border-color: var(--orange); box-shadow: var(--shadow-md); }
@@ -253,7 +249,6 @@
   .lvl-hard { background: var(--orange-light); color: var(--orange-dark); }
   .lvl-rare { background: var(--purple-light); color: var(--purple); }
 
-  /* Drag and Drop Zone Layout Engine */
   .upload-area { border: 2px dashed #cbd5e1; border-radius: var(--radius-md); padding: 36px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--card); position: relative; box-shadow: var(--shadow-sm); }
   .upload-area:hover { border-color: var(--orange); background: var(--orange-light); }
   .upload-area.has-file { border-color: var(--green); background: var(--card); border-style: solid; }
@@ -275,7 +270,6 @@
   .msg.ok { display: block; background: var(--green-light); color: #065f46; border: 1px solid #a7f3d0; }
   .msg.err { display: block; background: var(--red-light); color: #9f1239; border: 1px solid #fecdd3; }
 
-  /* History Cards */
   .sub-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
   .sub-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
   .sub-icon { font-size: 1.1rem; flex-shrink: 0; }
@@ -288,7 +282,6 @@
   .sub-pts { font-weight: 700; color: var(--orange); }
   .sub-timestamps { font-size: 0.75rem; color: var(--text-muted); width: 100%; margin-top: 10px; display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed var(--border); padding-top: 10px; }
 
-  /* Mini Leaderboard */
   .mini-lb { display: flex; flex-direction: column; gap: 8px; }
   .mlb-entry { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 16px; display: flex; align-items: center; gap: 14px; font-size: 0.9rem; box-shadow: var(--shadow-sm); }
   .mlb-entry.me { border-color: var(--orange); background: var(--orange-light); }
@@ -300,7 +293,6 @@
   .mlb-name { flex: 1; font-weight: 600; color: var(--text); }
   .mlb-pts { font-weight: 700; color: var(--text); }
 
-  /* Overlay Panels */
   .pin-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.3); z-index: 200; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
   .pin-overlay.show { display: flex; }
   .pin-box { background: var(--card); border-radius: var(--radius-lg); padding: 32px 24px; width: 90%; max-width: 360px; text-align: center; box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
@@ -317,7 +309,6 @@
   .toast-container { position: fixed; top: 16px; right: 16px; z-index: 500; display: flex; flex-direction: column; gap: 8px; }
   .toast { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 18px; font-size: 0.85rem; font-weight: 600; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; max-width: 320px; animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
   @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-  .empty { text-align: center; padding: 32px; color: var(--text-muted); font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -342,13 +333,11 @@
     <button onclick="manualRefresh()" style="flex:0;min-width:auto;padding:12px; background: transparent; box-shadow: none;" title="Refresh now">🔄</button>
   </div>
 
-  <!-- HOME VIEW -->
   <div class="sec active" id="sec-home">
     <div class="sec-title">📊 Category Progress</div>
     <div class="cat-progress-list" id="catProgressList"></div>
   </div>
 
-  <!-- SUBMIT VIEW -->
   <div class="sec" id="sec-submit">
     <div id="submitStep1">
       <div class="sec-title">📂 Select Challenge Category</div>
@@ -377,13 +366,11 @@
     </div>
   </div>
 
-  <!-- HISTORY MODULE -->
   <div class="sec" id="sec-history">
     <div class="sec-title">📋 My Activity Log</div>
     <div id="historyList"></div>
   </div>
 
-  <!-- STANDINGS OVERVIEW -->
   <div class="sec" id="sec-leaderboard">
     <div class="sec-title">🏅 Event Standings</div>
     <div class="mini-lb" id="miniLB"></div>
@@ -592,7 +579,8 @@ function myPoints(){
   CATEGORIES.forEach(cat=>cat.tasks.forEach(t=>{if(done[cat.id+'-'+t.num])pts+=t.pts;}));
   return pts;
 }
-UX big-game-7b4eddf219d35ce8f138f05f201149e167c13317/uploads/1779993227909-362891.jpgUT function getDoneMap(team){const m={};if(team.completions)team.completions.forEach(c=>{m[c.categoryId+'-'+c.taskNum]=true;});return m;}
+
+function getDoneMap(team){const m={};if(team.completions)team.completions.forEach(c=>{m[c.categoryId+'-'+c.taskNum]=true;});return m;}
 
 function renderAll(){
   const team=myTeam();if(!team)return;
