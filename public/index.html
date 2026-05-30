@@ -478,6 +478,143 @@ function renderTeamView() {
   target.innerHTML = html;
 }
 
+// ── REVENUE METRICS PDF GENERATOR FOR LIVE WEB CHANNELS ──
+async function generateGameSummaryPDF() {
+  let tasksMatrix = [];
+  try {
+    const res = await fetch('/api/tasks');
+    tasksMatrix = await res.json() || [];
+  } catch(e) {
+    alert("Pipeline Error: Failed to fetch master task definitions mapping schema.");
+    return;
+  }
+
+  const activeTeams = typeof teams !== 'undefined' ? teams : [];
+  if (!activeTeams.length) {
+    alert("No active team metadata entries discovered inside application state cache.");
+    return;
+  }
+
+  // Create temporary isolated canvas root container
+  const element = document.createElement('div');
+  element.style.padding = '20px';
+  element.style.fontFamily = "'Inter', system-ui, sans-serif";
+  element.style.color = '#0f172a';
+  element.style.backgroundColor = '#ffffff';
+
+  // Helper method to resolve dynamic scoring variables inline
+  const calcPts = (team) => {
+    let pts = 0;
+    if (team.completions) team.completions.forEach(c => {
+      const match = tasksMatrix.find(tk => tk.category_id === c.categoryId && tk.task_num === c.taskNum);
+      pts += match ? (match.points || 20) : 20;
+    });
+    return pts;
+  };
+  const rankedTeams = [...activeTeams].sort((a, b) => calcPts(b) - calcPts(a));
+
+  let htmlContent = `<h1 style="text-align: center; font-size: 24px; margin-bottom: 30px; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">🏆 Event Game Summary Report</h1>`;
+
+  rankedTeams.forEach((team, index) => {
+    const score = calcPts(team);
+    const completedCount = (team.completions || []).length;
+    const completionPercentage = tasksMatrix.length ? Math.round((completedCount / tasksMatrix.length) * 100) : 0;
+    const rankPosition = index + 1;
+
+    htmlContent += `
+      <div style="${index > 0 ? 'page-break-before: always;' : ''} margin-bottom: 40px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-left: 6px solid ${team.color || '#f97316'}; padding-left: 14px; margin-bottom: 20px;">
+          <div>
+            <h2 style="font-size: 20px; margin: 0; color: #0f172a;">${team.name}</h2>
+            <p style="font-size: 13px; color: #64748b; margin: 2px 0 0 0;">Members: ${Array.isArray(team.members) ? team.members.join(', ') : 'No roster registered'}</p>
+          </div>
+          <div style="text-align: right;">
+            <span style="background-color: #f1f5f9; padding: 4px 12px; border-radius: 30px; font-size: 11px; font-weight: 700; color: #334155;">RANK #${rankPosition}</span>
+            <h3 style="font-size: 22px; margin: 4px 0 0 0; color: #f97316;">${score} <span style="font-size: 14px; color: #64748b;">pts</span></h3>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+          <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 18px; font-weight: 700; color: #0f172a;">${completedCount}</div>
+            <div style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-top: 2px;">Tasks Cleared</div>
+          </div>
+          <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 18px; font-weight: 700; color: #10b981;">${completionPercentage}%</div>
+            <div style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-top: 2px;">Completion Rate</div>
+          </div>
+          <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 18px; font-weight: 700; color: #6366f1;">${tasksMatrix.length}</div>
+            <div style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-top: 2px;">Total Challenges</div>
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; margin-bottom: 20px;">
+          <thead>
+            <tr style="background-color: #f1f5f9; color: #475569; border-bottom: 2px solid #cbd5e1;">
+              <th style="padding: 10px 8px; font-weight: 600; width: 15%;">Task ID</th>
+              <th style="padding: 10px 8px; font-weight: 600; width: 55%;">Challenge Details</th>
+              <th style="padding: 10px 8px; font-weight: 600; width: 15%;">Complexity</th>
+              <th style="padding: 10px 8px; font-weight: 600; width: 15%; text-align: right;">Points Value</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    if (!team.completions || team.completions.length === 0) {
+      htmlContent += `
+        <tr>
+          <td colspan="4" style="padding: 20px; text-align: center; color: #94a3b8; font-style: italic; border-bottom: 1px solid #e2e8f0;">
+            No verified objectives completed inside system tables yet.
+          </td>
+        </tr>
+      `;
+    } else {
+      team.completions.forEach(c => {
+        const targetTask = tasksMatrix.find(tk => tk.category_id === c.categoryId && tk.task_num === c.taskNum);
+        const taskName = targetTask ? targetTask.task_name : "General Objective";
+        const level = targetTask ? targetTask.level : "Medium";
+        const pointsAwarded = targetTask ? (targetTask.points || 20) : 20;
+        const categoryIcon = targetTask ? (targetTask.category_icon || '📋') : '📋';
+
+        htmlContent += `
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 10px 8px; font-weight: 700; color: #475569;"># ${c.taskNum}</td>
+            <td style="padding: 10px 8px;">
+              <div style="font-weight: 600; color: #0f172a;">${taskName}</div>
+              <div style="font-size: 10px; color: #64748b; margin-top: 1px;">Category: ${categoryIcon} ${c.categoryId}</div>
+            </td>
+            <td style="padding: 10px 8px;">
+              <span style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase;">${level}</span>
+            </td>
+            <td style="padding: 10px 8px; text-align: right; font-weight: 700; color: #10b981;">
+              +${pointsAwarded} pts
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    htmlContent += `
+          </tbody>
+        </table>
+      </div>
+    `;
+  });
+
+  element.innerHTML = htmlContent;
+
+  const documentOptions = {
+    margin:       [15, 15, 15, 15],
+    filename:     `Event_Game_Summary_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(documentOptions).from(element).save();
+}
+  
 function renderTeamManagement() {
   const g = document.getElementById('teamManageGrid');
   g.innerHTML = teams.length ? teams.map(t => `
