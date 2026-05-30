@@ -61,6 +61,7 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
   .section-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+  .section-card border-left { border-left: 5px solid var(--border); }
   .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 16px; }
   .section-header h2 { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
 
@@ -304,7 +305,6 @@
   </div>
 </div>
 
-<!-- ── EDIT ADVISOR MODAL OVERLAY ── -->
 <div class="modal-overlay" id="editAdvisorModal">
   <div class="modal">
     <h2>✏️ Edit Field Monitor Settings</h2>
@@ -410,28 +410,7 @@ function refreshAll() {
   renderTeamView();
   renderTeamManagement();
   renderSubmissions();
-  renderAdvisors() {
-  const container = document.getElementById('advisorsList');
-  container.innerHTML = advisors.length ? advisors.map(a => `
-    <div class="lb-entry" style="cursor:default;justify-content:space-between;padding:16px 20px;">
-      <div>
-        <strong style="font-size:0.95rem;color:var(--text)">👤 ${a.name}</strong> <span style="color:var(--text-muted);font-size:0.8rem;font-weight:500;">(@${a.username})</span>
-        <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-          <span style="font-weight:600">Monitored Layouts:</span> ${a.teams.length ? a.teams.map(tid => {
-            const t = teams.find(team => team.id === tid);
-            return t ? `<span style="background:var(--orange-light);padding:2px 8px;border-radius:4px;color:var(--orange-dark);font-weight:600;font-size:0.72rem;border:1px solid #ffedd5">${t.name}</span>` : '';
-          }).join('') : '<span style="color:var(--text-muted);font-style:italic">None assigned</span>'}
-        </div>
-      </div>
-      <div style="display:flex; gap:6px;">
-        <button class="btn btn-sm" onclick="openEditAdvisorModal(${a.id}, '${escapeHtml(a.name)}', '${escapeHtml(a.username)}', '${escapeHtml(a.password)}', ${JSON.stringify(a.teams)})">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteAdvisor(${a.id})">Delete</button>
-      </div>
-    </div>
-  `).join('') : '<div class="empty-state">No advisor node monitors configured.</div>';
-}
-
-  
+  renderAdvisors();
   renderActivityLogs();
 }
 
@@ -758,7 +737,10 @@ function renderAdvisors() {
           }).join('') : '<span style="color:var(--text-muted);font-style:italic">None assigned</span>'}
         </div>
       </div>
-      <button class="btn btn-danger btn-sm" onclick="deleteAdvisor(${a.id})">Delete</button>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-sm" onclick="openEditAdvisorModal(${a.id}, '${escapeHtml(a.name)}', '${escapeHtml(a.username)}', '${escapeHtml(a.password)}', ${JSON.stringify(a.teams)})">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAdvisor(${a.id})">Delete</button>
+      </div>
     </div>
   `).join('') : '<div class="empty-state">No advisor node monitors configured.</div>';
 }
@@ -951,7 +933,6 @@ async function saveAdvisorEdit() {
     return;
   }
 
-  // Assumes your backend target routes use standard REST PUT patterns for advisors
   const res = await api('PUT', '/advisors/' + id, payload);
   if(res.success) {
     closeModal('editAdvisorModal');
