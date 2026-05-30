@@ -592,8 +592,8 @@ function renderAll(){
 
   document.getElementById('myStats').innerHTML=
     '<div class="stat"><div class="s-num" style="color:var(--text)">'+pts+'</div><div class="s-label">Score</div></div>'+
-    '<div class="stat"><div class="s-num" style="color:var(--green)">'+doneCount+'</div><div class="s-label">Passed</div></div>'+
-    '<div class="stat"><div class="s-num" style="color:var(--blue)">'+pendingCount+'</div><div class="s-label">Queue</div></div>'+
+    '<div class="stat"><div class="s-num" style="color:var(--green)">'+doneCount+'</div><div class="s-label">Approved</div></div>'+
+    '<div class="stat"><div class="s-num" style="color:var(--blue)">'+pendingCount+'</div><div class="s-label">Pending</div></div>'+
     '<div class="stat"><div class="s-num" style="color:var(--purple)">#'+rank+'</div><div class="s-label">Rank</div></div>';
 
   renderCatProgress();renderCats();renderHistory();renderLB();
@@ -755,7 +755,7 @@ function renderHistory(){
                           `</div>`;
     }
 
-    let reviewedTimeLabel = s.status === 'approved' ? 'Passed' : 'Flagged';
+    let reviewedTimeLabel = s.status === 'approved' ? 'Approved' : 'Flagged';
     let processedTimestampHtml = s.status !== 'pending' 
       ? `<span><strong>⏱️ Verified At:</strong> ${formatTime(s.reviewed_at)}</span>` 
       : `<span><strong>⏳ Status:</strong> Waiting for review verification loops...</span>`;
