@@ -1279,7 +1279,24 @@ function renderSubmissions() {
       const task = cat ? cat.tasks.find(t => t.num === s.task_num) : null;
       const taskName = task ? task.name : s.category_id + '-' + s.task_num;
       const pts = task ? task.pts : 0;
-      const evidenceLink = s.evidence_file ? '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.82rem;text-decoration:none;font-weight:500">📎 View Evidence</a>' : '<span style="font-size:.78rem;color:var(--text-muted)">No file attached</span>';
+      
+      // Handle parsing multiple file attachments safetly
+      let evidenceLinks = '<span style="font-size:.78rem;color:var(--text-muted)">No file attached</span>';
+      try {
+        const ef = JSON.parse(s.evidence_file || '[]');
+        if (Array.isArray(ef) && ef.length > 0) {
+          evidenceLinks = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">' +
+            ef.map((f, i) => '<a href="/uploads/' + f + '" target="_blank" style="display:inline-block;padding:4px 10px;background:var(--blue-light);color:var(--blue);border-radius:6px;font-size:.78rem;font-weight:500;text-decoration:none">📷 Attachment ' + (i + 1) + '</a>').join('') +
+            '</div>';
+        } else if (s.evidence_file && s.evidence_file.length > 10) {
+          evidenceLinks = '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.82rem;text-decoration:none;font-weight:500">📎 View Evidence</a>';
+        }
+      } catch (e) {
+        if (s.evidence_file && s.evidence_file.length > 10) {
+          evidenceLinks = '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.82rem;text-decoration:none;font-weight:500">📎 View Evidence</a>';
+        }
+      }
+
       return '<div class="lb-entry" style="cursor:default;flex-wrap:wrap;gap:10px">' +
         '<div style="flex:1;min-width:200px">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
@@ -1287,14 +1304,14 @@ function renderSubmissions() {
             '<span style="font-weight:700">' + s.team_name + '</span>' +
             '<span style="font-size:.72rem;color:var(--text-muted)">• ' + s.submitted_at + '</span></div>' +
           '<div style="font-weight:600;font-size:.9rem;margin-bottom:4px">' + taskName + '</div>' +
-          '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+          '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px">' +
             '<span class="level-badge level-' + (task ? task.level.toLowerCase() : 'medium') + '">' + (task ? task.level : '?') + '</span>' +
             '<span style="font-weight:700;color:var(--orange);font-size:.85rem">' + pts + ' pts</span>' +
-            evidenceLink +
           '</div>' +
+          '<div style="margin-top:6px">' + evidenceLinks + '</div>' +
           (s.note ? '<div style="font-size:.82rem;color:var(--text-dim);margin-top:6px;font-style:italic">"' + s.note + '"</div>' : '') +
         '</div>' +
-        '<div style="display:flex;gap:8px;flex-shrink:0">' +
+        '<div style="display:flex;gap:8px;flex-shrink:0;align-items:center">' +
           '<button class="btn btn-primary btn-sm" onclick="approveSubmission(' + s.id + ')">✅ Approve</button>' +
           '<button class="btn btn-danger btn-sm" onclick="rejectSubmission(' + s.id + ')">❌ Reject</button>' +
         '</div></div>';
@@ -1312,15 +1329,27 @@ function renderSubmissions() {
       const tag = s.status === 'approved'
         ? '<span style="background:var(--green-light);color:#15803d;padding:2px 10px;border-radius:50px;font-size:.72rem;font-weight:600">Approved</span>'
         : '<span style="background:var(--red-light);color:#b91c1c;padding:2px 10px;border-radius:50px;font-size:.72rem;font-weight:600">Rejected</span>';
+        
+      let reviewEvidenceLinks = '';
+      try {
+        const ef = JSON.parse(s.evidence_file || '[]');
+        if (Array.isArray(ef) && ef.length > 0) {
+          reviewEvidenceLinks = ef.map((f, i) => '<a href="/uploads/' + f + '" target="_blank" style="color:var(--blue);font-size:.75rem;margin-right:6px;text-decoration:none;">📷 ' + (i + 1) + '</a>').join(' ');
+        } else if (s.evidence_file) {
+          reviewEvidenceLinks = '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.75rem;text-decoration:none;">📎 Link</a>';
+        }
+      } catch (e) {
+        if (s.evidence_file) reviewEvidenceLinks = '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.75rem;text-decoration:none;">📎 Link</a>';
+      }
+
       return '<div class="lb-entry" style="cursor:default;opacity:.7">' +
         '<span style="font-size:1rem">' + icon + '</span>' +
         '<div style="flex:1"><div style="font-weight:600;font-size:.88rem">' + s.team_name + ' — ' + taskName + '</div>' +
-        (s.evidence_file ? '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.75rem">📎 Evidence</a>' : '') +
+        '<div style="margin-top:2px">' + reviewEvidenceLinks + '</div>' +
         '</div>' + tag + '</div>';
     }).join('');
   }
 }
-
 async function approveSubmission(id) {
   await api('PUT', '/submissions/' + id + '/approve');
   showToast('✅', 'Submission approved!');
