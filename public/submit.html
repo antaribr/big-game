@@ -207,7 +207,6 @@
   .task-btn.pending .tk-num { background: #eab308; color: #fff; border-color: #eab308; }
   .task-btn.rejected .tk-num { background: var(--red); color: #fff; border-color: var(--red); }
   
-  .task-list-wrapper { display: flex; flex-direction: column; gap: 10px; }
   .task-btn .tk-info { flex: 1; min-width: 0; }
   .task-btn .tk-name { font-weight: 600; font-size: 0.9rem; color: var(--text); letter-spacing: -0.01em; }
   .task-btn .tk-meta { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; display: flex; gap: 8px; align-items: center; }
@@ -215,7 +214,6 @@
   .task-btn.done .tk-pts { color: var(--green); }
   .task-btn.pending .tk-pts { color: #a16207; }
   .task-btn.rejected .tk-pts { color: var(--red); }
-  .task-btn.pending .tk-pts { color: #a16207; }
 
   .lvl { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
   .lvl-easy { background: var(--green-light); color: var(--green); }
@@ -375,6 +373,8 @@
 
 <script>
 let CATEGORIES = [];
+const LOCK_KEY='event_team_lock';
+const SEEN_SUBS_KEY='event_seen_submissions';
 let teams=[], myTeamId=null, myCatId=null, myTaskNum=null, doneMap={}, pendingMap={}, allSubs=[];
 let activeSection = 'home';
 
@@ -588,7 +588,7 @@ function renderCats(){
   const done=getDoneMap(myTeam());
   document.getElementById('catGrid').innerHTML=CATEGORIES.map(c=>{
     const total=c.tasks.length;const dn=c.tasks.filter(t=>done[c.id+'-'+t.num]).length;
-    return '<div class="cat-btn" onclick="pickCat(\''+c.id+'\')"><div class="cb-icon">'+c.icon+'</div><div class="cb-name">'+c.name+'</div><div class="cb-meta">'+dn+'/'+total+' parsed</div></div>';
+    return '<div class="cat-btn" onclick="pickCat(\''+c.id+'\')"><div class="cb-icon">'+c.icon+'</div><div class="cb-name">'+c.name+'</div><div class="cb-meta">'+dn+'/'+total+' completed</div></div>';
   }).join('');
 }
 function pickCat(id){
@@ -713,7 +713,12 @@ function renderHistory(){
     const cls=s.status==='pending'?'sub-pending':s.status==='approved'?'sub-approved':'sub-rejected';
     const ptsHtml=s.status==='approved'?'<span class="sub-pts">+'+pts+' pts</span>':s.status==='rejected'?'<span style="color:var(--red);font-weight:700">Rejected</span>':'';
     let ev='';
-    try{const ef=JSON.parse(s.evidence_file||'[]');if(Array.isArray(ef)&&ef.length>0)ev=ef.map((f,i)=>'<a href="/uploads/'+f+'" target="_blank" style="color:var(--blue);font-size:.75rem;font-weight:600;text-decoration:none;margin-left:4px">📷 Asset '+(i+1)+'</a>').join(' ')}catch(e){if(s.evidence_file&&s.evidence_file.length>10)ev='<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎</a>';}
+    try{
+      const ef=JSON.parse(s.evidence_file||'[]');
+      if(Array.isArray(ef)&&ef.length>0) {
+        ev=ef.map((f,i)=>`<a href="/uploads/${f}" target="_blank" style="color:var(--blue);font-size:.75rem;font-weight:600;text-decoration:none;margin-left:4px">📷 Asset ${(i+1)}</a>`).join(' ');
+      }
+    }catch(e){if(s.evidence_file&&s.evidence_file.length>10)ev='<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎</a>';}
     
     let rejectCommentHtml = '';
     if(s.status === 'rejected' && s.rejection_comment) {
