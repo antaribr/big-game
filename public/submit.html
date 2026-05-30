@@ -471,12 +471,24 @@ async function submitTask(){
   const btn=document.getElementById('submitBtn'),msg=document.getElementById('msg');
   btn.disabled=true;btn.textContent='Submitting...';
   try{
-    const file=document.getElementById('evidenceFile').files[0];let fileName='',fileData='';
-    if(file){fileData=await new Promise(r=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.readAsDataURL(file)});fileName=file.name;}
-    const res=await fetch('/api/submissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({teamId:myTeamId,categoryId:myCatId,taskNum:myTaskNum,note:document.getElementById('note').value,fileName,fileData})});
-    const data=await res.json();
-    if(data.success){msg.className='msg ok';msg.textContent='✅ Submitted! Waiting for approval.';msg.style.display='block';await loadSubs();renderAll();}
-    else{msg.className='msg err';msg.textContent='❌ '+(data.error||'Failed');msg.style.display='block';}
+    const files=document.getElementById('evidenceFile').files;
+    const evidence=[];
+    for(let i=0;i<files.length;i++){
+      const f=files[i];
+      const data=await new Promise(r=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.readAsDataURL(f)});
+      evidence.push({name:f.name,data:data});
+    }
+    const jsonData={
+      teamId:myTeamId,
+      categoryId:myCatId,
+      taskNum:myTaskNum,
+      note:document.getElementById('note').value,
+      evidence:evidence
+    };
+    const res=await fetch('/api/submissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(jsonData)});
+    const result=await res.json();
+    if(result.success){msg.className='msg ok';msg.textContent='✅ '+(result.message||'Submitted! Waiting for approval.');msg.style.display='block';document.getElementById('evidenceFile').value='';document.getElementById('fileName').textContent='';document.getElementById('filePreview').style.display='none';document.getElementById('uploadArea').classList.remove('has-file');document.getElementById('note').value='';await loadSubs();renderAll();}
+    else{msg.className='msg err';msg.textContent='❌ '+(result.error||'Failed');msg.style.display='block';}
   }catch(e){msg.className='msg err';msg.textContent='❌ Network error';msg.style.display='block';}
   btn.textContent='Submit for Review';btn.disabled=false;
 }
@@ -490,7 +502,8 @@ function renderHistory(){
     const icon=s.status==='pending'?'⏳':s.status==='approved'?'✅':'❌';
     const cls=s.status==='pending'?'sub-pending':s.status==='approved'?'sub-approved':'sub-rejected';
     const ptsHtml=s.status==='approved'?'<span class="sub-pts">+'+pts+' pts</span>':s.status==='rejected'?'<span style="color:var(--red);font-size:.78rem">Rejected</span>':'';
-    const ev=s.evidence_file?'<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎 Evidence</a>':'';
+    let ev='';
+    try{const ef=JSON.parse(s.evidence_file||'[]');if(Array.isArray(ef)&&ef.length>0)ev=ef.map((f,i)=>'<a href="/uploads/'+f+'" target="_blank" style="color:var(--blue);font-size:.75rem">📷'+(i+1)+'</a>').join(' ')}catch(e){if(s.evidence_file&&s.evidence_file.length>10)ev='<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎</a>';}
     return '<div class="sub-item"><div class="sub-top"><span class="sub-icon">'+icon+'</span><span class="sub-task">'+name+'</span><span class="sub-badge '+cls+'">'+s.status+'</span></div>'+
       '<div class="sub-detail">'+ptsHtml+ev+'</div></div>';
   }).join('');
@@ -518,6 +531,6 @@ async function manualRefresh() {
 init();
 setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();}},2000);
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a03c6c133e7bc0fb',t:'MTc4MDEzMDMwMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
