@@ -18,7 +18,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
 // ═══════════════════════════════════════════════════════════════
-// DATABASE - PostgreSQL Connection Pool Architecture
+// DATABASE - PostgreSQL
 // ═══════════════════════════════════════════════════════════════
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -118,7 +118,7 @@ async function initDatabase() {
       )
     `);
 
-    console.log('✅ Tables initialized');
+    console.log('✅ Tables created');
 
     const teamCount = await client.query('SELECT COUNT(*) FROM teams');
     if (parseInt(teamCount.rows[0].count) === 0) {
@@ -130,8 +130,9 @@ async function initDatabase() {
 }
 
 async function seedDatabase(client) {
-  await client.query("INSERT INTO activity_log (icon, message) VALUES ('🎉', 'Event platform initialized completely empty. Ready for configuration!')");
-  console.log('✅ Seeded clean environment without default teams or tasks');
+  // No default data — admin imports tasks via CSV and creates teams from dashboard
+  await client.query("INSERT INTO activity_log (icon, message) VALUES ('🎉', 'Database ready! Import tasks from the Tools tab and create teams from the Manage tab.')");
+  console.log('✅ Database ready (empty — import tasks via CSV)');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -298,10 +299,12 @@ app.post('/api/completions/toggle', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Submissions Review Nodes Pipeline 
+// ═══════════════════════════════════════════════════════════════
+// SUBMISSIONS
+// ═══════════════════════════════════════════════════════════════
 app.post('/api/submissions', async (req, res) => {
   try {
-    const { teamId, categoryId, taskNum, note, fileName, fileData } = req.body;
+    const { teamId, categoryId, taskNum, note, evidence, fileName, fileData } = req.body;
     if (!teamId || !categoryId || !taskNum) return res.status(400).json({ error: 'Missing fields' });
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [teamId]);
     if (!team) return res.status(404).json({ error: 'Team not found' });
@@ -310,17 +313,30 @@ app.post('/api/submissions', async (req, res) => {
     const approved = await queryOne('SELECT * FROM completions WHERE team_id=$1 AND category_id=$2 AND task_num=$3', [teamId, categoryId, taskNum]);
     if (approved) return res.status(400).json({ error: 'Already approved' });
 
-    let savedFileName = '';
-    if (fileData && fileName) {
+    // Handle multiple files (new format) or single file (legacy)
+    const savedFiles = [];
+    if (evidence && Array.isArray(evidence)) {
+      for (const ev of evidence) {
+        if (ev.data && ev.name) {
+          const ext = path.extname(ev.name) || '.jpg';
+          const savedName = Date.now() + '-' + Math.round(Math.random() * 1e6) + ext;
+          const base64 = ev.data.replace(/^data:.*?;base64,/, '');
+          fs.writeFileSync(path.join(UPLOADS_DIR, savedName), Buffer.from(base64, 'base64'));
+          savedFiles.push(savedName);
+        }
+      }
+    } else if (fileData && fileName) {
       const ext = path.extname(fileName) || '.jpg';
-      savedFileName = Date.now() + '-' + Math.round(Math.random() * 1e6) + ext;
+      const savedName = Date.now() + '-' + Math.round(Math.random() * 1e6) + ext;
       const base64 = fileData.replace(/^data:.*?;base64,/, '');
-      fs.writeFileSync(path.join(UPLOADS_DIR, savedFileName), Buffer.from(base64, 'base64'));
+      fs.writeFileSync(path.join(UPLOADS_DIR, savedName), Buffer.from(base64, 'base64'));
+      savedFiles.push(savedName);
     }
 
+    const evidenceJson = JSON.stringify(savedFiles);
     await pool.query('INSERT INTO submissions (team_id, category_id, task_num, note, evidence_file) VALUES ($1, $2, $3, $4, $5)',
-      [teamId, categoryId, taskNum, note || '', savedFileName]);
-    await addLog(teamId, '📨', team.name+' submitted '+categoryId+'-'+taskNum+' for review');
+      [teamId, categoryId, taskNum, note || '', evidenceJson]);
+    await addLog(teamId, '📨', team.name+' submitted '+categoryId+'-'+taskNum+' for review ('+savedFiles.length+' files)');
     res.json({ success: true, message: 'Submitted! Waiting for approval.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -362,7 +378,9 @@ app.put('/api/submissions/:id/reject', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Advisors
+// ═══════════════════════════════════════════════════════════════
+// ADVISORS
+// ═══════════════════════════════════════════════════════════════
 app.get('/api/advisors', async (req, res) => {
   try {
     const advisors = await query('SELECT * FROM advisors ORDER BY id');
@@ -420,7 +438,7 @@ app.delete('/api/advisors/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Advisor Login Flow 
+// Advisor login
 app.post('/api/advisor/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -473,73 +491,70 @@ app.put('/api/teams/:id/pin', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Individual Tasks CRUD Blueprint Endpoints
+// Tasks
 app.get('/api/tasks', async (req, res) => {
   try { res.json(await query('SELECT * FROM tasks ORDER BY category_id, task_num')); }
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Automatic Task ID (Number) Creation Endpoint Patch
+// Add a new task
 app.post('/api/tasks', async (req, res) => {
   try {
-    const { category_id, category_name, category_icon, task_name, evidence, level, comment } = req.body;
-    const LEVEL_PTS = { easy: 20, medium: 30, hard: 50, rare: 70 };
-    const points = LEVEL_PTS[level.toLowerCase()] || 20;
-
-    // Fetch the maximum task number currently active inside this category
-    const maxTaskRow = await queryOne('SELECT COALESCE(MAX(task_num), 0) as max_num FROM tasks WHERE category_id = $1', [category_id]);
-    const nextTaskNum = parseInt(maxTaskRow.max_num) + 1;
-
+    const { category_id, category_name, category_icon, task_num, task_name, evidence, level, comment } = req.body;
+    if (!category_id || !task_num || !task_name) return res.status(400).json({ error: 'Category ID, task number, and task name required' });
+    const pts = LEVEL_PTS[(level || 'easy').toLowerCase()] || 20;
+    const icon = category_icon || DEFAULT_ICONS[category_id] || '📋';
     await pool.query(
-      `INSERT INTO tasks (category_id, category_name, category_icon, task_num, task_name, evidence, level, points, comment) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [category_id, category_name, category_icon || '📋', nextTaskNum, task_name, evidence, level, points, comment || '']
+      'INSERT INTO tasks (category_id, category_name, category_icon, task_num, task_name, evidence, level, points, comment) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+      [category_id, category_name || category_id, icon, parseInt(task_num), task_name, evidence || '', level || 'Easy', pts, comment || '']
     );
-    await addLog(null, '📝', `Task #${nextTaskNum} ("${task_name}") was automatically numbered and added to category "${category_id}".`);
-    res.json({ success: true, task_num: nextTaskNum });
+    await addLog(null, '➕', 'Task added: ' + task_name);
+    saveDatabase && saveDatabase();
+    res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Update a task
 app.put('/api/tasks/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { task_name, evidence, level, comment } = req.body;
-    const LEVEL_PTS = { easy: 20, medium: 30, hard: 50, rare: 70 };
-    const points = LEVEL_PTS[level.toLowerCase()] || 20;
-
+    const { category_name, category_icon, task_num, task_name, evidence, level, comment } = req.body;
+    const existing = await queryOne('SELECT * FROM tasks WHERE id=$1', [id]);
+    if (!existing) return res.status(404).json({ error: 'Task not found' });
+    const pts = LEVEL_PTS[(level || existing.level).toLowerCase()] || 20;
     await pool.query(
-      `UPDATE tasks SET task_name=$1, evidence=$2, level=$3, points=$4, comment=$5 WHERE id=$6`,
-      [task_name, evidence, level, points, comment || '', id]
+      'UPDATE tasks SET category_name=$1, category_icon=$2, task_num=$3, task_name=$4, evidence=$5, level=$6, points=$7, comment=$8 WHERE id=$9',
+      [category_name || existing.category_name, category_icon || existing.category_icon, parseInt(task_num) || existing.task_num, task_name || existing.task_name, evidence || '', level || existing.level, pts, comment || '', id]
     );
+    await addLog(null, '✏️', 'Task updated: ' + (task_name || existing.task_name));
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Delete a task
 app.delete('/api/tasks/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const task = await queryOne('SELECT category_id, task_num FROM tasks WHERE id=$1', [id]);
-    if (task) {
-      await pool.query('DELETE FROM completions WHERE category_id=$1 AND task_num=$2', [task.category_id, task.task_num]);
-      await pool.query('DELETE FROM submissions WHERE category_id=$1 AND task_num=$2', [task.category_id, task.task_num]);
-    }
+    const task = await queryOne('SELECT * FROM tasks WHERE id=$1', [id]);
+    if (!task) return res.status(404).json({ error: 'Task not found' });
     await pool.query('DELETE FROM tasks WHERE id=$1', [id]);
+    await addLog(null, '🗑️', 'Task deleted: ' + task.task_name);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Delete all tasks in a category
 app.delete('/api/categories/:catId', async (req, res) => {
   try {
-    const { catId } = req.params;
-    await pool.query('DELETE FROM completions WHERE category_id=$1', [catId]);
-    await pool.query('DELETE FROM submissions WHERE category_id=$1', [catId]);
+    const catId = req.params.catId;
+    const tasks = await query('SELECT * FROM tasks WHERE category_id=$1', [catId]);
+    if (tasks.length === 0) return res.status(404).json({ error: 'Category not found' });
     await pool.query('DELETE FROM tasks WHERE category_id=$1', [catId]);
-    await addLog(null, '🗑', `Category "${catId}" and all related team submissions were successfully removed.`);
-    res.json({ success: true });
+    await addLog(null, '🗑️', 'Category deleted: ' + (tasks[0].category_name || catId) + ' (' + tasks.length + ' tasks)');
+    res.json({ success: true, deleted: tasks.length });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// CSV Export Layout Builder Node
 app.get('/api/tasks/export', async (req, res) => {
   try {
     const tasks = await query('SELECT * FROM tasks ORDER BY category_id, task_num');
@@ -556,7 +571,6 @@ app.get('/api/tasks/export', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Bulk Task Import Flow Node
 const LEVEL_PTS = { easy: 20, medium: 30, hard: 50, rare: 70 };
 const DEFAULT_ICONS = {
   community: '🤝', bonding: '💬', 'available-soon': '⏳', challenges: '⚡',
@@ -596,18 +610,18 @@ app.post('/api/tasks/import', async (req, res) => {
         [catId, catName, icon, taskNum, taskName, evidence, level, pts, comment]);
       imported++;
     }
-    await addLog(null, '📥', `Bulk task replacement: ${imported} tasks imported via Task Center CSV, overriding active configurations.`);
+    await addLog(null, '📥', imported+' tasks imported from CSV');
     res.json({ success: true, imported });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Logs Endpoint
+// Log
 app.get('/api/log', async (req, res) => {
   try { res.json(await query('SELECT * FROM activity_log ORDER BY id DESC LIMIT 200')); }
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Deep Hard Reset
+// Reset
 app.post('/api/reset', async (req, res) => {
   try {
     await pool.query('DELETE FROM completions');
@@ -615,24 +629,26 @@ app.post('/api/reset', async (req, res) => {
     await pool.query('DELETE FROM activity_log');
     await pool.query('DELETE FROM members');
     await pool.query('DELETE FROM teams');
-    await addLog(null, '🔄', 'Database reset completely');
+    await addLog(null, '🔄', 'Database reset');
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Catch-All SPA Fallback
+// Fallback
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ═══════════════════════════════════════════════════════════════
-// INITIALIZATION RUNTIME ENGINE START
+// START
 // ═══════════════════════════════════════════════════════════════
 if (process.env.VERCEL) {
   initDatabase().catch(err => console.error('DB init error:', err));
   module.exports = app;
 } else {
   initDatabase().then(() => {
-    app.listen(PORT, () => {
-      console.log('\n🏆 Live Backend Engine Active on port ' + PORT);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log('\n🏆 Event Dashboard: http://localhost:'+PORT);
+      console.log('📝 Team Submit Page: http://localhost:'+PORT+'/submit.html');
+      console.log('👤 Advisor Dashboard: http://localhost:'+PORT+'/advisor.html\n');
     });
-  }).catch(err => { console.error('Initialization Failed:', err); process.exit(1); });
+  }).catch(err => { console.error('Failed:', err); process.exit(1); });
 }
