@@ -599,14 +599,18 @@ async function rejectSubmission(id) {
   }
   
   try {
-    // Calls your API helper matching the APP's PUT route logic
     const res = await api('PUT', '/submissions/' + id + '/reject', { reason: reason.trim() });
-    showToast('❌', 'Submission rejected');
-    await loadState(); 
-    refreshAll();
+    
+    if (res && res.success) {
+      showToast('❌', 'Submission rejected');
+      await loadState(); 
+      refreshAll();
+    } else {
+      alert('Failed to update submission on server: ' + (res.error || 'Unknown error'));
+    }
   } catch (err) {
     console.error('Error rejecting submission:', err);
-    showToast('⚠️', 'Failed to reject submission');
+    showToast('⚠️', 'Failed to communicate with server');
   }
 }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
