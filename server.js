@@ -84,7 +84,8 @@ async function initDatabase() {
         evidence_file TEXT DEFAULT '',
         status TEXT NOT NULL DEFAULT 'pending',
         submitted_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        reviewed_at TIMESTAMP
+        reviewed_at TIMESTAMP,
+        rejection_comment TEXT DEFAULT ''
       )
     `);
 
@@ -130,7 +131,6 @@ async function initDatabase() {
 }
 
 async function seedDatabase(client) {
-  // No default data — admin imports tasks via CSV and creates teams from dashboard
   await client.query("INSERT INTO activity_log (icon, message) VALUES ('🎉', 'Database ready! Import tasks from the Tools tab and create teams from the Manage tab.')");
   console.log('✅ Database ready (empty — import tasks via CSV)');
 }
@@ -299,9 +299,7 @@ app.post('/api/completions/toggle', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ═══════════════════════════════════════════════════════════════
 // SUBMISSIONS
-// ═══════════════════════════════════════════════════════════════
 app.post('/api/submissions', async (req, res) => {
   try {
     const { teamId, categoryId, taskNum, note, evidence, fileName, fileData } = req.body;
@@ -313,7 +311,6 @@ app.post('/api/submissions', async (req, res) => {
     const approved = await queryOne('SELECT * FROM completions WHERE team_id=$1 AND category_id=$2 AND task_num=$3', [teamId, categoryId, taskNum]);
     if (approved) return res.status(400).json({ error: 'Already approved' });
 
-    // Handle multiple files (new format) or single file (legacy)
     const savedFiles = [];
     if (evidence && Array.isArray(evidence)) {
       for (const ev of evidence) {
@@ -371,16 +368,14 @@ app.put('/api/submissions/:id/reject', async (req, res) => {
     if (!sub) return res.status(404).json({ error: 'Not found' });
     if (sub.status !== 'pending') return res.status(400).json({ error: 'Already reviewed' });
     const reason = req.body.reason || '';
-    await pool.query("UPDATE submissions SET status='rejected', reviewed_at=NOW() WHERE id=$1", [id]);
+    await pool.query("UPDATE submissions SET status='rejected', reviewed_at=NOW(), rejection_comment=$1 WHERE id=$2", [reason, id]);
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [sub.team_id]);
     await addLog(sub.team_id, '❌', team.name+' — '+sub.category_id+'-'+sub.task_num+' REJECTED'+(reason?': '+reason:''));
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ═══════════════════════════════════════════════════════════════
 // ADVISORS
-// ═══════════════════════════════════════════════════════════════
 app.get('/api/advisors', async (req, res) => {
   try {
     const advisors = await query('SELECT * FROM advisors ORDER BY id');
@@ -636,9 +631,7 @@ app.post('/api/reset', async (req, res) => {
 // Fallback
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-// ═══════════════════════════════════════════════════════════════
 // START
-// ═══════════════════════════════════════════════════════════════
 if (process.env.VERCEL) {
   initDatabase().catch(err => console.error('DB init error:', err));
   module.exports = app;
