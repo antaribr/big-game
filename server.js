@@ -509,7 +509,6 @@ app.post('/api/tasks', async (req, res) => {
       [category_id, category_name || category_id, icon, parseInt(task_num), task_name, evidence || '', level || 'Easy', pts, comment || '']
     );
     await addLog(null, '➕', 'Task added: ' + task_name);
-    saveDatabase && saveDatabase();
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
