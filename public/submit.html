@@ -459,9 +459,22 @@ function backToTasks(){document.getElementById('submitStep2').style.display='blo
 function onFileChange(){
   const files=document.getElementById('evidenceFile').files;
   if(!files.length)return;
+  
+  // Enforce a maximum limit of 5 files
+  if (files.length > 5) {
+    alert("You can upload a maximum of 5 evidence files.");
+    document.getElementById('evidenceFile').value = '';
+    document.getElementById('uploadArea').classList.remove('has-file');
+    document.getElementById('fileName').textContent = '';
+    document.getElementById('filePreview').style.display = 'none';
+    document.getElementById('submitBtn').disabled = true;
+    return;
+  }
+  
   document.getElementById('uploadArea').classList.add('has-file');
-  document.getElementById('fileName').textContent='📎 '+files.length+' file'+(files.length>1?'s':'')+' selected';
-  document.getElementById('submitBtn').disabled=false;
+  document.getElementById('fileName').textContent = '📎 '+files.length+' file'+(files.length>1?'s':'')+' selected (Max 5)';
+  document.getElementById('submitBtn').disabled = false;
+  
   const p=document.getElementById('filePreview');
   const f=files[0];
   if(f.type.startsWith('image/')){const r=new FileReader();r.onload=e=>{p.src=e.target.result;p.style.display='block'};r.readAsDataURL(f);}
