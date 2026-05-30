@@ -292,6 +292,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .03em;
+    text-align: center;
   }
   .level-easy { background: var(--green-light); color: var(--green); }
   .level-medium { background: var(--blue-light); color: var(--blue); }
@@ -299,8 +300,6 @@
   .level-rare { background: var(--purple-light); color: var(--purple); }
   .pts-cell { font-weight: 700; color: var(--orange); }
   .evidence-cell { font-size: .75rem; color: var(--text-muted); }
-  .status-cell { text-align: center; }
-  .checkbox-big { width: 20px; height: 20px; accent-color: var(--green); cursor: pointer; }
 
   /* ── Team Detail ── */
   .team-detail-card {
@@ -462,26 +461,10 @@
     outline: none;
     background: var(--card);
     color: var(--text);
+    margin-bottom: 16px;
   }
   .search-input:focus { border-color: var(--orange); }
   .search-input::placeholder { color: var(--text-muted); }
-
-  /* ── Activity Log ── */
-  .log-list { display: flex; flex-direction: column; gap: 6px; }
-  .log-entry {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: .75rem;
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: .85rem;
-    box-shadow: var(--shadow);
-  }
-  .log-time { font-size: .72rem; color: var(--text-muted); white-space: nowrap; min-width: 70px; }
-  .log-icon { font-size: 1rem; }
-  .log-team-tag { font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 50px; color: #fff; }
 
   /* ── Modals ── */
   .modal-overlay {
@@ -572,43 +555,10 @@
     gap: 8px;
     font-weight: 500;
   }
-
-  /* ── Toast ── */
-  .toast-container { position: fixed; top: 16px; right: 16px; z-index: 500; display: flex; flex-direction: column; gap: 6px; }
-  .toast {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: .75rem;
-    padding: 12px 18px;
-    font-size: .85rem;
-    box-shadow: var(--shadow-md);
-    animation: slideIn .2s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    max-width: 320px;
-  }
-  @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-
-  /* ── Empty State ── */
-  .empty-state { text-align: center; padding: 48px 16px; color: var(--text-muted); }
-  .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 8px; }
-  .empty-state p { font-size: .9rem; }
-
-  /* ── Responsive ── */
-  @media (max-width: 768px) {
-    .hero { padding: 32px 16px 24px; }
-    .hero h1 { font-size: 1.75rem; }
-    .cat-grid { grid-template-columns: 1fr; }
-    .team-manage-grid { grid-template-columns: 1fr; }
-    .rules-grid { grid-template-columns: 1fr; }
-    .nav-bar button { padding: 8px 10px; font-size: .78rem; }
-  }
 </style>
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
 <div id="loginScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:90%;max-width:380px;box-shadow:var(--shadow);text-align:center">
     <div style="font-size:2.5rem;margin-bottom:12px">🔐</div>
@@ -616,16 +566,16 @@
     <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:20px">Enter password to continue</p>
     <input type="password" id="adminPassInput" placeholder="Password" onkeydown="if(event.key==='Enter')adminLogin()" style="width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:.75rem;font-size:1rem;font-family:inherit;background:var(--bg);color:var(--text);outline:none;text-align:center;letter-spacing:.1em">
     <div id="loginError" style="color:var(--red);font-size:.82rem;margin-top:8px;display:none">Wrong password</div>
-    <button onclick="adminLogin()" style="width:100%;padding:12px;margin-top:14px;border:none;border-radius:.75rem;background:var(--orange);color:#fff;font-size:1rem;font-weight:600;cursor:pointer;font-family:inherit">Login</button>
+    <div style="margin-top:14px; display:flex; gap:8px;">
+        <button onclick="adminLogin()" style="flex:1;padding:12px;border:none;border-radius:.75rem;background:var(--orange);color:#fff;font-size:1rem;font-weight:600;cursor:pointer;font-family:inherit">Login</button>
+    </div>
   </div>
 </div>
 
-<!-- MAIN APP (hidden until login) -->
 <div id="mainApp" style="display:none">
 
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- Hero -->
 <div class="hero">
   <h1>🏆 Live Leaderboard</h1>
   <p>The competition is heating up!</p>
@@ -633,24 +583,19 @@
 
 <div class="container">
 
-  <!-- Stats -->
   <div class="stats-row" id="dashStats"></div>
 
-  <!-- Nav -->
   <div class="nav-bar">
     <button class="active" onclick="showSection('leaderboard',this)">🏅 Leaderboard</button>
-    <button onclick="showSection('tasks',this)">📋 All Tasks</button>
+    <button onclick="showSection('taskcenter',this)">📝 Task Center</button>
     <button onclick="showSection('team',this)">👤 Team View</button>
-    <button onclick="showSection('teams',this)">⚙️ Manage</button>
+    <button onclick="showSection('teams',this)">⚙️ Manage Teams</button>
     <button onclick="showSection('activity',this)">📜 Log</button>
     <button onclick="showSection('submissions',this)">📨 Submissions</button>
     <button onclick="showSection('rules',this)">📖 Rules</button>
     <button onclick="showSection('advisors',this)">👥 Advisors</button>
-    <button onclick="showSection('taskmgmt',this)">📝 Tasks</button>
-    <button onclick="showSection('tools',this)">🔧 Tools</button>
   </div>
 
-  <!-- ═══ LEADERBOARD ═══ -->
   <div class="section active" id="section-leaderboard">
     <div class="section-header"><h2>🏅 Leaderboard</h2></div>
     <div class="leaderboard" id="fullLeaderboard"></div>
@@ -659,22 +604,36 @@
     <div class="cat-grid" id="dashCatGrid"></div>
   </div>
 
-  <!-- ═══ TASKS ═══ -->
-  <div class="section" id="section-tasks">
+  <div class="section" id="section-taskcenter">
     <div class="section-header">
-      <h2>📋 All Tasks</h2>
+      <h2>📝 Task Configuration & Tools</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" onclick="openAddTaskModal()">+ Add Task</button>
-        <button class="btn btn-sm" onclick="exportTasks()">📤 Export</button>
-        <button class="btn btn-sm" onclick="document.getElementById('importInline').click()">📥 Import</button>
-        <input type="file" id="importInline" accept=".csv" style="display:none" onchange="importTasks(this)">
+        <button class="btn btn-sm" onclick="exportTasks()">📤 Export CSV</button>
+        <button class="btn btn-sm" onclick="document.getElementById('importCenterFile').click()">📥 Import CSV</button>
+        <input type="file" id="importCenterFile" accept=".csv" style="display:none" onchange="importTasks(this)">
       </div>
     </div>
-    <input type="text" class="search-input" placeholder="🔍 Search tasks..." id="taskSearch" oninput="renderAllTasksView()">
-    <div id="allTasksView"></div>
+
+    <div id="importResult" style="display:none; margin-bottom: 16px;"></div>
+
+    <input type="text" class="search-input" placeholder="🔍 Live filter tasks across categories..." id="taskSearch" oninput="renderAllTasks()">
+
+    <div id="allTasksContainer" style="margin-bottom: 32px;"></div>
+
+    <div class="section-header"><h3>⚙️ Modify Categories & Task Database</h3></div>
+    <div id="taskMgmtContainer"></div>
   </div>
 
-  <!-- ═══ MANAGE TEAMS ═══ -->
+  <div class="section" id="section-team">
+    <div class="section-header"><h2>👤 Team View</h2></div>
+    <div class="team-select-bar">
+      <label for="teamViewSelect">Select Team Layout:</label>
+      <select id="teamViewSelect" onchange="renderTeamView()"></select>
+    </div>
+    <div id="teamViewContent"></div>
+  </div>
+
   <div class="section" id="section-teams">
     <div class="section-header">
       <h2>⚙️ Manage Teams</h2>
@@ -683,13 +642,11 @@
     <div class="team-manage-grid" id="teamManageGrid"></div>
   </div>
 
-  <!-- ═══ ACTIVITY LOG ═══ -->
   <div class="section" id="section-activity">
     <div class="section-header"><h2>📜 Activity Log</h2></div>
     <div class="log-list" id="activityLog"></div>
   </div>
 
-  <!-- ═══ SUBMISSIONS ═══ -->
   <div class="section" id="section-submissions">
     <div class="section-header"><h2>📨 Submissions</h2></div>
     <div id="pendingCount" style="margin-bottom:16px;font-size:.9rem;color:var(--text-dim)"></div>
@@ -698,7 +655,6 @@
     <div id="reviewedSubmissions"></div>
   </div>
 
-  <!-- ═══ ADVISORS ═══ -->
   <div class="section" id="section-advisors">
     <div class="section-header">
       <h2>👥 Advisors</h2>
@@ -707,41 +663,6 @@
     <div id="advisorsList"></div>
   </div>
 
-  <!-- ═══ TOOLS ═══ -->
-  <div class="section" id="section-tools">
-    <div class="section-header"><h2>🔧 Export / Import Tasks</h2></div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
-      <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px" onclick="exportTasks()">
-        <div style="font-size:1.5rem;margin-bottom:6px">📤</div>
-        <div style="font-weight:700;font-size:.95rem">Export Tasks</div>
-        <div style="font-size:.78rem;color:var(--text-muted);margin-top:4px">Download all tasks as CSV file</div>
-      </div>
-      <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px;position:relative" onclick="document.getElementById('importFile').click()">
-        <div style="font-size:1.5rem;margin-bottom:6px">📥</div>
-        <div style="font-weight:700;font-size:.95rem">Import Tasks</div>
-        <div style="font-size:.78rem;color:var(--text-muted);margin-top:4px">Upload CSV to replace all tasks</div>
-        <input type="file" id="importFile" accept=".csv" style="display:none" onchange="importTasks(this)">
-      </div>
-    </div>
-
-    <div class="stat-card" style="padding:20px;text-align:left;margin-bottom:16px">
-      <div style="font-weight:700;font-size:.95rem;margin-bottom:8px">📋 CSV Format</div>
-      <div style="font-size:.82rem;color:var(--text-dim);line-height:1.6">
-        <strong>Export first</strong> to get the correct template. The CSV has these columns:<br>
-        <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:.78rem">Category ID, Category Name, Task ID, Task Name, Evidence, Level, Comment</code><br><br>
-        <strong>Points are automatic</strong> — Easy: 20, Medium: 30, Hard: 50, Rare: 70<br><br>
-        <strong>To add tasks:</strong> Add new rows, keep same Category ID for existing category.<br>
-        <strong>To edit tasks:</strong> Change values in the CSV and re-import.<br>
-        <strong>To delete tasks:</strong> Remove the row and re-import.<br><br>
-        ⚠️ <strong>Import replaces ALL tasks</strong> — make sure your CSV has everything.
-      </div>
-    </div>
-
-    <div id="importResult" style="display:none"></div>
-  </div>
-
-  <!-- ═══ RULES ═══ -->
   <div class="section" id="section-rules">
     <div class="section-header"><h2>📖 Rules & Notes</h2></div>
     <div class="rules-grid">
@@ -768,7 +689,6 @@
 
 </div>
 
-<!-- ═══ MODALS ═══ -->
 <div class="modal-overlay" id="addTeamModal">
   <div class="modal">
     <h2>➕ Add New Team</h2>
@@ -777,9 +697,7 @@
     <label>Team Color</label>
     <div class="color-picker" id="colorPicker"></div>
     <label>Members (one per line)</label>
-    <textarea id="newTeamMembers" placeholder="Member 1
-Member 2
-Member 3"></textarea>
+    <textarea id="newTeamMembers" placeholder="Member 1&#10;Member 2&#10;Member 3"></textarea>
     <div class="btn-row">
       <button class="btn" onclick="closeModal('addTeamModal')">Cancel</button>
       <button class="btn btn-primary" onclick="addTeam()">Create Team</button>
@@ -805,7 +723,6 @@ Member 3"></textarea>
   </div>
 </div>
 
-<!-- Add Advisor Modal -->
 <div class="modal-overlay" id="addAdvisorModal">
   <div class="modal">
     <h2>➕ Add Advisor</h2>
@@ -824,7 +741,6 @@ Member 3"></textarea>
   </div>
 </div>
 
-<!-- Edit Advisor Modal -->
 <div class="modal-overlay" id="editAdvisorModal">
   <div class="modal">
     <h2>✏️ Edit Advisor</h2>
@@ -841,7 +757,8 @@ Member 3"></textarea>
       <button class="btn btn-primary" onclick="saveAdvisor()">Save</button>
     </div>
   </div>
-<!-- Add Task Modal -->
+</div>
+
 <div class="modal-overlay" id="addTaskModal">
   <div class="modal">
     <h2>➕ Add New Task</h2>
@@ -858,8 +775,6 @@ Member 3"></textarea>
       <label>Category Icon (emoji)</label>
       <input type="text" id="newCatIcon" placeholder="e.g. 🍕" style="width:80px">
     </div>
-    <label>Task Number</label>
-    <input type="number" id="newTaskNum" placeholder="1" min="1" style="width:100px">
     <label>Task Name</label>
     <input type="text" id="newTaskName" placeholder="What needs to be done?">
     <label>Evidence Type</label>
@@ -886,7 +801,6 @@ Member 3"></textarea>
   </div>
 </div>
 
-<!-- Edit Task Modal -->
 <div class="modal-overlay" id="editTaskModal">
   <div class="modal">
     <h2>✏️ Edit Task</h2>
@@ -918,17 +832,24 @@ Member 3"></textarea>
   </div>
 </div>
 
-</div><!-- end mainApp -->
-
-<script>
+</div><script>
 let CATEGORIES = [];
+let teams = [];
+let activityLog = [];
+let advisors = [];
+let selectedColor = '#f97316';
+let editSelectedColor = '';
+
+const TEAM_COLORS = ['#f97316','#3b82f6','#22c55e','#ef4444','#8b5cf6','#06b6d4','#ec4899','#eab308','#14b8a6','#f43f5e','#84cc16','#6366f1','#f97316','#a855f7','#0ea5e9'];
 
 async function loadCategoriesFromDB() {
   try {
     const tasks = await api('GET', '/tasks');
-    if (tasks.length === 0) return;
+    if (!tasks || tasks.length === 0) {
+      CATEGORIES = getFallbackCategories();
+      return;
+    }
 
-    // Group tasks by category
     const catMap = {};
     tasks.forEach(t => {
       if (!catMap[t.category_id]) {
@@ -949,7 +870,6 @@ async function loadCategoriesFromDB() {
       });
     });
 
-    // Sort tasks within each category by num
     Object.values(catMap).forEach(cat => {
       cat.tasks.sort((a, b) => a.num - b.num);
     });
@@ -957,62 +877,14 @@ async function loadCategoriesFromDB() {
     CATEGORIES = Object.values(catMap);
   } catch (e) {
     console.error('Failed to load categories from DB:', e);
-    // Fallback to hardcoded if DB fails
     CATEGORIES = getFallbackCategories();
   }
 }
 
 function getFallbackCategories() {
-  return [
-    {id:'community',name:'Community Service',icon:'🤝',tasks:[
-      {num:1,name:'Collect 5 recyclable materials from around the city',evidence:'Video',level:'Easy',pts:20},
-      {num:2,name:'Go feed 4 different animals',evidence:'Photo',level:'Medium',pts:30},
-      {num:3,name:'Find 3 plants and make a presentation about them',evidence:'Video',level:'Medium',pts:30},
-      {num:4,name:'Make an awareness campaign about street cleanliness',evidence:'Video',level:'Hard',pts:50}
-    ]},
-    {id:'bonding',name:'Bonding & Public Communication',icon:'💬',tasks:[
-      {num:1,name:'Organize a small Dabke performance with locals',evidence:'Video',level:'Easy',pts:20},
-      {num:2,name:'Take a picture with another team',evidence:'Photo',level:'Easy',pts:20},
-      {num:3,name:'Capture 5 people while smiling (not your team)',evidence:'Photo',level:'Medium',pts:30,comment:'Get their approval'},
-      {num:4,name:'Interview a local about favorite place in Saida',evidence:'Video',level:'Medium',pts:30},
-      {num:5,name:'Learn vendor signature dish',evidence:'Video',level:'Hard',pts:50}
-    ]},
-    {id:'available-soon',name:'Available Soon Tasks',icon:'⏳',tasks:[
-      {num:1,name:'Go to Hunchies and find ch. Majed',evidence:'Photo',level:'Medium',pts:30,comment:'Wait for advisor'},
-      {num:2,name:'Go to Pioneer wall and type anything',evidence:'Photo',level:'Medium',pts:30,comment:'Wait for advisor'},
-      {num:3,name:'Go to BOB Juice and find ch. Ahmad',evidence:'Photo',level:'Medium',pts:30,comment:'Wait for location'},
-      {num:4,name:'Hidden task',evidence:'Photo',level:'Hard',pts:50,comment:'Wait for advisor'},
-      {num:5,name:'Catch the flag',evidence:'Photo',level:'Rare',pts:70,comment:'Wait for location'}
-    ]},
-    {id:'challenges',name:'Challenges',icon:'⚡',tasks:[
-      {num:1,name:'Get a camel-hair with a proof',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Get a signature from someone wearing a red hat',evidence:'Video',level:'Easy',pts:20},{num:3,name:'Take a pic with animal at Pets N Claws',evidence:'Photo',level:'Easy',pts:20},{num:4,name:'Try to fish',evidence:'Photo',level:'Easy',pts:20},{num:5,name:'Collect 5 ants in a bottle',evidence:'Photo',level:'Easy',pts:20},{num:6,name:'All members follow @vip.bob.taxi on Instagram',evidence:'Photo',level:'Easy',pts:20},{num:7,name:'Take a picture with a BOB taxi car',evidence:'Photo',level:'Medium',pts:30},{num:8,name:'Buy anything with 1000 Lira',evidence:'Photo',level:'Medium',pts:30},{num:9,name:'Find Markit Driver, selfie, tag @markit',evidence:'Photo',level:'Medium',pts:30,comment:"Don't forget to smile"},{num:10,name:'Help anyone who needs to change a tire',evidence:'Photo',level:'Medium',pts:30},{num:11,name:'Trade anything starting from a pen',evidence:'Video',level:'Medium',pts:30},{num:12,name:'Make a vlog for Event',evidence:'Video',level:'Medium',pts:30},{num:13,name:'Find a local business open for over 50 years',evidence:'Photo',level:'Medium',pts:30},{num:14,name:'Take a picture of money from another country',evidence:'Photo',level:'Medium',pts:30,comment:'Not LBP / Dollar'},{num:15,name:'Like @LSA.S1 comment on @amccocamping post',evidence:'Screenshot',level:'Medium',pts:30},{num:16,name:'Find Markit App QR code, scan, download, verify',evidence:'Screenshot',level:'Hard',pts:50},{num:17,name:'Go to Makari Engineering and solve the task (10-1:30)',evidence:'Photo',level:'Hard',pts:50},{num:18,name:'Take a picture of a foreign car plate',evidence:'Photo',level:'Hard',pts:50,comment:'Ask the driver first'},{num:19,name:'Photo with famous person (1M+ followers)',evidence:'Photo',level:'Hard',pts:50},{num:20,name:'Get last year Event bracelet',evidence:'Photo',level:'Hard',pts:50},{num:21,name:'Fastest apple eating with no hands at Saida Beach',evidence:'Video',level:'Rare',pts:70},{num:22,name:'Biggest car plate number with letter S',evidence:'Photo',level:'Rare',pts:70}
-    ]},
-    {id:'sport',name:'Sport & Fitness',icon:'🏃',tasks:[
-      {num:1,name:'Human pyramid with another team',evidence:'Photo',level:'Medium',pts:30},{num:2,name:'Win tug of war at Saida Beach (11-1:30)',evidence:'Video',level:'Hard',pts:50},{num:3,name:'Most pull-ups at Saida Stadium (10-1:30)',evidence:'Video',level:'Rare',pts:70},{num:4,name:'Most push-ups at Saida Stadium (10-1:30)',evidence:'Video',level:'Rare',pts:70},{num:5,name:'Fastest run at Saida Stadium (10-1:30)',evidence:'Video',level:'Rare',pts:70},{num:6,name:'Fastest climb at Saida Mall (3:30-5:00)',evidence:'Video',level:'Rare',pts:70}
-    ]},
-    {id:'saida',name:'Saida City',icon:'🏛️',tasks:[
-      {num:1,name:'Go to Saida Castle and take a picture',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Take a picture in the Soap Museum',evidence:'Photo',level:'Easy',pts:20},{num:3,name:'Find 5 street names in Saida',evidence:'Photo',level:'Medium',pts:30},{num:4,name:'Go to 3 Khans in Old Saida',evidence:'Photo',level:'Medium',pts:30},{num:5,name:'Visit a traditional bakery, learn about manakish',evidence:'Video',level:'Medium',pts:30},{num:6,name:'Photograph five different doors in the Old Souk',evidence:'Photo',level:'Medium',pts:30},{num:7,name:'Photograph an abandoned building',evidence:'Photo',level:'Medium',pts:30},{num:8,name:'Find mukhtar in Saida and take a picture',evidence:'Photo',level:'Hard',pts:50}
-    ]},
-    {id:'riddles',name:'Riddles & Treasure Hunt',icon:'🧩',tasks:[
-      {num:1,name:'Download That Level Again 2 and solve riddles',evidence:'Screenshot',level:'Medium',pts:30},{num:2,name:'Go to dawar al kanaya, solve the morse code',evidence:'Photo',level:'Hard',pts:50,comment:'Ask advisor for guide'},{num:3,name:'Go to Khatib Center, scan QR, complete tasks',evidence:'Photo',level:'Hard',pts:50}
-    ]},
-    {id:'getfind',name:'Get & Find',icon:'🔍',tasks:[
-      {num:1,name:'Get any stamp',evidence:'Photo',level:'Easy',pts:20},{num:2,name:'Get a 500 LBP and a 250 LBP coin',evidence:'Photo',level:'Easy',pts:20},{num:3,name:'Get 5 different screw sizes',evidence:'Photo',level:'Easy',pts:20},{num:4,name:'Find a street named after a famous person',evidence:'Photo',level:'Easy',pts:20},{num:5,name:'Find an electric car',evidence:'Photo',level:'Medium',pts:30},{num:6,name:'Find a local speaking non-Arabic/English/French',evidence:'Video',level:'Medium',pts:30},{num:7,name:'Find artisan in Old Souk, create handmade souvenir',evidence:'Photo',level:'Hard',pts:50}
-    ]},
-    {id:'bonus',name:'Bonus',icon:'🌟',tasks:[
-      {num:1,name:'First team to finish all Easy tasks',evidence:'Advisor',level:'Rare',pts:70},{num:2,name:'First team to finish all Medium tasks',evidence:'Advisor',level:'Rare',pts:70},{num:3,name:'First team to finish one entire category',evidence:'Advisor',level:'Rare',pts:70},{num:4,name:'Design a new Event logo',evidence:'Photo',level:'Rare',pts:70,comment:'Will influence next year event'},{num:5,name:'Make the longest straight line of people',evidence:'Photo',level:'Rare',pts:70}
-    ]}
-  ];
-};
+  return []; 
+}
 
-const TEAM_COLORS = ['#f97316','#3b82f6','#22c55e','#ef4444','#8b5cf6','#06b6d4','#ec4899','#eab308','#14b8a6','#f43f5e','#84cc16','#6366f1','#f97316','#a855f7','#0ea5e9'];
-
-let teams = [];
-let activityLog = [];
-let selectedColor = TEAM_COLORS[0];
-let editSelectedColor = '';
-
-// ── API ──
 async function api(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if (body) opts.body = JSON.stringify(body);
@@ -1030,7 +902,7 @@ async function loadState() {
 
 function getCompletedMap(team) {
   const map = {};
-  if (team.completions) team.completions.forEach(c => { map[c.categoryId + '-' + c.taskNum] = true; });
+  if (team && team.completions) team.completions.forEach(c => { map[c.categoryId + '-' + c.taskNum] = true; });
   return map;
 }
 
@@ -1044,6 +916,7 @@ function teamPoints(teamId) {
   CATEGORIES.forEach(cat => cat.tasks.forEach(t => { if (done[cat.id+'-'+t.num]) pts += t.pts; }));
   return pts;
 }
+
 function teamCompletedCount(teamId) {
   const team = teams.find(t => t.id === teamId);
   return team ? (team.completions || []).length : 0;
@@ -1063,9 +936,9 @@ function catDoneCount(teamId, catId) {
   return cat ? cat.tasks.filter(t => done[catId+'-'+t.num]).length : 0;
 }
 
-// ── Toast ──
 function showToast(icon, msg) {
   const c = document.getElementById('toastContainer');
+  if (!c) return;
   const t = document.createElement('div');
   t.className = 'toast';
   t.innerHTML = '<span style="font-size:1.1rem">'+icon+'</span> '+msg;
@@ -1073,21 +946,22 @@ function showToast(icon, msg) {
   setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 3000);
 }
 
-// ── Navigation ──
 function showSection(id, btn) {
+  const targetSection = document.getElementById('section-'+id);
+  if (!targetSection) {
+    console.warn(`Target section wrapper "section-${id}" does not exist inside layout setup.`);
+    return;
+  }
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  const sec = document.getElementById('section-'+id);
-  if (sec) sec.classList.add('active');
+  targetSection.classList.add('active');
   document.querySelectorAll('.nav-bar button').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   refreshAll();
 }
 
-// ── Stats ──
 function renderStats() {
   const statsEl = document.getElementById('dashStats');
   if (!statsEl) return;
-  const active = teams.filter(t => !t.disqualified).length;
   const done = teams.reduce((s,t) => s + teamCompletedCount(t.id), 0);
   const pts = teams.reduce((s,t) => s + teamPoints(t.id), 0);
   statsEl.innerHTML =
@@ -1097,7 +971,6 @@ function renderStats() {
     '<div class="stat-card"><div class="stat-num" style="color:var(--purple)">'+pts+'</div><div class="stat-label">Total Points</div></div>';
 }
 
-// ── Leaderboard ──
 function renderLeaderboard() {
   const container = document.getElementById('fullLeaderboard');
   if (!container) return;
@@ -1118,14 +991,13 @@ function renderLeaderboard() {
   }).join('');
 }
 
-// ── Categories ──
 function renderCategories() {
   const catGrid = document.getElementById('dashCatGrid');
   if (!catGrid) return;
   catGrid.innerHTML = CATEGORIES.map(cat => {
     const catMax = cat.tasks.reduce((s,t)=>s+t.pts,0);
     const catTotal = teams.reduce((s,t)=>s+catPointsForTeam(t.id,cat.id),0);
-    const pct = Math.round((catTotal/(catMax*teams.length))*100);
+    const pct = teams.length ? Math.round((catTotal/(catMax*teams.length))*100) : 0;
     return '<div class="cat-card" onclick="showTasksForCat(\''+cat.id+'\')">'+
       '<div class="cat-top"><span class="cat-icon">'+cat.icon+'</span><span class="cat-name">'+cat.name+'</span></div>'+
       '<div class="cat-meta">'+cat.tasks.length+' tasks • '+catMax+' max pts</div>'+
@@ -1134,55 +1006,47 @@ function renderCategories() {
   }).join('');
 }
 
-// ── Populate Selects ──
 function populateTeamSelects() {
-  const taskSel = document.getElementById('taskTeamSelect');
   const teamSel = document.getElementById('teamViewSelect');
-  const sv1 = taskSel.value, sv2 = teamSel.value;
+  if (!teamSel) return;
   const opts = teams.map(t=>'<option value="'+t.id+'">'+t.name+'</option>').join('');
-  taskSel.innerHTML = opts;
-  teamSel.innerHTML = opts;
-  if (sv1 && taskSel.querySelector('option[value="'+sv1+'"]')) taskSel.value = sv1;
-  if (sv2 && teamSel.querySelector('option[value="'+sv2+'"]')) teamSel.value = sv2;
+  
+  if (teamSel) {
+    const sv2 = teamSel.value;
+    teamSel.innerHTML = opts;
+    if (sv2 && teamSel.querySelector('option[value="'+sv2+'"]')) teamSel.value = sv2;
+  }
 }
 
-// ── All Tasks ──
 function renderAllTasks() {
-  const sel = document.getElementById('taskTeamSelect');
-  if (!sel.value) return;
-  const teamId = parseInt(sel.value);
-  const team = teams.find(t=>t.id===teamId);
-  if (!team) return;
-  const done = getCompletedMap(team);
-  const search = (document.getElementById('taskSearch').value||'').toLowerCase();
   const c = document.getElementById('allTasksContainer');
+  if (!c) return;
+
+  const search = (document.getElementById('taskSearch').value||'').toLowerCase();
   let html = '';
   CATEGORIES.forEach(cat => {
     const filtered = cat.tasks.filter(t => !search || t.name.toLowerCase().includes(search) || t.level.toLowerCase().includes(search));
     if (!filtered.length) return;
-    const catDone = filtered.filter(t=>done[cat.id+'-'+t.num]).length;
     html += '<div class="task-table-wrap" id="cat-'+cat.id+'">'+
       '<div class="task-table-header"><div class="th-left"><span class="th-icon">'+cat.icon+'</span>'+
-      '<div><div class="th-name">'+cat.name+'</div><div class="th-meta">'+cat.tasks.length+' tasks • '+catDone+'/'+filtered.length+' done</div></div></div>'+
-      '<div class="th-pts">'+catPointsForTeam(teamId,cat.id)+' pts</div></div>'+
-      '<table class="task-table"><thead><tr><th>#</th><th>Task</th><th>Evidence</th><th>Level</th><th>Pts</th><th style="text-align:center">✓</th></tr></thead><tbody>';
+      '<div><div class="th-name">'+cat.name+'</div><div class="th-meta">'+cat.tasks.length+' tasks total</div></div></div></div>'+
+      '<table class="task-table"><thead><tr><th style="width:40px">#</th><th>Task</th><th>Evidence</th><th>Level</th><th style="width:50px">Pts</th><th style="width:90px;text-align:center">Actions</th></tr></thead><tbody>';
     filtered.forEach(t => {
-      const key = cat.id+'-'+t.num;
-      const ck = done[key]?'checked':'';
-      const cls = done[key]?'done':'';
       const cm = t.comment?'<div class="task-comment">💡 '+t.comment+'</div>':'';
-      html += '<tr class="'+cls+'"><td class="task-num">'+t.num+'</td>'+
+      html += '<tr><td class="task-num">'+t.num+'</td>'+
         '<td><div class="task-name">'+t.name+'</div>'+cm+'</td>'+
         '<td class="evidence-cell">'+t.evidence+'</td>'+
         '<td><span class="level-badge level-'+t.level.toLowerCase()+'">'+t.level+'</span></td>'+
         '<td class="pts-cell">'+t.pts+'</td>'+
-        '<td class="status-cell"><input type="checkbox" class="checkbox-big" '+ck+' onchange="toggleTask('+teamId+',\''+cat.id+'\','+t.num+',this.checked)"></td></tr>';
+        '<td style="text-align:center; white-space:nowrap;">'+
+          '<button class="btn btn-sm" onclick="openEditTaskModal(\'' + cat.id + '\',' + t.num + ')" style="padding:4px 8px; margin-right:4px;">✏️</button>'+
+          '<button class="btn btn-sm btn-danger" onclick="deleteTaskDirect(\'' + cat.id + '\',' + t.num + ',\'' + t.name.replace(/'/g, "\\'") + '\')" style="padding:4px 8px;">🗑️</button>'+
+        '</td></tr>';
     });
     html += '</tbody></table></div>';
   });
-  c.innerHTML = html || '<div class="empty-state"><div class="empty-icon">🔍</div><p>No tasks match your search.</p></div>';
+  c.innerHTML = html || '<div class="empty-state"><div class="empty-icon">🔍</div><p>No active event tasks found.</p></div>';
 }
-function filterTasks() { renderAllTasks(); }
 
 async function toggleTask(teamId, catId, taskNum, checked) {
   const cat = CATEGORIES.find(c=>c.id===catId);
@@ -1193,17 +1057,18 @@ async function toggleTask(teamId, catId, taskNum, checked) {
     showToast(checked?'✅':'↩️', '<strong>'+team.name+'</strong> '+(checked?'+':'-')+task.pts+' pts');
     await loadState();
     refreshAll();
-  } catch(e) { showToast('❌','Error updating task'); }
+  } catch(e) { showToast('❌','Error updating completion node.'); }
 }
 
-// ── Team View ──
 function selectTeamView(teamId) {
-  // Navigate to Teams section
-  showSection('teams', document.querySelectorAll('.nav-bar button')[3]);
+  const teamSel = document.getElementById('teamViewSelect');
+  if (teamSel) teamSel.value = teamId;
+  showSection('team', document.querySelectorAll('.nav-bar button')[2]);
 }
 function renderTeamView() {
   const sel = document.getElementById('teamViewSelect');
-  if (!sel.value) return;
+  const targetContainer = document.getElementById('teamViewContent');
+  if (!sel || !targetContainer || !sel.value) return;
   const teamId = parseInt(sel.value);
   const team = teams.find(t=>t.id===teamId);
   if (!team) return;
@@ -1211,7 +1076,7 @@ function renderTeamView() {
   const done = getCompletedMap(team);
   const totalDone = Object.keys(done).length;
   const total = totalTasks();
-  const pct = Math.round((totalDone/total)*100);
+  const pct = total > 0 ? Math.round((totalDone/total)*100) : 0;
   const sorted = [...teams].sort((a,b)=>teamPoints(b.id)-teamPoints(a.id));
   const rank = sorted.findIndex(t=>t.id===teamId)+1;
 
@@ -1225,16 +1090,17 @@ function renderTeamView() {
       '<div class="progress-row"><span>'+totalDone+' / '+total+' tasks</span><span>'+pct+'%</span></div>'+
       '<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:'+pct+'%"></div></div></div>';
 
-  html += '<div class="section-header"><h2>📂 Category Progress</h2></div><div class="cat-grid">'+
-    CATEGORIES.map(cat=>{
+  html += '<div class="section-header"><h2>📂 Category Progress</h2></div><div class="cat-grid">';
+  CATEGORIES.forEach(cat=>{
       const catMax = cat.tasks.reduce((s,t)=>s+t.pts,0);
       const earned = catPointsForTeam(teamId,cat.id);
       const cd = catDoneCount(teamId,cat.id);
-      const cp = Math.round((cd/cat.tasks.length)*100);
-      return '<div class="cat-card"><div class="cat-top"><span class="cat-icon">'+cat.icon+'</span><span class="cat-name">'+cat.name+'</span></div>'+
+      const cp = cat.tasks.length ? Math.round((cd/cat.tasks.length)*100) : 0;
+      html += '<div class="cat-card"><div class="cat-top"><span class="cat-icon">'+cat.icon+'</span><span class="cat-name">'+cat.name+'</span></div>'+
         '<div class="cat-meta">'+cd+'/'+cat.tasks.length+' tasks • '+earned+'/'+catMax+' pts</div>'+
         '<div class="cat-progress"><div class="cat-progress-bar" style="width:'+cp+'%;background:'+team.color+'"></div></div></div>';
-    }).join('')+'</div>';
+  });
+  html += '</div>';
 
   html += '<div class="section-header" style="margin-top:16px"><h2>✅ Task Checklist</h2></div>';
   CATEGORIES.forEach(cat=>{
@@ -1251,12 +1117,13 @@ function renderTeamView() {
     });
     html+='</tbody></table></div>';
   });
-  document.getElementById('teamViewContent').innerHTML = html;
+  targetContainer.innerHTML = html;
 }
 
-// ── Manage Teams ──
 function renderManageTeams() {
-  document.getElementById('teamManageGrid').innerHTML = teams.map(t=>{
+  const container = document.getElementById('teamManageGrid');
+  if (!container) return;
+  container.innerHTML = teams.map(t=>{
     const pts = teamPoints(t.id);
     return '<div class="team-manage-card" style="border-top-color:'+t.color+'">'+
       '<h4><span style="width:10px;height:10px;border-radius:50%;background:'+t.color+';display:inline-block"></span>'+
@@ -1277,6 +1144,7 @@ function renderManageTeams() {
 }
 async function addMember(teamId) {
   const input = document.getElementById('addMember-'+teamId);
+  if (!input) return;
   const name = input.value.trim();
   if (!name) return;
   const res = await api('POST','/teams/'+teamId+'/members',{name});
@@ -1296,9 +1164,9 @@ async function toggleDQ(teamId) {
   await loadState(); refreshAll();
 }
 
-// ── Activity Log ──
 function renderActivityLog() {
   const c = document.getElementById('activityLog');
+  if (!c) return;
   if (!activityLog.length) { c.innerHTML='<div class="empty-state"><div class="empty-icon">📜</div><p>No activity yet.</p></div>'; return; }
   c.innerHTML = activityLog.slice(0,100).map(log=>{
     const team = log.team_id ? teams.find(t=>t.id===log.team_id) : null;
@@ -1309,7 +1177,6 @@ function renderActivityLog() {
   }).join('');
 }
 
-// ── Modals ──
 function openAddTeamModal() {
   document.getElementById('newTeamName').value='';
   document.getElementById('newTeamMembers').value='';
@@ -1326,7 +1193,9 @@ function openEditTeamModal(teamId) {
 }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 function renderColorPicker(cid, def, isEdit) {
-  document.getElementById(cid).innerHTML = TEAM_COLORS.map(c=>{
+  const el = document.getElementById(cid);
+  if (!el) return;
+  el.innerHTML = TEAM_COLORS.map(c=>{
     return '<div class="color-swatch'+(c===def?' selected':'')+'" style="background:'+c+'" onclick="pickColor(\''+c+'\','+!!isEdit+',this)"></div>';
   }).join('');
   if (isEdit) editSelectedColor=def; else selectedColor=def;
@@ -1372,18 +1241,14 @@ async function deleteTeam() {
   await loadState(); refreshAll();
 }
 
-// ── Helpers ──
 function showTasksForCat(catId) {
-  const sel = document.getElementById('taskTeamSelect');
-  if (!sel.value && teams.length) sel.value = teams[0].id;
-  showSection('tasks', document.querySelectorAll('.nav-bar button')[1]);
+  showSection('taskcenter', document.querySelectorAll('.nav-bar button')[1]);
   setTimeout(()=>{ const el=document.getElementById('cat-'+catId); if(el) el.scrollIntoView({behavior:'smooth'}); },100);
 }
 
-// ── Refresh ──
 function refreshAll() {
   renderStats();
-  if (typeof renderTaskManagement === 'function') renderTaskManagement();
+  renderTaskManagement();
   renderLeaderboard();
   renderCategories();
   populateTeamSelects();
@@ -1391,9 +1256,10 @@ function refreshAll() {
   renderTeamView();
   renderManageTeams();
   renderActivityLog();
+  renderSubmissions();
+  renderAdvisors();
 }
 
-// ── Submissions ──
 function renderSubmissions() {
   const pendingContainer = document.getElementById('pendingSubmissions');
   const reviewedContainer = document.getElementById('reviewedSubmissions');
@@ -1413,19 +1279,7 @@ function renderSubmissions() {
       const task = cat ? cat.tasks.find(t => t.num === s.task_num) : null;
       const taskName = task ? task.name : s.category_id + '-' + s.task_num;
       const pts = task ? task.pts : 0;
-      let evidenceLink = '<span style="font-size:.78rem;color:var(--text-muted)">No file</span>';
-      try {
-        const evFiles = JSON.parse(s.evidence_file || '[]');
-        if (Array.isArray(evFiles) && evFiles.length > 0) {
-          evidenceLink = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">' +
-            evFiles.map((f,i) => '<a href="/uploads/' + f + '" target="_blank" style="display:inline-block;padding:3px 10px;background:var(--blue-light);color:var(--blue);border-radius:6px;font-size:.78rem;font-weight:500;text-decoration:none">📷 Photo ' + (i+1) + '</a>').join('') +
-            '</div>';
-        } else if (s.evidence_file && s.evidence_file.length > 10) {
-          evidenceLink = '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.82rem">📎 View Evidence</a>';
-        }
-      } catch(e) {
-        if (s.evidence_file && s.evidence_file.length > 10) evidenceLink = '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.82rem">📎 View Evidence</a>';
-      }
+      const evidenceLink = s.evidence_file ? '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.82rem;text-decoration:none;font-weight:500">📎 View Evidence</a>' : '<span style="font-size:.78rem;color:var(--text-muted)">No file attached</span>';
       return '<div class="lb-entry" style="cursor:default;flex-wrap:wrap;gap:10px">' +
         '<div style="flex:1;min-width:200px">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
@@ -1461,7 +1315,7 @@ function renderSubmissions() {
       return '<div class="lb-entry" style="cursor:default;opacity:.7">' +
         '<span style="font-size:1rem">' + icon + '</span>' +
         '<div style="flex:1"><div style="font-weight:600;font-size:.88rem">' + s.team_name + ' — ' + taskName + '</div>' +
-        (function(){try{const ef=JSON.parse(s.evidence_file||'[]');if(Array.isArray(ef)&&ef.length>0)return ef.map((f,i)=>'<a href="/uploads/'+f+'" target="_blank" style="color:var(--blue);font-size:.75rem">📷'+(i+1)+'</a>').join(' ')}catch(e){} return (s.evidence_file&&s.evidence_file.length>10)?'<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎</a>':''})() +
+        (s.evidence_file ? '<a href="/uploads/' + s.evidence_file + '" target="_blank" style="color:var(--blue);font-size:.75rem">📎 Evidence</a>' : '') +
         '</div>' + tag + '</div>';
     }).join('');
   }
@@ -1482,8 +1336,6 @@ async function rejectSubmission(id) {
   refreshAll();
 }
 
-// Override loadState to also fetch submissions
-const _origLoadState = loadState;
 loadState = async function() {
   try {
     const data = await api('GET', '/state');
@@ -1491,27 +1343,12 @@ loadState = async function() {
     activityLog = data.log || [];
     window._submissions = data.submissions || { pending: [], reviewed: [] };
     await loadAdvisors();
-    // loadAllTasks removed
   } catch (e) { console.error('Load failed:', e); }
-};
-
-// Override refreshAll to include submissions
-const _origRefreshAll = refreshAll;
-refreshAll = function() {
-  renderStats();
-  renderLeaderboard();
-  renderCategories();
-  populateTeamSelects();
-  renderAllTasks();
-  renderTeamView();
-  renderManageTeams();
-  renderActivityLog();
-  renderSubmissions();
 };
 
 async function exportTasks() {
   window.open('/api/tasks/export', '_blank');
-  showToast('📤', 'Downloading tasks CSV...');
+  showToast('📤', 'Downloading configuration file...');
 }
 
 async function importTasks(input) {
@@ -1519,21 +1356,24 @@ async function importTasks(input) {
   if (!file) return;
   const text = await file.text();
   const result = document.getElementById('importResult');
+  if (!result) return;
   result.style.display = 'block';
-  result.innerHTML = '<div style="padding:12px;background:var(--blue-light);color:var(--blue);border-radius:.75rem;font-size:.85rem">⏳ Importing...</div>';
+  result.innerHTML = '<div style="padding:12px;background:var(--blue-light);color:var(--blue);border-radius:.75rem;font-size:.85rem">⏳ Overwriting layout context...</div>';
 
   try {
     const res = await api('POST', '/tasks/import', { csv: text });
     if (res.success) {
-      result.innerHTML = '<div style="padding:12px;background:var(--green-light);color:#15803d;border-radius:.75rem;font-size:.85rem">✅ ' + res.imported + ' tasks imported successfully! Refresh the page to see changes.</div>';
-      showToast('📥', res.imported + ' tasks imported!');
+      result.innerHTML = '<div style="padding:12px;background:var(--green-light);color:#15803d;border-radius:.75rem;font-size:.85rem">✅ ' + res.imported + ' dataset configurations loaded.</div>';
+      showToast('📥', res.imported + ' database entries updated!');
     } else {
-      result.innerHTML = '<div style="padding:12px;background:var(--red-light);color:#b91c1c;border-radius:.75rem;font-size:.85rem">❌ ' + (res.error || 'Import failed') + '</div>';
+      result.innerHTML = '<div style="padding:12px;background:var(--red-light);color:#b91c1c;border-radius:.75rem;font-size:.85rem">❌ ' + (res.error || 'Import parsed layout error') + '</div>';
     }
   } catch(e) {
     result.innerHTML = '<div style="padding:12px;background:var(--red-light);color:#b91c1c;border-radius:.75rem;font-size:.85rem">❌ Network error</div>';
   }
   input.value = '';
+  await loadCategoriesFromDB();
+  refreshAll();
 }
 
 async function changePin(teamId, teamName) {
@@ -1547,18 +1387,17 @@ async function changePin(teamId, teamName) {
   refreshAll();
 }
 
-// ── Advisors ──
-let advisors = [];
-
 async function loadAdvisors() {
-  advisors = await api('GET', '/advisors');
+  try {
+    advisors = await api('GET', '/advisors') || [];
+  } catch(e) { advisors = []; }
 }
 
 function renderAdvisors() {
   const container = document.getElementById('advisorsList');
   if (!container) return;
-  if (!advisors.length) {
-    container.innerHTML = '<div class="empty-state" style="padding:24px"><p>No advisors yet. Add one to get started.</p></div>';
+  if (!advisors || !advisors.length) {
+    container.innerHTML = '<div class="empty-state" style="padding:24px"><p>No active monitors assigned.</p></div>';
     return;
   }
   container.innerHTML = advisors.map(a => {
@@ -1582,6 +1421,7 @@ function renderAdvisors() {
 
 function renderTeamCheckboxes(containerId, selectedIds) {
   const container = document.getElementById(containerId);
+  if (!container) return;
   container.innerHTML = teams.map(t => {
     const checked = selectedIds.includes(t.id) ? 'checked' : '';
     return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:.5rem;margin-bottom:4px;cursor:pointer;font-size:.85rem">'+
@@ -1595,7 +1435,7 @@ document.addEventListener('change', function(e) {
   if (e.target.classList.contains('team-cb')) {
     const cid = e.target.dataset.cid;
     const container = document.getElementById(cid);
-    if (container.querySelectorAll('input:checked').length > 4) {
+    if (container && container.querySelectorAll('input:checked').length > 4) {
       e.target.checked = false;
       showToast('⚠️', 'Maximum 4 teams per advisor');
     }
@@ -1603,7 +1443,9 @@ document.addEventListener('change', function(e) {
 });
 
 function getCheckedTeams(containerId) {
-  return Array.from(document.getElementById(containerId).querySelectorAll('input:checked')).map(el => parseInt(el.value));
+  const container = document.getElementById(containerId);
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('input:checked')).map(el => parseInt(el.value));
 }
 
 function openAddAdvisorModal() {
@@ -1627,7 +1469,7 @@ async function addAdvisor() {
   if (res.error) { showToast('❌', res.error); return; }
   showToast('✅', 'Advisor "'+name+'" created!');
   closeModal('addAdvisorModal');
-  await loadAdvisors(); renderAdvisors();
+  await loadAdvisors(); refreshAll();
 }
 
 function openEditAdvisorModal(id) {
@@ -1654,13 +1496,13 @@ async function saveAdvisor() {
   await api('PUT', '/advisors/'+id, body);
   showToast('✅', 'Advisor updated!');
   closeModal('editAdvisorModal');
-  await loadAdvisors(); renderAdvisors();
+  await loadAdvisors(); refreshAll();
 }
 
 async function toggleAdvisor(id, active) {
   await api('PUT', '/advisors/'+id, { active });
   showToast(active?'✅':'🚫', active?'Advisor activated':'Advisor deactivated');
-  await loadAdvisors(); renderAdvisors();
+  await loadAdvisors(); refreshAll();
 }
 
 async function deleteAdvisor() {
@@ -1673,12 +1515,11 @@ async function deleteAdvisor() {
   await loadAdvisors(); renderAdvisors();
 }
 
-// ── Init ──
-// ── Task Management ──
 function renderTaskManagement() {
   const container = document.getElementById('taskMgmtContainer');
-  if (!CATEGORIES.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><p>No tasks yet. Import tasks from the Tools tab or add them manually.</p></div>';
+  if (!container) return;
+  if (!CATEGORIES || !CATEGORIES.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Task configuration database is empty.</p></div>';
     return;
   }
 
@@ -1694,9 +1535,10 @@ function renderTaskManagement() {
     html += '<button class="btn btn-sm btn-danger" onclick="deleteCategory(\'' + cat.id + '\',\'' + cat.name.replace(/'/g, "\\'") + '\')">🗑️ Delete Category</button>';
     html += '</div></div>';
     html += '<table class="task-table"><thead><tr>';
-    html += '<th style="width:40px">#</th><th>Task</th><th>Evidence</th><th>Level</th><th style="width:50px">Pts</th><th style="width:80px;text-align:center">Actions</th>';
+    html += '<th style="width:40px">#</th><th>Task Name</th><th>Evidence</th><th>Level</th><th style="width:50px">Pts</th><th style="width:90px;text-align:center">Actions</th>';
     html += '</tr></thead><tbody>';
-    filtered.forEach(t => {
+    
+    cat.tasks.forEach(t => {
       html += '<tr>';
       html += '<td class="task-num">' + t.num + '</td>';
       html += '<td><div class="task-name">' + t.name + '</div>';
@@ -1705,9 +1547,9 @@ function renderTaskManagement() {
       html += '<td class="evidence-cell">' + t.evidence + '</td>';
       html += '<td><span class="level-badge level-' + t.level.toLowerCase() + '">' + t.level + '</span></td>';
       html += '<td class="pts-cell">' + t.pts + '</td>';
-      html += '<td style="text-align:center">';
-      html += '<button class="btn btn-sm" onclick="openEditTaskModal(\'' + cat.id + '\',' + t.num + ')" style="padding:4px 8px">✏️</button> ';
-      html += '<button class="btn btn-sm btn-danger" onclick="deleteTaskDirect(\'' + cat.id + '\',' + t.num + ',\'' + t.name.replace(/'/g, "\\'") + '\')" style="padding:4px 8px">🗑️</button>';
+      html += '<td style="text-align:center; white-space:nowrap;">';
+      html += '<button class="btn btn-sm" onclick="openEditTaskModal(\'' + cat.id + '\',' + t.num + ')" style="padding:4px 8px; margin-right:4px;">✏️</button> ';
+      html += '<button class="btn btn-sm btn-danger" onclick="deleteTaskDirect(\'' + cat.id + '\',' + t.num + ',\'' + t.name.replace(/'/g, "\\'") + '\')" style="padding:4px 8px;">🗑️</button>';
       html += '</td></tr>';
     });
     html += '</tbody></table></div>';
@@ -1722,12 +1564,11 @@ function openAddCategoryModal() {
 }
 
 function openAddTaskModal() {
-  // Populate category dropdown
   const sel = document.getElementById('newTaskCat');
+  if (!sel) return;
   sel.innerHTML = '<option value="">— Select category —</option><option value="_new">➕ Create new category...</option>' +
     CATEGORIES.map(c => '<option value="' + c.id + '">' + c.icon + ' ' + c.name + '</option>').join('');
   document.getElementById('newCatFields').style.display = 'none';
-  document.getElementById('newTaskNum').value = '';
   document.getElementById('newTaskName').value = '';
   document.getElementById('newTaskComment').value = '';
   document.getElementById('newTaskLevel').value = 'Easy';
@@ -1738,10 +1579,6 @@ function openAddTaskModal() {
 function onNewTaskCatChange() {
   const val = document.getElementById('newTaskCat').value;
   document.getElementById('newCatFields').style.display = val === '_new' ? 'block' : 'none';
-  if (val && val !== '_new') {
-    const cat = CATEGORIES.find(c => c.id === val);
-    if (cat) document.getElementById('newTaskNum').value = cat.tasks.length + 1;
-  }
 }
 
 async function saveNewTask() {
@@ -1762,21 +1599,20 @@ async function saveNewTask() {
     showToast('⚠️', 'Select a category'); return;
   }
 
-  const taskNum = parseInt(document.getElementById('newTaskNum').value);
   const taskName = document.getElementById('newTaskName').value.trim();
   const evidence = document.getElementById('newTaskEvidence').value;
   const level = document.getElementById('newTaskLevel').value;
   const comment = document.getElementById('newTaskComment').value.trim();
 
-  if (!taskNum || !taskName) { showToast('⚠️', 'Task number and name required'); return; }
+  if (!taskName) { showToast('⚠️', 'Task name required'); return; }
 
   try {
     const res = await api('POST', '/tasks', {
       category_id: catId, category_name: catName, category_icon: catIcon,
-      task_num: taskNum, task_name: taskName, evidence, level, comment
+      task_name: taskName, evidence, level, comment
     });
     if (res.error) { showToast('❌', res.error); return; }
-    showToast('✅', 'Task added!');
+    showToast('✅', 'Task added automatically!');
     closeModal('addTaskModal');
     await loadCategoriesFromDB();
     refreshAll();
@@ -1802,7 +1638,6 @@ async function saveEditTask() {
   const catId = idParts[0];
   const taskNum = parseInt(idParts[1]);
 
-  // Find the task in DB by matching category_id and task_num
   const allTasks = await api('GET', '/tasks');
   const dbTask = allTasks.find(t => t.category_id === catId && t.task_num === taskNum);
   if (!dbTask) { showToast('❌', 'Task not found'); return; }
@@ -1859,19 +1694,16 @@ async function deleteCategory(catId, catName) {
 
 async function initApp() {
   await loadCategoriesFromDB();
-  // loadAllTasks removed
   await loadState();
   refreshAll();
   setInterval(async()=>{ await loadState(); refreshAll(); }, 2000);
 }
 
-// Auto-run if already logged in
 if (localStorage.getItem('evt_admin_session') === '1') {
   initApp();
 }
 </script>
 <script>
-// Admin login check
 const ADMIN_KEY = 'evt_admin_session';
 
 async function adminLogin() {
@@ -1890,7 +1722,6 @@ async function adminLogin() {
       localStorage.setItem(ADMIN_KEY, '1');
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('mainApp').style.display = 'block';
-      // Trigger app init
       if (typeof initApp === 'function') initApp();
     } else {
       errEl.textContent = '❌ Wrong password';
@@ -1904,19 +1735,12 @@ async function adminLogin() {
   }
 }
 
-// Check on load
 (function() {
   if (localStorage.getItem(ADMIN_KEY) === '1') {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
   }
 })();
-
-// Auto-run if already logged in
-if (localStorage.getItem(ADMIN_KEY) === '1') {
-  initApp();
-}
 </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a03c7da9fb88a26a',t:'MTc4MDEzMTAyMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
