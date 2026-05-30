@@ -16,7 +16,6 @@
   .header{text-align:center;padding:28px 16px 16px}
   .header h1{font-size:1.4rem;font-weight:700;letter-spacing:-.03em}
 
-  /* Team Lock Banner */
   .team-banner{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
   .team-banner .tb-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
   .team-banner .tb-info{flex:1}
@@ -24,13 +23,11 @@
   .team-banner .tb-sub{font-size:.75rem;color:var(--text-muted)}
   .team-banner .tb-badge{background:var(--green-light);color:#15803d;padding:4px 10px;border-radius:50px;font-size:.7rem;font-weight:600;flex-shrink:0}
 
-  /* Stats */
   .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
   .stat{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:14px 8px;text-align:center;box-shadow:var(--shadow)}
   .stat .s-num{font-size:1.5rem;font-weight:700;line-height:1;margin-bottom:2px}
   .stat .s-label{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;font-weight:500}
 
-  /* Nav */
   .nav-bar{display:flex;gap:4px;margin-bottom:16px;padding:4px;background:var(--card);border-radius:.75rem;border:1px solid var(--border);box-shadow:var(--shadow);overflow-x:auto}
   .nav-bar button{flex:1;min-width:0;padding:10px 8px;border:none;border-radius:.5rem;background:transparent;color:var(--text-dim);font-size:.8rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
   .nav-bar button:hover{background:var(--orange-light);color:var(--orange)}
@@ -41,7 +38,6 @@
   .sec-title{font-size:1rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
   .sec-title .st-back{width:26px;height:26px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.8rem}
 
-  /* Category Progress */
   .cat-progress-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
   .cp-card{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:12px 14px;box-shadow:var(--shadow)}
   .cp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
@@ -50,7 +46,6 @@
   .cp-bar{height:5px;background:var(--bg);border-radius:3px;overflow:hidden}
   .cp-fill{height:100%;border-radius:3px;transition:width .4s}
 
-  /* Category Grid (for picking) */
   .cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .cat-btn{padding:16px 8px;border:2px solid var(--border);border-radius:.75rem;background:var(--card);cursor:pointer;text-align:center;transition:all .15s;font-family:inherit}
   .cat-btn:hover{border-color:var(--orange);background:var(--orange-light)}
@@ -59,7 +54,6 @@
   .cat-btn .cb-name{font-weight:600;font-size:.75rem;line-height:1.3}
   .cat-btn .cb-meta{font-size:.65rem;color:var(--text-muted);margin-top:2px}
 
-  /* Task List */
   .task-list{display:flex;flex-direction:column;gap:8px}
   .task-btn{padding:14px 16px;border:2px solid var(--border);border-radius:.75rem;background:var(--card);cursor:pointer;text-align:left;transition:all .15s;display:flex;align-items:center;gap:12px;font-family:inherit}
   .task-btn:hover{border-color:var(--orange)}
@@ -84,7 +78,6 @@
   .lvl-hard{background:var(--orange-light);color:var(--orange-dark)}
   .lvl-rare{background:var(--purple-light);color:var(--purple)}
 
-  /* Upload */
   .upload-area{border:2px dashed var(--border);border-radius:.75rem;padding:28px 16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--card);position:relative}
   .upload-area:hover{border-color:var(--orange);background:var(--orange-light)}
   .upload-area.has-file{border-color:var(--green);background:var(--green-light);border-style:solid}
@@ -107,7 +100,6 @@
   .msg.ok{display:block;background:var(--green-light);color:#15803d;border:1px solid #bbf7d0}
   .msg.err{display:block;background:var(--red-light);color:#b91c1c;border:1px solid #fecaca}
 
-  /* Submission List */
   .sub-item{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow)}
   .sub-top{display:flex;align-items:center;gap:10px;margin-bottom:4px}
   .sub-icon{font-size:1rem;flex-shrink:0}
@@ -119,7 +111,6 @@
   .sub-detail{font-size:.75rem;color:var(--text-muted);display:flex;gap:10px;align-items:center}
   .sub-pts{font-weight:700;color:var(--orange);font-size:.82rem}
 
-  /* Mini Leaderboard */
   .mini-lb{display:flex;flex-direction:column;gap:6px}
   .mlb-entry{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:.82rem;box-shadow:var(--shadow)}
   .mlb-entry.me{border-color:var(--orange);background:var(--orange-light)}
@@ -131,7 +122,6 @@
   .mlb-name{flex:1;font-weight:600}
   .mlb-pts{font-weight:700;color:var(--orange)}
 
-  /* PIN Modal */
   .pin-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;justify-content:center;align-items:center;backdrop-filter:blur(4px)}
   .pin-overlay.show{display:flex}
   .pin-box{background:var(--card);border-radius:var(--radius);padding:28px;width:90%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.15);animation:fadeIn .2s ease}
@@ -162,13 +152,9 @@
 <div class="container">
   <div class="header"><h1>🏆 Team Dashboard</h1></div>
 
-  <!-- Team Banner (appears after lock) -->
   <div id="teamBanner" style="display:none"></div>
-
-  <!-- Stats (appears after lock) -->
   <div class="stats-grid" id="myStats" style="display:none"></div>
 
-  <!-- Nav -->
   <div class="nav-bar" id="mainNav" style="display:none">
     <button class="active" onclick="showSec('home',this)">🏠 Home</button>
     <button onclick="showSec('submit',this)">📝 Submit</button>
@@ -177,13 +163,11 @@
     <button onclick="manualRefresh()" style="flex:0;min-width:auto;padding:10px" title="Refresh now">🔄</button>
   </div>
 
-  <!-- HOME: Category Progress -->
   <div class="sec active" id="sec-home">
     <div class="sec-title">📊 Progress</div>
     <div class="cat-progress-list" id="catProgressList"></div>
   </div>
 
-  <!-- SUBMIT: Pick Category → Task → Upload -->
   <div class="sec" id="sec-submit">
     <div id="submitStep1">
       <div class="sec-title">📂 Pick a category</div>
@@ -212,26 +196,22 @@
     </div>
   </div>
 
-  <!-- HISTORY: All my submissions -->
   <div class="sec" id="sec-history">
     <div class="sec-title">📋 My Submissions</div>
     <div id="historyList"></div>
   </div>
 
-  <!-- LEADERBOARD -->
   <div class="sec" id="sec-leaderboard">
     <div class="sec-title">🏅 Standings</div>
     <div class="mini-lb" id="miniLB"></div>
   </div>
 
-  <!-- Team Selection (shown if not locked) -->
   <div id="teamSelectScreen" style="display:none">
     <div class="sec-title" style="margin-bottom:14px">👋 Select your team</div>
     <div class="team-grid" id="teamGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
   </div>
 </div>
 
-<!-- PIN Modal -->
 <div class="pin-overlay" id="pinOverlay">
   <div class="pin-box">
     <h3>🔐 Enter Team PIN</h3>
@@ -245,7 +225,6 @@
 </div>
 
 <script>
-const LEVEL_PTS = {easy:20,medium:30,hard:50,rare:70};
 let CATEGORIES = [];
 
 async function loadCategoriesFromDB() {
@@ -278,8 +257,7 @@ async function loadCategoriesFromDB() {
   } catch (e) {
     console.error('Failed to load categories:', e);
   }
-};
-const TOTAL_TASKS = CATEGORIES.reduce((s,c)=>s+c.tasks.length,0);
+}
 
 let teams=[], myTeamId=null, myCatId=null, myTaskNum=null, doneMap={}, pendingMap={}, allSubs=[];
 const LOCK_KEY='event_team_lock';
@@ -288,7 +266,6 @@ async function api(m,p,b){const o={method:m,headers:{'Content-Type':'application
 function toast(icon,msg){const c=document.getElementById('toastContainer'),t=document.createElement('div');t.className='toast';t.innerHTML='<span style="font-size:1rem">'+icon+'</span> '+msg;c.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},3000);}
 function showSec(id,btn){document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));document.getElementById('sec-'+id).classList.add('active');document.querySelectorAll('.nav-bar button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');}
 
-// ── INIT ──
 async function init(){
   await loadCategoriesFromDB();
   const data=await api('GET','/state');
@@ -315,7 +292,6 @@ function showTeamSelect(){
   ).join('');
 }
 
-// ── PIN ──
 let pendingTeamId=null;
 function pickTeam(id){
   pendingTeamId=id;const team=teams.find(t=>t.id===id);
@@ -339,7 +315,6 @@ async function verifyPin(){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('pinOverlay').classList.contains('show'))verifyPin();});
 
-// ── LOCK TEAM ──
 async function lockTeam(id){
   myTeamId=id;const team=teams.find(t=>t.id===id);
   doneMap={};pendingMap={};
@@ -379,7 +354,6 @@ function myPoints(){
 }
 function getDoneMap(team){const m={};if(team.completions)team.completions.forEach(c=>{m[c.categoryId+'-'+c.taskNum]=true;});return m;}
 
-// ── RENDER ALL ──
 function renderAll(){
   const team=myTeam();if(!team)return;
   const done=getDoneMap(team);const doneCount=Object.keys(done).length;
@@ -388,7 +362,6 @@ function renderAll(){
   const rank=sorted.findIndex(t=>t.id===myTeamId)+1;
   const pendingCount=allSubs.filter(s=>s.status==='pending').length;
 
-  // Stats
   document.getElementById('myStats').innerHTML=
     '<div class="stat"><div class="s-num" style="color:var(--orange)">'+pts+'</div><div class="s-label">Points</div></div>'+
     '<div class="stat"><div class="s-num" style="color:var(--green)">'+doneCount+'</div><div class="s-label">Done</div></div>'+
@@ -398,7 +371,6 @@ function renderAll(){
   renderCatProgress();renderCats();renderHistory();renderLB();
 }
 
-// ── HOME: Category Progress ──
 function renderCatProgress(){
   const done=getDoneMap(myTeam());
   document.getElementById('catProgressList').innerHTML=CATEGORIES.map(cat=>{
@@ -412,7 +384,6 @@ function renderCatProgress(){
   }).join('');
 }
 
-// ── SUBMIT: Categories ──
 function renderCats(){
   const done=getDoneMap(myTeam());
   document.getElementById('catGrid').innerHTML=CATEGORIES.map(c=>{
@@ -427,7 +398,6 @@ function pickCat(id){
 }
 function backToCats(){document.getElementById('submitStep1').style.display='block';document.getElementById('submitStep2').style.display='none';document.getElementById('submitStep3').style.display='none';}
 
-// ── SUBMIT: Tasks ──
 function renderTasks(){
   const cat=CATEGORIES.find(c=>c.id===myCatId);const done=getDoneMap(myTeam());
   document.getElementById('taskList').innerHTML=cat.tasks.map(t=>{
@@ -455,12 +425,10 @@ function pickTask(num){
 }
 function backToTasks(){document.getElementById('submitStep2').style.display='block';document.getElementById('submitStep3').style.display='none';}
 
-// ── SUBMIT: Upload ──
 function onFileChange(){
   const files=document.getElementById('evidenceFile').files;
   if(!files.length)return;
   
-  // Enforce a maximum limit of 5 files
   if (files.length > 5) {
     alert("You can upload a maximum of 5 evidence files.");
     document.getElementById('evidenceFile').value = '';
@@ -474,12 +442,12 @@ function onFileChange(){
   document.getElementById('uploadArea').classList.add('has-file');
   document.getElementById('fileName').textContent = '📎 '+files.length+' file'+(files.length>1?'s':'')+' selected (Max 5)';
   document.getElementById('submitBtn').disabled = false;
-  
   const p=document.getElementById('filePreview');
   const f=files[0];
   if(f.type.startsWith('image/')){const r=new FileReader();r.onload=e=>{p.src=e.target.result;p.style.display='block'};r.readAsDataURL(f);}
   else p.style.display='none';
 }
+
 async function submitTask(){
   const btn=document.getElementById('submitBtn'),msg=document.getElementById('msg');
   btn.disabled=true;btn.textContent='Submitting...';
@@ -506,7 +474,6 @@ async function submitTask(){
   btn.textContent='Submit for Review';btn.disabled=false;
 }
 
-// ── HISTORY ──
 function renderHistory(){
   if(!allSubs.length){document.getElementById('historyList').innerHTML='<div class="empty">No submissions yet. Go submit some tasks!</div>';return;}
   document.getElementById('historyList').innerHTML=allSubs.map(s=>{
@@ -517,16 +484,22 @@ function renderHistory(){
     const ptsHtml=s.status==='approved'?'<span class="sub-pts">+'+pts+' pts</span>':s.status==='rejected'?'<span style="color:var(--red);font-size:.78rem">Rejected</span>':'';
     let ev='';
     try{const ef=JSON.parse(s.evidence_file||'[]');if(Array.isArray(ef)&&ef.length>0)ev=ef.map((f,i)=>'<a href="/uploads/'+f+'" target="_blank" style="color:var(--blue);font-size:.75rem">📷'+(i+1)+'</a>').join(' ')}catch(e){if(s.evidence_file&&s.evidence_file.length>10)ev='<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎</a>';}
+    
+    let rejectCommentHtml = '';
+    if(s.status === 'rejected' && s.rejection_comment) {
+      rejectCommentHtml = `<div style="margin-top:8px; padding:8px 12px; background:var(--red-light); border-left: 3px solid var(--red); border-radius:4px; font-size:0.78rem; color:#b91c1c;">` +
+                            `<strong>💬 Feedback:</strong> "${s.rejection_comment}"` +
+                          `</div>`;
+    }
+
     return '<div class="sub-item"><div class="sub-top"><span class="sub-icon">'+icon+'</span><span class="sub-task">'+name+'</span><span class="sub-badge '+cls+'">'+s.status+'</span></div>'+
-      '<div class="sub-detail">'+ptsHtml+ev+'</div></div>';
+      '<div class="sub-detail">'+ptsHtml+ev+'</div>' + rejectCommentHtml + '</div>';
   }).join('');
 }
 
-// ── LEADERBOARD ──
 function renderLB(){
   const calcPts=t=>{const d=getDoneMap(t);let p=0;CATEGORIES.forEach(c=>c.tasks.forEach(tk=>{if(d[c.id+'-'+tk.num])p+=tk.pts;}));return p;};
   const sorted=[...teams].sort((a,b)=>calcPts(b)-calcPts(a));
-  const max=sorted.length?calcPts(sorted[0]):1;
   document.getElementById('miniLB').innerHTML=sorted.map((t,i)=>{
     const pts=calcPts(t);const isMe=t.id===myTeamId;
     const rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
@@ -544,6 +517,5 @@ async function manualRefresh() {
 init();
 setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();}},2000);
 </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
