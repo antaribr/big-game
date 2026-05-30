@@ -86,6 +86,7 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- LOGIN SCREEN -->
 <div id="loginScreen">
   <div class="login-box">
     <h2>👤 Advisor Login</h2>
@@ -98,6 +99,7 @@
   </div>
 </div>
 
+<!-- DASHBOARD SCREEN -->
 <div id="dashScreen" style="display:none">
   <button class="logout-btn" onclick="doLogout()">🚪 Logout</button>
 
@@ -246,7 +248,7 @@ async function loadAdvisorData() {
 }
 
 function renderAll() {
-  // Stats Points Calculation Wrapper
+  // Dynamic Score Aggregator
   const totalPts = myTeams.reduce((s,t) => {
     let pts = 0;
     if (t.completions) t.completions.forEach(c => {
@@ -269,7 +271,6 @@ function renderAll() {
     document.getElementById('pendingList').innerHTML = '<div class="empty">✅ No pending submissions. All clear!</div>';
   } else {
     document.getElementById('pendingList').innerHTML = pending.map(s => {
-      // Find matching schema record from the database mapping array
       const taskObj = dbTasks.find(t => t.category_id === s.category_id && t.task_num === s.task_num);
       
       const categoryName = taskObj ? `${taskObj.category_icon || '📋'} ${taskObj.category_name}` : s.category_id;
@@ -282,7 +283,6 @@ function renderAll() {
       try {
         const ef = JSON.parse(s.evidence_file||'[]');
         if(Array.isArray(ef) && ef.length > 0) {
-          // PRO FIX: Ensures absolute path anchors are cleanly interpolated 
           evLink = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">' +
             ef.map((f,i) => '<a href="/uploads/'+f+'" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:var(--blue-light);color:var(--blue);border-radius:6px;font-size:.78rem;font-weight:600;text-decoration:none;border:1px solid #bbf7d0;">📷 Photo '+(i+1)+'</a>').join('') +
             '</div>';
@@ -331,45 +331,6 @@ function renderAll() {
         const ef = JSON.parse(s.evidence_file || '[]');
         if (Array.isArray(ef) && ef.length > 0) {
           reviewEvLinks = ef.map((f, i) => '<a href="/uploads/' + f + '" target="_blank" style="color:var(--blue);font-size:.75rem;margin-right:6px;text-decoration:none;">📷 Photo ' + (i + 1) + '</a>').join(' ');
-        }
-      } catch (e) {}
-
-      return '<div class="reviewed-item">'+
-        '<span style="font-size:1rem">'+(isApproved?'✅':'❌')+'</span>'+
-        '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:.82rem">'+s.team_name+' &mdash; '+taskTitle+'</div>'+
-        '<div style="margin-top:2px">'+reviewEvLinks+'</div>'+
-        (s.rejection_comment ? '<div style="font-size:0.72rem;color:var(--red);margin-top:2px;">Reason: "'+s.rejection_comment+'"</div>' : '')+
-        '</div>'+
-        '<span class="ri-status '+(isApproved?'ri-approved':'ri-rejected')+'">'+s.status+'</span></div>';
-    }).join('');
-  }
-}
-
-  // Teams Roster Grid
-  document.getElementById('myTeamsList').innerHTML = myTeams.map(t => {
-    const done = (t.completions||[]).length;
-    return '<div class="team-card" style="border-left-color:'+t.color+'">'+
-      '<div class="tc-top"><div class="tc-name"><span style="width:12px;height:12px;border-radius:50%;background:'+t.color+';display:inline-block"></span>'+
-      t.name+'</div><div class="tc-pts">'+done+' tasks</div></div>'+
-      '<div class="tc-meta">'+t.members.length+' members • '+done+' completed</div>'+
-      '<div class="tc-members">'+t.members.map(m => '<span class="tc-member">'+m+'</span>').join('')+'</div>'+
-      '<div class="progress-bg"><div class="progress-fill" style="width:'+Math.min(done*3,100)+'%;background:'+t.color+'"></div></div></div>';
-  }).join('');
-
-  // History Review Feed
-  if (!reviewed.length) {
-    document.getElementById('reviewedList').innerHTML = '<div class="empty">No reviewed submissions yet.</div>';
-  } else {
-    document.getElementById('reviewedList').innerHTML = reviewed.map(s => {
-      const taskObj = dbTasks.find(t => t.category_id === s.category_id && t.task_num === s.task_num);
-      const taskTitle = taskObj ? taskObj.task_name : `${s.category_id} #${s.task_num}`;
-      const isApproved = s.status==='approved';
-      
-      let reviewEvLinks = '';
-      try {
-        const ef = JSON.parse(s.evidence_file || '[]');
-        if (Array.isArray(ef) && ef.length > 0) {
-          reviewEvLinks = ef.map((f, i) => '<a href="/uploads/' + f + '" target="_blank" style="color:var(--blue);font-size:.75rem;margin-right:6px;text-decoration:none;">📷 File ' + (i + 1) + '</a>').join(' ');
         }
       } catch (e) {}
 
