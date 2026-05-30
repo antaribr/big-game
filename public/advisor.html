@@ -190,21 +190,29 @@ async function approveSub(id) {
 
 async function rejectSub(id) {
   const reason = prompt('Rejection reason (Please specify why this task was rejected):');
-  if (reason === null) return;
+  if (reason === null) return; // User canceled the dialog box prompt
   if (!reason.trim()) {
     alert('A concise rejection comment is required so teams know how to fix it.');
     return;
   }
 
-  await fetch('/api/submissions/'+id+'/reject', {
-    method:'PUT', 
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ reason: reason.trim() })
-  });
-  
-  await loadAdvisorData(); renderAll();
+  try {
+    const res = await fetch('/api/submissions/' + id + '/reject', {
+      method: 'PUT', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: reason.trim() })
+    });
+    
+    if (res.ok) {
+      await loadAdvisorData(); 
+      renderAll();
+    } else {
+      alert('Failed to update submission on server.');
+    }
+  } catch (err) {
+    console.error('Network Error:', err);
+  }
 }
-
 (async function autoLogin() {
   const id = localStorage.getItem('adv_id');
   if (id) {
