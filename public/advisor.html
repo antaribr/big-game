@@ -21,11 +21,15 @@
   .login-box{max-width:380px;margin:80px auto;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow)}
   .login-box h2{text-align:center;font-size:1.2rem;margin-bottom:20px}
   .login-box label{display:block;font-size:.82rem;color:var(--text-dim);margin-bottom:4px;margin-top:12px;font-weight:500}
-  .login-box input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:.5rem;font-size:.9rem;outline:none;background:var(--bg)}
-  .login-box .login-btn{width:100%;padding:12px;border:none;border-radius:.5rem;background:var(--orange);color:#fff;font-size:.95rem;font-weight:600;cursor:pointer;margin-top:20px}
+  .login-box input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:.5rem;font-size:.9rem;font-family:inherit;outline:none;background:var(--bg)}
+  .login-box input:focus{border-color:var(--orange)}
+  .login-box .login-btn{width:100%;padding:12px;border:none;border-radius:.5rem;background:var(--orange);color:#fff;font-size:.95rem;font-weight:600;cursor:pointer;margin-top:20px;font-family:inherit}
+  .login-box .login-btn:hover{background:var(--orange-dark)}
+  .login-box .login-err{color:var(--red);font-size:.82rem;text-align:center;margin-top:10px;display:none}
 
   .nav-bar{display:flex;gap:4px;margin-bottom:20px;padding:4px;background:var(--card);border-radius:.75rem;border:1px solid var(--border);box-shadow:var(--shadow)}
-  .nav-bar button{flex:1;padding:10px;border:none;border-radius:.5rem;background:transparent;color:var(--text-dim);font-size:.85rem;font-weight:500;cursor:pointer;transition:all .15s}
+  .nav-bar button{flex:1;padding:10px;border:none;border-radius:.5rem;background:transparent;color:var(--text-dim);font-size:.85rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+  .nav-bar button:hover{background:var(--orange-light);color:var(--orange)}
   .nav-bar button.active{background:var(--orange);color:#fff;font-weight:600}
 
   .section{display:none;animation:fadeIn .2s ease}.section.active{display:block}
@@ -36,41 +40,72 @@
   .stat-card .sn{font-size:1.6rem;font-weight:700;line-height:1;margin-bottom:2px}
   .stat-card .sl{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:500}
 
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .section-header h2{font-size:1.1rem;font-weight:700}
+
+  .team-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:12px;box-shadow:var(--shadow);border-left:4px solid var(--orange)}
+  .team-card .tc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .team-card .tc-name{font-weight:700;font-size:1rem;display:flex;align-items:center;gap:8px}
+  .team-card .tc-pts{font-weight:700;font-size:1.1rem;color:var(--orange)}
+  .team-card .tc-meta{font-size:.78rem;color:var(--text-muted);margin-bottom:8px}
+  .tc-members{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+  .tc-member{background:var(--bg);border:1px solid var(--border);padding:3px 10px;border-radius:50px;font-size:.75rem;font-weight:500}
+  .progress-bg{height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+  .progress-fill{height:100%;background:var(--orange);border-radius:3px;transition:width .4s}
+
   .sub-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)}
   .sub-card .sc-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
   .sub-card .sc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
   .sub-card .sc-team{font-weight:700;font-size:.9rem}
   .sub-card .sc-time{font-size:.72rem;color:var(--text-muted)}
-  .sub-card .sc-task{font-weight:600;font-size:.88rem;margin-bottom:4px}
-  .sub-card .sc-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:.78rem}
-  .sub-card .sc-note{font-size:.82rem;color:var(--text-dim);font-style:italic;margin-bottom:10px}
-  .sub-card .sc-actions{display:flex;gap:8px}
-
-  .btn{padding:8px 16px;border-radius:.5rem;border:1px solid var(--border);font-size:.82rem;font-weight:500;cursor:pointer;background:var(--card);color:var(--text);transition:all .15s}
-  .btn-primary{background:var(--orange);color:#fff;border-color:var(--orange)}
-  .btn-danger{background:var(--red-light);color:var(--red);border-color:#fecaca}
+  .sub-card .sc-task{font-weight:600;font-size:.9rem;margin-bottom:4px;color:var(--orange-dark)}
+  .sub-card .sc-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; font-size: .78rem; }
+  .sub-card .sc-note{font-size:.82rem;color:var(--text-dim);font-style:italic;margin-bottom:10px;background:var(--bg);padding:6px 10px;border-radius:6px;border-left:3px solid var(--orange);}
+  .sub-card .sc-actions{display:flex;gap:8px;margin-top:12px}
+  .btn{padding:8px 16px;border-radius:.5rem;border:1px solid var(--border);font-size:.82rem;font-weight:500;cursor:pointer;font-family:inherit;background:var(--card);color:var(--text);transition:all .15s}
+  .btn:hover{background:var(--bg)}.btn-primary{background:var(--orange);color:#fff;border-color:var(--orange)}.btn-primary:hover{background:var(--orange-dark)}
+  .btn-danger{background:var(--red-light);color:var(--red);border-color:#fecaca}.btn-danger:hover{background:#fee2e2}
   .btn-sm{padding:5px 12px;font-size:.78rem}
+  .level-badge{display:inline-block;padding:2px 8px;border-radius:50px;font-size:.7rem;font-weight:600;text-transform:uppercase}
+  .level-easy{background:var(--green-light);color:var(--green)}.level-medium{background:var(--blue-light);color:var(--blue)}
+  .level-hard{background:var(--orange-light);color:var(--orange-dark)}.level-rare{background:#f5f3ff;color:var(--purple)}
 
   .reviewed-item{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:.82rem;box-shadow:var(--shadow)}
   .ri-status{padding:3px 10px;border-radius:50px;font-size:.7rem;font-weight:600;flex-shrink:0}
   .ri-approved{background:var(--green-light);color:#15803d}.ri-rejected{background:var(--red-light);color:#b91c1c}
+
   .empty{text-align:center;padding:40px;color:var(--text-muted);font-size:.9rem}
+  .toast-container{position:fixed;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:6px}
+  .toast{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:12px 16px;font-size:.82rem;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:8px;max-width:300px;animation:slideIn .2s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+  @media(max-width:600px){.stats-row{grid-template-columns:repeat(2,1fr)}.nav-bar button{padding:8px;font-size:.78rem}}
 </style>
 </head>
 <body>
 
+<div class="toast-container" id="toastContainer"></div>
+
 <div id="loginScreen">
   <div class="login-box">
     <h2>👤 Advisor Login</h2>
-    <label>Username</label><input type="text" id="loginUser">
-    <label>Password</label><input type="password" id="loginPass">
+    <label>Username</label>
+    <input type="text" id="loginUser" placeholder="Your username" autocomplete="username">
+    <label>Password</label>
+    <input type="password" id="loginPass" placeholder="Your password" autocomplete="current-password">
     <button class="login-btn" onclick="doLogin()">Login</button>
+    <div class="login-err" id="loginErr">❌ Invalid credentials</div>
   </div>
 </div>
 
 <div id="dashScreen" style="display:none">
   <button class="logout-btn" onclick="doLogout()">🚪 Logout</button>
-  <div class="header"><h1>👤 Advisor Dashboard</h1><p id="advWelcome">Welcome!</p></div>
+
+  <div class="header">
+    <h1>👤 Advisor Dashboard</h1>
+    <p id="advWelcome">Welcome!</p>
+  </div>
+
   <div class="stats-row" id="advStats"></div>
 
   <div class="nav-bar">
@@ -80,18 +115,38 @@
   </div>
 
   <div class="section active" id="sec-subs">
+    <div class="section-header"><h2>📨 Pending Submissions</h2><span id="pendingBadge"></span></div>
     <div id="pendingList"></div>
   </div>
+
   <div class="section" id="sec-teams">
+    <div class="section-header"><h2>🏅 My Teams</h2></div>
     <div id="myTeamsList"></div>
   </div>
+
   <div class="section" id="sec-log">
+    <div class="section-header"><h2>📜 Reviewed History</h2></div>
     <div id="reviewedList"></div>
   </div>
 </div>
 
 <script>
-let advisor = null, myTeams = [], pending = [], reviewed = [];
+let advisor = null;
+let myTeams = [];
+let pending = [];
+let reviewed = [];
+let dbTasks = []; // Holds relational database configurations fetched from server
+
+const LEVEL_PTS = { easy:20, medium:30, hard:50, rare:70 };
+
+function toast(icon, msg) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = '<span style="font-size:1rem">'+icon+'</span> '+msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 3000);
+}
 
 function showSec(id, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -100,28 +155,83 @@ function showSec(id, btn) {
   if (btn) btn.classList.add('active');
 }
 
+// ── Login ──
 async function doLogin() {
   const username = document.getElementById('loginUser').value.trim();
   const password = document.getElementById('loginPass').value.trim();
-  const res = await fetch('/api/advisor/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
-  const data = await res.json();
-  if (data.success) {
-    advisor = data.advisor; myTeams = data.teams;
-    localStorage.setItem('adv_id', advisor.id);
-    localStorage.setItem('adv_user', username); localStorage.setItem('adv_pass', password);
-    showDashboard();
+  if (!username || !password) return;
+
+  try {
+    const res = await fetch('/api/advisor/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (data.success) {
+      advisor = data.advisor;
+      myTeams = data.teams;
+      localStorage.setItem('adv_id', advisor.id);
+      localStorage.setItem('adv_user', username);
+      localStorage.setItem('adv_pass', password);
+      showDashboard();
+    } else {
+      document.getElementById('loginErr').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('loginErr').textContent = '❌ Network error';
+    document.getElementById('loginErr').style.display = 'block';
   }
 }
 
 function doLogout() {
-  localStorage.clear(); location.reload();
+  advisor = null;
+  localStorage.removeItem('adv_id');
+  localStorage.removeItem('adv_user');
+  localStorage.removeItem('adv_pass');
+  document.getElementById('dashScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'block';
 }
 
+async function autoLogin() {
+  const id = localStorage.getItem('adv_id');
+  const user = localStorage.getItem('adv_user');
+  const pass = localStorage.getItem('adv_pass');
+  if (!id || !user || !pass) return;
+
+  try {
+    const res = await fetch('/api/advisor/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass })
+    });
+    const data = await res.json();
+    if (data.success) {
+      advisor = data.advisor;
+      myTeams = data.teams;
+      showDashboard();
+    }
+  } catch(e) {}
+}
+
+// ── Fetch Global Config ──
+async function loadTasksFromDB() {
+  try {
+    const res = await fetch('/api/tasks');
+    dbTasks = await res.json() || [];
+  } catch(e) {
+    console.error("Failed to sync structural targets database", e);
+  }
+}
+
+// ── Dashboard ──
 async function showDashboard() {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('dashScreen').style.display = 'block';
   document.getElementById('advWelcome').textContent = 'Welcome, '+advisor.name+'!';
-  await loadAdvisorData(); renderAll();
+  await loadTasksFromDB();
+  await loadAdvisorData();
+  renderAll();
   setInterval(async () => { await loadAdvisorData(); renderAll(); }, 2000);
 }
 
@@ -130,100 +240,139 @@ async function loadAdvisorData() {
     const res = await fetch('/api/advisor/'+advisor.id+'/state');
     const data = await res.json();
     myTeams = data.teams || myTeams;
-    pending = data.submissions?.pending || [];
-    reviewed = data.submissions?.reviewed || [];
+    pending = data.submissions ? data.submissions.pending || [] : [];
+    reviewed = data.submissions ? data.submissions.reviewed || [] : [];
   } catch(e) {}
 }
 
 function renderAll() {
-  document.getElementById('advStats').innerHTML = `<div class="stat-card"><div class="sn">${pending.length}</div><div class="sl">Pending</div></div>`;
+  // Stats Points Calculation Wrapper
+  const totalPts = myTeams.reduce((s,t) => {
+    let pts = 0;
+    if (t.completions) t.completions.forEach(c => {
+      const match = dbTasks.find(tk => tk.category_id === c.categoryId && tk.task_num === c.taskNum);
+      pts += match ? (match.points || 20) : 30;
+    });
+    return s + pts;
+  }, 0);
+  const totalTasks = myTeams.reduce((s,t) => s + (t.completions||[]).length, 0);
 
+  document.getElementById('advStats').innerHTML =
+    '<div class="stat-card"><div class="sn" style="color:var(--orange)">'+myTeams.length+'</div><div class="sl">My Teams</div></div>'+
+    '<div class="stat-card"><div class="sn" style="color:var(--blue)">'+pending.length+'</div><div class="sl">Pending</div></div>'+
+    '<div class="stat-card"><div class="sn" style="color:var(--green)">'+totalTasks+'</div><div class="sl">Completed</div></div>'+
+    '<div class="stat-card"><div class="sn" style="color:var(--purple)">'+reviewed.length+'</div><div class="sl">Reviewed</div></div>';
+
+  // Pending View Controller Configuration
+  document.getElementById('pendingBadge').textContent = pending.length+' pending';
   if (!pending.length) {
-    document.getElementById('pendingList').innerHTML = '<div class="empty">✅ All clear!</div>';
+    document.getElementById('pendingList').innerHTML = '<div class="empty">✅ No pending submissions. All clear!</div>';
   } else {
     document.getElementById('pendingList').innerHTML = pending.map(s => {
-      let evLink = '<span>No files uploaded</span>';
+      // Find matching schema record from the database mapping array
+      const taskObj = dbTasks.find(t => t.category_id === s.category_id && t.task_num === s.task_num);
+      
+      const categoryName = taskObj ? `${taskObj.category_icon || '📋'} ${taskObj.category_name}` : s.category_id;
+      const taskTitle = taskObj ? taskObj.task_name : `Task #${s.task_num}`;
+      const level = taskObj ? taskObj.level : 'Medium';
+      const pts = taskObj ? (taskObj.points || 20) : 30;
+      const evidenceReq = taskObj && taskObj.evidence ? taskObj.evidence : 'Verification Attachment';
+
+      let evLink = '<span style="font-size:.75rem;color:var(--text-muted)">No files uploaded</span>';
       try {
-        const ef = JSON.parse(s.evidence_file || '[]');
+        const ef = JSON.parse(s.evidence_file||'[]');
         if(Array.isArray(ef) && ef.length > 0) {
-          evLink = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">' +
-            ef.map((f,i) => `<a href="/uploads/${f}" target="_blank" style="display:inline-block;padding:4px 10px;background:var(--blue-light);color:var(--blue);border-radius:6px;font-size:.78rem;text-decoration:none">📷 Photo ${i+1}</a>`).join('') +
+          evLink = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">' +
+            ef.map((f,i) => '<a href="/uploads/'+f+'" target="_blank" style="display:inline-block;padding:4px 10px;background:var(--blue-light);color:var(--blue);border-radius:6px;font-size:.78rem;font-weight:500;text-decoration:none">📷 Asset '+(i+1)+'</a>').join('') +
             '</div>';
         }
       } catch(e) {}
 
-      return `<div class="sub-card">
-        <div class="sc-team">Team: ${s.team_name}</div>
-        <div style="margin:6px 0">${evLink}</div>
-        <div class="sc-actions">
-          <button class="btn btn-primary btn-sm" onclick="approveSub(${s.id})">✅ Approve</button>
-          <button class="btn btn-danger btn-sm" onclick="rejectSub(${s.id})">❌ Reject</button>
-        </div>
-      </div>`;
+      return '<div class="sub-card">'+
+        '<div class="sc-top"><div class="sc-dot" style="background:'+s.team_color+'"></div>'+
+        '<div class="sc-team">'+s.team_name+'</div><div class="sc-time">'+new Date(s.submitted_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})+'</div></div>'+
+        '<div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.02em;margin-bottom:2px;">'+categoryName+'</div>'+
+        '<div class="sc-task">'+t.task_num + '. ' + taskTitle+'</div>'+
+        '<div style="font-size:0.75rem;color:var(--blue);font-weight:600;margin-bottom:6px;">📸 Rule: '+evidenceReq+'</div>'+
+        '<div class="sc-meta"><span class="level-badge level-'+level.toLowerCase()+'">'+level+'</span>'+
+        '<span style="font-weight:700;color:var(--orange)">'+pts+' pts</span></div>'+
+        (s.note ? '<div class="sc-note">"'+s.note+'"</div>' : '')+
+        evLink +
+        '<div class="sc-actions">'+
+        '<button class="btn btn-primary btn-sm" onclick="approveSub('+s.id+')">✅ Approve</button>'+
+        '<button class="btn btn-danger btn-sm" onclick="rejectSub('+s.id+')">❌ Reject</button>'+
+        '</div></div>';
     }).join('');
   }
 
+  // Teams
+  document.getElementById('myTeamsList').innerHTML = myTeams.map(t => {
+    const done = (t.completions||[]).length;
+    return '<div class="team-card" style="border-left-color:'+t.color+'">'+
+      '<div class="tc-top"><div class="tc-name"><span style="width:12px;height:12px;border-radius:50%;background:'+t.color+';display:inline-block"></span>'+
+      t.name+'</div><div class="tc-pts">'+done+' tasks</div></div>'+
+      '<div class="tc-meta">'+t.members.length+' members • '+done+' completed</div>'+
+      '<div class="tc-members">'+t.members.map(m => '<span class="tc-member">'+m+'</span>').join('')+'</div>'+
+      '<div class="progress-bg"><div class="progress-fill" style="width:'+Math.min(done*3,100)+'%;background:'+t.color+'"></div></div></div>';
+  }).join('');
+
+  // History Review Logs
   if (!reviewed.length) {
-    document.getElementById('reviewedList').innerHTML = '<div class="empty">No processed logs.</div>';
+    document.getElementById('reviewedList').innerHTML = '<div class="empty">No reviewed submissions yet.</div>';
   } else {
     document.getElementById('reviewedList').innerHTML = reviewed.map(s => {
+      const taskObj = dbTasks.find(t => t.category_id === s.category_id && t.task_num === s.task_num);
+      const taskTitle = taskObj ? taskObj.task_name : `${s.category_id} #${s.task_num}`;
+      const isApproved = s.status==='approved';
+      
       let reviewEvLinks = '';
       try {
         const ef = JSON.parse(s.evidence_file || '[]');
         if (Array.isArray(ef) && ef.length > 0) {
-          reviewEvLinks = ef.map((f, i) => `<a href="/uploads/${f}" target="_blank" style="color:var(--blue);font-size:.75rem;margin-right:6px;text-decoration:none;">📷 ${i + 1}</a>`).join(' ');
+          reviewEvLinks = ef.map((f, i) => '<a href="/uploads/' + f + '" target="_blank" style="color:var(--blue);font-size:.75rem;margin-right:6px;text-decoration:none;">📷 File ' + (i + 1) + '</a>').join(' ');
         }
       } catch (e) {}
 
-      return `<div class="reviewed-item">
-        <div style="flex:1"><strong>${s.team_name}</strong><div style="margin-top:2px">${reviewEvLinks}</div></div>
-        <span class="ri-status ri-${s.status}">${s.status}</span>
-      </div>`;
+      return '<div class="reviewed-item">'+
+        '<span style="font-size:1rem">'+(isApproved?'✅':'❌')+'</span>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:.82rem">'+s.team_name+' &mdash; '+taskTitle+'</div>'+
+        '<div style="margin-top:2px">'+reviewEvLinks+'</div>'+
+        (s.rejection_comment ? '<div style="font-size:0.72rem;color:var(--red);margin-top:2px;">Reason: "'+s.rejection_comment+'"</div>' : '')+
+        '</div>'+
+        '<span class="ri-status '+(isApproved?'ri-approved':'ri-rejected')+'">'+s.status+'</span></div>';
     }).join('');
   }
 }
 
+// ── Actions ──
 async function approveSub(id) {
-  await fetch('/api/submissions/'+id+'/approve', { method:'PUT' });
+  await fetch('/api/submissions/'+id+'/approve', { method:'PUT', headers:{'Content-Type':'application/json'} });
+  toast('✅', 'Approved!');
   await loadAdvisorData(); renderAll();
 }
 
 async function rejectSub(id) {
   const reason = prompt('Rejection reason (Please specify why this task was rejected):');
-  if (reason === null) return; // User canceled the dialog box prompt
+  if (reason === null) return;
   if (!reason.trim()) {
-    alert('A concise rejection comment is required so teams know how to fix it.');
+    alert('A rejection reason is required so teams know how to fix it.');
     return;
   }
+  
+  await fetch('/api/submissions/'+id+'/reject', {
+    method:'PUT', 
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ reason: reason.trim() })
+  });
+  toast('❌', 'Rejected');
+  await loadAdvisorData(); renderAll();
+}
 
-  try {
-    const res = await fetch('/api/submissions/' + id + '/reject', {
-      method: 'PUT', 
-      headers: { 
-        'Content-Type': 'application/json' 
-      },
-      body: JSON.stringify({ reason: reason.trim() })
-    });
-    
-    const data = await res.json();
-    
-    if (res.ok && data.success) {
-      await loadAdvisorData(); 
-      renderAll();
-    } else {
-      alert('Failed to update submission on server: ' + (data.error || 'Unknown error'));
-    }
-  } catch (err) {
-    console.error('Network Error:', err);
-    alert('Network error occurred while updating the server.');
-  }
-}(async function autoLogin() {
-  const id = localStorage.getItem('adv_id');
-  if (id) {
-    advisor = { id, name: localStorage.getItem('adv_user') };
-    await showDashboard();
-  }
-})();
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') doLogin();
+});
+
+autoLogin();
 </script>
 </body>
 </html>
