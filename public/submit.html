@@ -448,17 +448,28 @@ function onFileChange(){
   else p.style.display='none';
 }
 
+// ── NEW HIGH-PERFORMANCE COMPRESSED SUBMISSION ──
 async function submitTask(){
   const btn=document.getElementById('submitBtn'),msg=document.getElementById('msg');
-  btn.disabled=true;btn.textContent='Submitting...';
+  btn.disabled=true;btn.textContent='Compressing & Uploading...';
   try{
     const files=document.getElementById('evidenceFile').files;
     const evidence=[];
+    
     for(let i=0;i<files.length;i++){
       const f=files[i];
-      const data=await new Promise(r=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.readAsDataURL(f)});
-      evidence.push({name:f.name,data:data});
+      
+      // Only compress images; leave videos or other files as-is
+      if (f.type.startsWith('image/')) {
+        const compressedData = await compressImage(f, 1200, 0.75);
+        evidence.push({name: f.name, data: compressedData});
+      } else {
+        // Fallback for videos/other assets
+        const data=await new Promise(r=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.readAsDataURL(f)});
+        evidence.push({name:f.name,data:data});
+      }
     }
+    
     const jsonData={
       teamId:myTeamId,
       categoryId:myCatId,
@@ -466,14 +477,74 @@ async function submitTask(){
       note:document.getElementById('note').value,
       evidence:evidence
     };
+    
     const res=await fetch('/api/submissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(jsonData)});
     const result=await res.json();
-    if(result.success){msg.className='msg ok';msg.textContent='✅ '+(result.message||'Submitted! Waiting for approval.');msg.style.display='block';document.getElementById('evidenceFile').value='';document.getElementById('fileName').textContent='';document.getElementById('filePreview').style.display='none';document.getElementById('uploadArea').classList.remove('has-file');document.getElementById('note').value='';await loadSubs();renderAll();}
-    else{msg.className='msg err';msg.textContent='❌ '+(result.error||'Failed');msg.style.display='block';}
-  }catch(e){msg.className='msg err';msg.textContent='❌ Network error';msg.style.display='block';}
-  btn.textContent='Submit for Review';btn.disabled=false;
+    if(result.success){
+      msg.className='msg ok';
+      msg.textContent='✅ '+(result.message||'Submitted! Waiting for approval.');
+      msg.style.display='block';
+      document.getElementById('evidenceFile').value='';
+      document.getElementById('fileName').textContent='';
+      document.getElementById('filePreview').style.display='none';
+      document.getElementById('uploadArea').classList.remove('has-file');
+      document.getElementById('note').value='';
+      await loadSubs();
+      renderAll();
+    } else {
+      msg.className='msg err';
+      msg.textContent='❌ '+(result.error||'Failed');
+      msg.style.display='block';
+    }
+  }catch(e){
+    msg.className='msg err';
+    msg.textContent='❌ Network error';
+    msg.style.display='block';
+  }
+  btn.textContent='Submit for Review';
+  btn.disabled=false;
 }
 
+// ── HELPER FUNCTION: CLIENT-SIDE CANVAS COMPRESSION ──
+function compressImage(file, maxDim = 1200, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions matching max aspect ratio boundaries
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Export to highly optimized compressed JPEG Base64 string format
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedBase64);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+}
 function renderHistory(){
   if(!allSubs.length){document.getElementById('historyList').innerHTML='<div class="empty">No submissions yet. Go submit some tasks!</div>';return;}
   document.getElementById('historyList').innerHTML=allSubs.map(s=>{
