@@ -268,41 +268,8 @@ function renderAll() {
   if (!pending.length) {
     document.getElementById('pendingList').innerHTML = '<div class="empty">✅ No pending submissions. All clear!</div>';
   } else {
-    document.getElementById('pendingList').innerHTML = pending.map(s => {
-      // Find matching schema record from the database mapping array
-      const taskObj = dbTasks.find(t => t.category_id === s.category_id && t.task_num === s.task_num);
-      
-      const categoryName = taskObj ? `${taskObj.category_icon || '📋'} ${taskObj.category_name}` : s.category_id;
-      const taskTitle = taskObj ? taskObj.task_name : `Task #${s.task_num}`;
-      const level = taskObj ? taskObj.level : 'Medium';
-      const pts = taskObj ? (taskObj.points || 20) : 30;
-      const evidenceReq = taskObj && taskObj.evidence ? taskObj.evidence : 'Verification Attachment';
-
-      let evLink = '<span style="font-size:.75rem;color:var(--text-muted)">No files uploaded</span>';
-      try {
-        const ef = JSON.parse(s.evidence_file||'[]');
-        if(Array.isArray(ef) && ef.length > 0) {
-          evLink = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">' +
-            ef.map((f,i) => '<a href="/uploads/'+f+'" target="_blank" style="display:inline-block;padding:4px 10px;background:var(--blue-light);color:var(--blue);border-radius:6px;font-size:.78rem;font-weight:500;text-decoration:none">📷 Asset '+(i+1)+'</a>').join('') +
-            '</div>';
-        }
-      } catch(e) {}
-
-      return '<div class="sub-card">'+
-        '<div class="sc-top"><div class="sc-dot" style="background:'+s.team_color+'"></div>'+
-        '<div class="sc-team">'+s.team_name+'</div><div class="sc-time">'+new Date(s.submitted_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})+'</div></div>'+
-        '<div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.02em;margin-bottom:2px;">'+categoryName+'</div>'+
-        '<div class="sc-task">'+t.task_num + '. ' + taskTitle+'</div>'+
-        '<div style="font-size:0.75rem;color:var(--blue);font-weight:600;margin-bottom:6px;">📸 Rule: '+evidenceReq+'</div>'+
-        '<div class="sc-meta"><span class="level-badge level-'+level.toLowerCase()+'">'+level+'</span>'+
-        '<span style="font-weight:700;color:var(--orange)">'+pts+' pts</span></div>'+
-        (s.note ? '<div class="sc-note">"'+s.note+'"</div>' : '')+
-        evLink +
-        '<div class="sc-actions">'+
-        '<button class="btn btn-primary btn-sm" onclick="approveSub('+s.id+')">✅ Approve</button>'+
-        '<button class="btn btn-danger btn-sm" onclick="rejectSub('+s.id+')">❌ Reject</button>'+
-        '</div></div>';
-    }).join('');
+    // ✅ FIXED LINE
+'<div class="sc-task">'+s.task_num + '. ' + taskTitle+'</div>'+
   }
 
   // Teams
