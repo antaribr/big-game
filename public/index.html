@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Event — Point System Admin</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -151,7 +152,12 @@
   </div>
 
   <div class="section active" id="section-leaderboard">
-    <div class="section-header"><h2>🏅 Live Standings</h2></div>
+    <div class="section-header">
+      <h2>🏅 Live Standings</h2>
+      <button class="btn btn-primary btn-sm" onclick="generateGameSummaryPDF()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+        📄 Export Game Summaries PDF
+      </button>
+    </div>
     <div class="leaderboard" id="fullLeaderboard"></div>
     <div class="section-header" style="margin-top:20px;"><h2>📂 Active Categories</h2></div>
     <div class="cat-grid" id="dashCatGrid"></div>
