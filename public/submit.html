@@ -511,12 +511,21 @@ async function lockTeam(id){
   document.getElementById('teamBanner').style.display='flex';
   document.getElementById('myStats').style.display='grid';
   document.getElementById('mainNav').style.display='flex';
-  document.getElementById('teamBanner').innerHTML=
-    '<div class="tb-dot" style="background:'+team.color+'"></div>'+
-    '<div class="tb-info"><div class="tb-name">'+team.name+'</div>'+
-    '<div class="tb-sub">'+team.members.length+' participants</div></div>'+
-    '<span class="tb-badge">🔒 Synchronized</span>'+
-    '<button style="background:none;border:1px solid var(--border);border-radius:.4rem;padding:4px 10px;font-size:.72rem;color:var(--text-dim);cursor:pointer;font-family:inherit;font-weight:500;" onclick="if(confirm(\'De-synchronize identity layout profile? Requires valid target verification pin.\')){localStorage.removeItem(\'event_team_lock\');localStorage.removeItem(SEEN_SUBS_KEY);location.reload();}">Disconnect</button>';
+  
+  // Cleaned layout split into structural flex boxes
+  document.getElementById('teamBanner').innerHTML =
+    '<div class="tb-left">' +
+      '<div class="tb-dot" style="background:'+team.color+'"></div>' +
+      '<div class="tb-info">' +
+        '<div class="tb-name">'+team.name+'</div>' +
+        '<div class="tb-sub">'+team.members.length+' participants</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="tb-right">' +
+      '<span class="tb-badge">🔒 Linked</span>' +
+      '<button class="disconnect-btn" onclick="if(confirm(\'De-synchronize identity layout profile? Requires valid target verification pin.\')){localStorage.removeItem(\'event_team_lock\');localStorage.removeItem(SEEN_SUBS_KEY);location.reload();}">Disconnect</button>' +
+    '</div>';
+
   await loadSubs();renderAll();
 }
 
