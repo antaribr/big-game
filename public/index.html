@@ -592,17 +592,23 @@ async function approveSubmission(id) {
 
 async function rejectSubmission(id) {
   const reason = prompt('Rejection reason (Please specify why this task was rejected):');
-  if (reason === null) return;
+  if (reason === null) return; // User canceled the dialog box prompt
   if (!reason.trim()) {
     alert('A concise rejection comment is required so teams know how to fix it.');
     return;
   }
   
-  await api('PUT', '/submissions/' + id + '/reject', { reason: reason.trim() });
-  showToast('❌', 'Submission rejected');
-  await loadState(); refreshAll();
+  try {
+    // Calls your API helper matching the APP's PUT route logic
+    const res = await api('PUT', '/submissions/' + id + '/reject', { reason: reason.trim() });
+    showToast('❌', 'Submission rejected');
+    await loadState(); 
+    refreshAll();
+  } catch (err) {
+    console.error('Error rejecting submission:', err);
+    showToast('⚠️', 'Failed to reject submission');
+  }
 }
-
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
 async function adminLogin() {
