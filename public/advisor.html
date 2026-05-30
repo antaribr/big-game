@@ -309,7 +309,12 @@ function renderAll() {
       const taskName = getTaskName(s.category_id, s.task_num);
       const level = 'medium';
       const pts = LEVEL_PTS[level] || 30;
-      const evLink = s.evidence_file ? '<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.82rem;text-decoration:none;font-weight:500">📎 View Evidence</a>' : '<span style="font-size:.75rem;color:var(--text-muted)">No file</span>';
+      let evLink = '<span style="font-size:.75rem;color:var(--text-muted)">No file</span>';
+      try {
+        const ef = JSON.parse(s.evidence_file||'[]');
+        if(Array.isArray(ef)&&ef.length>0) evLink = ef.map(f=>'<a href="/uploads/'+f+'" target="_blank" style="color:var(--blue);font-size:.82rem;font-weight:500">📎 Photo</a>').join(' ');
+        else if(s.evidence_file) evLink = '<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.82rem">📎 Evidence</a>';
+      } catch(e) { if(s.evidence_file) evLink = '<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.82rem">📎 Evidence</a>'; }
       return '<div class="sub-card">'+
         '<div class="sc-top"><div class="sc-dot" style="background:'+s.team_color+'"></div>'+
         '<div class="sc-team">'+s.team_name+'</div><div class="sc-time">'+s.submitted_at+'</div></div>'+
@@ -376,6 +381,6 @@ document.addEventListener('keydown', e => {
 
 autoLogin();
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a037be8ac9c7e16a',t:'MTc4MDA4MTI1MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-</body>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a03c6c3789ecc0fb',t:'MTc4MDEzMDMwNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
