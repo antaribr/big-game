@@ -3,9 +3,20 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const webpush = require('web-push'); // Added background push package context
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configure web-push keys derived directly from secure Railway context variables
+webpush.setVapidDetails(
+  'mailto:your-scout-troop@example.com', // Operational validation signature mail
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
+
+// In-memory array storage pool tracking device registration handset nodes
+let pushSubscriptions = [];
 
 // Ensure uploads directory exists
 const UPLOADS_DIR = process.env.VERCEL ? '/tmp/uploads' : path.join(__dirname, 'uploads');
@@ -179,6 +190,20 @@ app.post('/api/admin/login', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PUSH NOTIFICATIONS REGISTER ENDPOINT
+// ═══════════════════════════════════════════════════════════════
+app.post('/api/notifications/subscribe', (req, res) => {
+  const { teamId, subscription } = req.body;
+  if (!teamId || !subscription) return res.status(400).json({ error: 'Missing fields' });
+
+  // Filter out any stale/duplicate endpoint nodes to clean out redundancy memory
+  pushSubscriptions = pushSubscriptions.filter(sub => sub.subscription.endpoint !== subscription.endpoint);
+  
+  pushSubscriptions.push({ teamId: parseInt(teamId), subscription });
+  res.json({ success: true });
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -357,6 +382,20 @@ app.put('/api/submissions/:id/approve', async (req, res) => {
     if (!existing) await pool.query('INSERT INTO completions (team_id, category_id, task_num) VALUES ($1, $2, $3)', [sub.team_id, sub.category_id, sub.task_num]);
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [sub.team_id]);
     await addLog(sub.team_id, '✅', team.name+' — '+sub.category_id+'-'+sub.task_num+' APPROVED');
+
+    // ── TRIGGER REAL-TIME PUSH NOTIFICATION ON APPROVAL ──
+    const approvedTeamDevices = pushSubscriptions.filter(device => device.teamId === sub.team_id);
+    const approvalPayload = JSON.stringify({
+      title: "🎯 Task Approved!",
+      body: `Excellent! Your submission for Task #${sub.task_num} has been verified and marked approved!`,
+      url: "/submit.html"
+    });
+    approvedTeamDevices.forEach(device => {
+      webpush.sendNotification(device.subscription, approvalPayload).catch(() => {
+        pushSubscriptions = pushSubscriptions.filter(s => s.subscription.endpoint !== device.subscription.endpoint);
+      });
+    });
+
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -371,6 +410,20 @@ app.put('/api/submissions/:id/reject', async (req, res) => {
     await pool.query("UPDATE submissions SET status='rejected', reviewed_at=NOW(), rejection_comment=$1 WHERE id=$2", [reason, id]);
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [sub.team_id]);
     await addLog(sub.team_id, '❌', team.name+' — '+sub.category_id+'-'+sub.task_num+' REJECTED'+(reason?': '+reason:''));
+
+    // ── TRIGGER REAL-TIME PUSH NOTIFICATION ON REJECTION ──
+    const rejectedTeamDevices = pushSubscriptions.filter(device => device.teamId === sub.team_id);
+    const rejectionPayload = JSON.stringify({
+      title: "❌ Revision Flagged",
+      body: `Task #${sub.task_num} needs updates. Check comments to fix and retry!`,
+      url: "/submit.html"
+    });
+    rejectedTeamDevices.forEach(device => {
+      webpush.sendNotification(device.subscription, rejectionPayload).catch(() => {
+        pushSubscriptions = pushSubscriptions.filter(s => s.subscription.endpoint !== device.subscription.endpoint);
+      });
+    });
+
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
