@@ -8,8 +8,8 @@ self.addEventListener('push', function(event) {
     
     const options = {
       body: data.body,
-      icon: '/uploads/app-logo.png', // Automatically links your home screen logo!
-      badge: '/uploads/app-logo.png',
+      icon: '/uploads/08_39_26 PM.png', // Automatically links your home screen logo!
+      badge: '/uploads/08_39_26 PM.png',
       vibrate: [200, 100, 200],
       data: { url: data.url || '/' }
     };
