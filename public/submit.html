@@ -6,12 +6,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Jiba w Siba">
-<link rel="apple-touch-icon" ="/logo.png">
+<!-- FIXED HTML SYNTAX ATTR HERE -->
+<link rel="apple-touch-icon" href="/logo.png">
 
 <title>Team Management Console</title>
-<link rel="preconnect" ="https://fonts.googleapis.com">
-<link rel="preconnect" ="https://fonts.gstatic.com" crossorigin>
-<link ="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- FIXED ACCIDENTAL HOLES IN FONT LINK MATRIX HERE -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f8fafc;
@@ -60,7 +62,11 @@
 
   .header-panel {
     padding: 24px 0 16px;
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
   }
   .header-panel h1 {
     font-size: 1.45rem;
@@ -312,6 +318,7 @@
 
 <div id="iosInstallBanner" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid var(--border); box-shadow: 0 -10px 25px rgba(0,0,0,0.1); padding: 16px 20px; z-index: 999; animation: slideUp 0.4s ease;">
   <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+    <!-- FIXED IMAGE EMBED SYNTAX HERE -->
     <img src="/logo.png" style="width: 44px; height: 44px; border-radius: 10px; box-shadow: var(--shadow-sm);" onerror="this.src='https://placehold.co/100?text=🏆'">
     <div style="flex: 1;">
       <div style="font-weight: 800; font-size: 0.95rem; color: var(--text);">Install Jiba w Siba</div>
@@ -327,7 +334,11 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <div class="container">
-  <div class="header-panel"><h1>🏆 Big Game Dashboard</h1></div>
+  <!-- INTEGRATED THE ACTIVE VISUAL BRAND EMBLEM INTO THE PANELS HERE -->
+  <div class="header-panel">
+    <img src="/logo.png" style="width: 64px; height: 64px; border-radius: 14px; box-shadow: var(--shadow-md); margin-bottom: 4px;" alt="Logo" onerror="this.style.display='none'">
+    <h1>🏆 Big Game Dashboard</h1>
+  </div>
 
   <div id="teamBanner" class="team-banner" style="display:none"></div>
   <div class="stats-grid" id="myStats" style="display:none"></div>
@@ -786,9 +797,10 @@ function renderHistory(){
     try{
       const ef = JSON.parse(s.evidence_file||'[]');
       if(Array.isArray(ef) && ef.length > 0) {
-        ev = ef.map((f,i)=>`<a ="/uploads/${f}" target="_blank" style="color:var(--blue);font-size:.75rem;font-weight:600;text-decoration:none;margin-left:4px">📷 Asset ${(i+1)}</a>`).join(' ');
+        // FIXED BAD ATTR ROUTE TAG HERE
+        ev = ef.map((f,i)=>`<a href="/uploads/${f}" target="_blank" style="color:var(--blue);font-size:.75rem;font-weight:600;text-decoration:none;margin-left:4px">📷 Asset ${(i+1)}</a>`).join(' ');
       }
-    }catch(e){if(s.evidence_file && s.evidence_file.length>10)ev='<a ="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎 Map</a>';}
+    }catch(e){if(s.evidence_file && s.evidence_file.length>10)ev='<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎 Map</a>';}
     
     let rejectCommentHtml = '';
     if(s.status === 'rejected' && s.rejection_comment) {
@@ -906,8 +918,8 @@ async function configurePushSubscription() {
     }
   } catch (e) {
     console.error("Subscription vector generation failed in frontend layout canvas:", e);
-    // UPDATE THIS LINE TO PRINT THE REAL ERROR VALUE ON YOUR PHONE SCREEN:
-    alert("CRITICAL ERROR: " + e.name + " - " + e.message);
+    // FORCE THE HANDSET TO POP UP THE RAW OPERATIONAL SYSTEM REASON
+    alert("🚨 PUSH ERROR CAPTURED:\nName: " + e.name + "\nMessage: " + e.message);
   }
 }
 
