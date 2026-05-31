@@ -1015,6 +1015,14 @@ async function adminLogin() {
   } else { alert('Access Denied: Invalid Password Verification'); }
 }
 
+// Add this helper function inside the script block of index.html
+function formatTime(isoString) {
+  if (!isoString) return 'Pending...';
+  const d = new Date(isoString);
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + 
+         ' (' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ')';
+}
+  
 function escapeHtml(str) {
   return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
