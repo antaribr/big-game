@@ -207,6 +207,38 @@ app.post('/api/notifications/subscribe', (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// PUSH NOTIFICATIONS CUSTOM FIELD BROADCAST ENDPOINT
+// ═══════════════════════════════════════════════════════════════
+app.post('/api/notifications/broadcast', (req, res) => {
+  try {
+    const { target, message } = req.body;
+    if (!message) return res.status(400).json({ success: false, error: "Message content empty" });
+
+    const payload = JSON.stringify({
+      title: "📢 Admin Announcement",
+      body: message,
+      url: "/submit.html"
+    });
+
+    // Filter by target metric criteria
+    const targetDevices = target === 'all' 
+      ? pushSubscriptions 
+      : pushSubscriptions.filter(sub => sub.teamId === parseInt(target));
+
+    targetDevices.forEach(device => {
+      webpush.sendNotification(device.subscription, payload).catch(() => {
+        // Automatically purge dead handset configurations from array stack memory
+        pushSubscriptions = pushSubscriptions.filter(s => s.subscription.endpoint !== device.subscription.endpoint);
+      });
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // API ROUTES
 // ═══════════════════════════════════════════════════════════════
 
