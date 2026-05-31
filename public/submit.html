@@ -6,8 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Jiba w Siba">
-<link rel="apple-touch-icon" href="/uploads/08_39_26 PM.png
-">
+<link rel="apple-touch-icon" href="/uploads/08_39_26 PM.png">
 
 <title>Team Management Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -244,7 +243,6 @@
   .lvl-hard { background: var(--orange-light); color: #9a3412; }
   .lvl-rare { background: var(--purple-light); color: #5b21b6; }
 
-  /* Redesigned Native-feeling upload block targets */
   .upload-area { border: 2px dashed #cbd5e1; border-radius: var(--radius-md); padding: 28px 16px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--card); position: relative; box-shadow: var(--shadow-sm); }
   .upload-area:active { border-color: var(--orange); background: var(--orange-light); }
   .upload-area.has-file { border-color: var(--green); background: var(--card); border-style: solid; }
@@ -257,7 +255,6 @@
   .file-preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
   .preview-thumb { width: 100%; height: 80px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
 
-  /* 16px Font scale ensures iOS Safari ignores auto-zoom behaviors */
   textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 16px; font-family: inherit; background: var(--card); color: var(--text); outline: none; resize: none; min-height: 72px; margin-top: 12px; box-shadow: var(--shadow-sm); }
   textarea:focus { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-light); }
 
@@ -313,6 +310,20 @@
 </head>
 <body>
 
+<div id="iosInstallBanner" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid var(--border); box-shadow: 0 -10px 25px rgba(0,0,0,0.1); padding: 16px 20px; z-index: 999; animation: slideUp 0.4s ease;">
+  <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+    <img src="/uploads/08_39_26 PM.png" style="width: 44px; height: 44px; border-radius: 10px; box-shadow: var(--shadow-sm);" onerror="this.src='https://placehold.co/100?text=🏆'">
+    <div style="flex: 1;">
+      <div style="font-weight: 800; font-size: 0.95rem; color: var(--text);">Install Jiba w Siba</div>
+      <div style="font-size: 0.78rem; color: var(--text-dim); font-weight: 500;">Add to Home Screen for full-screen challenge tracking and instant live advisor notifications.</div>
+    </div>
+    <button onclick="document.getElementById('iosInstallBanner').style.display='none'" style="border: none; background: #f1f5f9; width: 28px; height: 28px; border-radius: 50%; font-weight: 700; color: var(--text-dim); cursor: pointer;">×</button>
+  </div>
+  <div style="background: var(--bg); padding: 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; text-align: center; color: var(--text-dim);">
+    Tap the browser share icon <span style="font-size: 1.1rem; vertical-align: middle;">⎋</span> below, then scroll down and tap <strong style="color: var(--text);">"Add to Home Screen"</strong>.
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <div class="container">
@@ -320,6 +331,13 @@
 
   <div id="teamBanner" class="team-banner" style="display:none"></div>
   <div class="stats-grid" id="myStats" style="display:none"></div>
+
+  <div class="sec-card card" id="notificationPromptBox" style="margin-bottom: 16px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); box-shadow: var(--shadow-sm); text-align: center; display: none; animation: slideUp 0.25s ease;">
+    <div style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 8px;">Stay Updated Live</div>
+    <button class="btn btn-sm" id="pushBtn" onclick="requestNotificationAccess()" style="background: var(--blue-light); color: var(--blue); border-color: #bfdbfe; width: 100%; min-height: 40px; border-radius: 6px; font-weight: 700; cursor: pointer; border: 1px solid #bfdbfe; font-family: inherit;">
+      🔔 Enable Live Push Notifications
+    </button>
+  </div>
 
   <div class="nav-bar" id="mainNav" style="display:none">
     <button class="active" onclick="showSec('home',this)">🏠<span>Progress</span></button>
@@ -389,7 +407,7 @@
     <div class="pb-team"><span id="pinTeamDot" style="width:12px;height:12px;border-radius:50%;display:inline-block"></span><span id="pinTeamName"></span></div>
     <input type="tel" class="pin-input" id="pinInput" maxlength="6" placeholder="••••" inputmode="numeric" autocomplete="off">
     <div class="pin-err" id="pinErr">❌ Invalid Code Verification</div>
-    <button class="pin-btn" id="pinBtn" onclick="verifyPin()">Verify & Unlock</button>
+    <div class="pin-btn" id="pinBtn" onclick="verifyPin()">Verify & Unlock</div>
     <button class="pin-cancel" onclick="closePin()">Cancel</button>
   </div>
 </div>
@@ -398,8 +416,18 @@
 let CATEGORIES = [];
 const LOCK_KEY='event_team_lock';
 const SEEN_SUBS_KEY='event_seen_submissions';
+// Explicit configuration target for your Railway VAPID Public key parameters
+const VAPID_PUBLIC_KEY = "YOUR_PUBLIC_KEY_STRING_HERE";
+
 let teams=[], myTeamId=null, myCatId=null, myTaskNum=null, doneMap={}, pendingMap={}, allSubs=[];
 let activeSection = 'home';
+
+// Register standard tracking Service Worker logic context directly 
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(reg => console.log('Service Worker scoped online successfully:', reg.scope))
+    .catch(err => console.error('Service Worker fallback context initialization dropped:', err));
+}
 
 async function loadCategoriesFromDB() {
   try {
@@ -466,6 +494,7 @@ function showTeamSelect(){
   document.getElementById('mainNav').style.display='none';
   document.getElementById('myStats').style.display='none';
   document.getElementById('teamBanner').style.display='none';
+  document.getElementById('notificationPromptBox').style.display='none';
   document.getElementById('teamGrid').innerHTML=teams.map(t=>
     '<div style="padding:16px 12px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--card);cursor:pointer;text-align:center;box-shadow:var(--shadow-sm);" onclick="pickTeam('+t.id+')">'+
     '<div style="width:12px;height:12px;border-radius:50%;background:'+t.color+';margin:0 auto 8px;box-shadow:0 0 0 4px var(--bg)"></div>'+
@@ -487,13 +516,13 @@ function pickTeam(id){
 function closePin(){document.getElementById('pinOverlay').classList.remove('show');pendingTeamId=null;}
 async function verifyPin(){
   const pin=document.getElementById('pinInput').value.trim();if(!pin)return;
-  const btn=document.getElementById('pinBtn');btn.disabled=true;btn.textContent='Verifying...';
+  const btn=document.getElementById('pinBtn');btn.style.pointerEvents='none';btn.textContent='Verifying...';
   try{
     const res=await api('POST','/verify-pin',{teamId:pendingTeamId,pin});
     if(res.valid){document.getElementById('pinOverlay').classList.remove('show');localStorage.setItem(LOCK_KEY,pendingTeamId);lockTeam(pendingTeamId);}
     else{document.getElementById('pinInput').classList.add('error');document.getElementById('pinErr').style.display='block';document.getElementById('pinInput').value='';document.getElementById('pinInput').focus();}
   }catch(e){document.getElementById('pinErr').textContent='❌ Infrastructure Error';document.getElementById('pinErr').style.display='block';}
-  btn.disabled=false;btn.textContent='Verify & Unlock';
+  btn.style.pointerEvents='auto';btn.textContent='Verify & Unlock';
 }
 
 async function lockTeam(id){
@@ -504,6 +533,10 @@ async function lockTeam(id){
   document.getElementById('teamBanner').style.display='grid';
   document.getElementById('myStats').style.display='grid';
   document.getElementById('mainNav').style.display='flex';
+  
+  // Turn on the toggle prompt card once secure workspace profile is verified
+  document.getElementById('notificationPromptBox').style.display='block';
+  checkExistingPushSubscription();
   
   document.getElementById('teamBanner').innerHTML =
     '<div class="tb-dot" style="background:'+team.color+'"></div>' +
@@ -673,7 +706,6 @@ function onFileChange(){
   fn.style.display = 'inline-block';
   document.getElementById('submitBtn').disabled = false;
 
-  // Process Multi-file thumbnails loops
   Array.from(files).forEach(f => {
     if(f.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -793,6 +825,83 @@ function renderLB(){
 
 async function manualRefresh() { if(myTeamId){await loadSubs();renderAll();if(activeSection==='submit'&&myCatId)renderTasks();} toast('🔄','Dashboard Synchronized'); }
 
+// Handle PWA context guidelines viewports display logic maps
+function runPwaInstallationWatchdog() {
+  const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+
+  if (isIos && !isStandalone) {
+    document.getElementById('iosInstallBanner').style.display = 'block';
+  }
+}
+
+// Check if a push subscription is already active to safely toggle button layout states
+async function checkExistingPushSubscription() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      document.getElementById('pushBtn').textContent = "✅ Live Alerts Active";
+      document.getElementById('pushBtn').style.pointerEvents = "none";
+    }
+  } catch (e) { console.error("Error evaluating internal token maps:", e); }
+}
+
+async function requestNotificationAccess() {
+  if (!('Notification' in window)) {
+    alert("This device layout container does not support hardware push managers.");
+    return;
+  }
+
+  if (window.navigator.standalone === false && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    alert("iOS Constraint: You must tap 'Add to Home Screen' in Safari first before enabling live notifications!");
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    alert("Permission denied. Alerts will not be pushed to this node vector.");
+    return;
+  }
+
+  configurePushSubscription();
+}
+
+async function configurePushSubscription() {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+
+    if (myTeamId) {
+      await fetch('/api/notifications/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teamId: myTeamId, subscription: subscription })
+      });
+      
+      document.getElementById('pushBtn').textContent = "✅ Live Alerts Active";
+      document.getElementById('pushBtn').style.pointerEvents = "none";
+      toast('🔔', 'Live alerts linked to this handset handset node!');
+    }
+  } catch (e) {
+    console.error("Subscription vector generation failed:", e);
+    alert("Could not register push endpoints with device gateway.");
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+  return outputArray;
+}
+
+window.addEventListener('DOMContentLoaded', runPwaInstallationWatchdog);
 init();
 setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();if(activeSection==='submit'&&myCatId)renderTasks();}},3000);
 </script>
