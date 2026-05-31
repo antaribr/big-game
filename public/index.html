@@ -554,12 +554,16 @@ async function generateGameSummaryPDF() {
     tasksMatrix = await res.json() || [];
     const state = await (await fetch('/api/state')).json();
     allSubs = [...(state.submissions?.pending || []), ...(state.submissions?.reviewed || [])];
-  } catch(e) { alert("Pipeline Error: Failed to fetch system data."); return; }
+  } catch(e) { 
+    alert("Pipeline Error: Failed to fetch system data."); 
+    return; 
+  }
 
   const activeTeams = typeof teams !== 'undefined' ? teams : [];
   const selectedTargetId = document.getElementById('pdfTeamSelector').value;
   let targetTeamsList = selectedTargetId === 'all' ? [...activeTeams] : [activeTeams.find(t => t.id === parseInt(selectedTargetId))];
 
+  // Scoring/Ranking helper
   const calcPts = (team) => {
     let pts = 0;
     if (team.completions) team.completions.forEach(c => {
@@ -607,6 +611,7 @@ async function generateGameSummaryPDF() {
     const teamLogs = allSubs.filter(s => s.team_id === team.id).sort((a,b) => new Date(a.submitted_at) - new Date(b.submitted_at));
     
     if(!teamLogs.length) {
+      // FIXED HERE: Changed colspan from 4 to 5 to accurately link across all structural head matrices
       htmlContent += `<tr><td colspan="5" style="padding:16px; text-align:center; font-style:italic; color:#94a3b8; border-bottom:1px solid #e2e8f0;">No history modifications parsed under this tracking registry node.</td></tr>`;
     } else {
       teamLogs.forEach((s, logIdx) => {
@@ -614,7 +619,6 @@ async function generateGameSummaryPDF() {
         const points = task ? task.points : 0;
         const colorStatus = s.status === 'approved' ? '#10b981' : s.status === 'rejected' ? '#ef4444' : '#3b82f6';
         
-        // Formatted timestamp extractions for audit parameters
         const punchedAt = formatTime(s.submitted_at);
         const verifiedAt = s.reviewed_at ? formatTime(s.reviewed_at) : 'N/A (Pending)';
 
