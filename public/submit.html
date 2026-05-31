@@ -876,18 +876,36 @@ async function configurePushSubscription() {
     });
 
     if (myTeamId) {
-      await fetch('/api/notifications/subscribe', {
+      // Destructure internal sub details cleanly to stringify payload maps for server.js compatibility rules
+      const subJSON = subscription.toJSON();
+      const payload = {
+        teamId: myTeamId,
+        subscription: {
+          endpoint: subJSON.endpoint,
+          keys: {
+            p256dh: subJSON.keys?.p256dh,
+            auth: subJSON.keys?.auth
+          }
+        }
+      };
+
+      const response = await fetch('/api/notifications/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teamId: myTeamId, subscription: subscription })
+        body: JSON.stringify(payload)
       });
       
-      document.getElementById('pushBtn').textContent = "✅ Live Alerts Active";
-      document.getElementById('pushBtn').style.pointerEvents = "none";
-      toast('🔔', 'Live alerts linked to this handset handset node!');
+      const result = await response.json();
+      if (result.success) {
+        document.getElementById('pushBtn').textContent = "✅ Live Alerts Active";
+        document.getElementById('pushBtn').style.pointerEvents = "none";
+        toast('🔔', 'Live alerts linked to this handset node!');
+      } else {
+        alert("Server storage dropped subscription: " + (result.error || "Unknown response verification flaw."));
+      }
     }
   } catch (e) {
-    console.error("Subscription vector generation failed:", e);
+    console.error("Subscription vector generation failed in frontend layout canvas:", e);
     alert("Could not register push endpoints with device gateway.");
   }
 }
