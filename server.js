@@ -15,9 +15,6 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY
 );
 
-// In-memory array storage pool tracking device registration handset nodes
-let pushSubscriptions = [];
-
 // Ensure uploads directory exists
 const UPLOADS_DIR = process.env.VERCEL ? '/tmp/uploads' : path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -130,6 +127,18 @@ async function initDatabase() {
       )
     `);
 
+    // Ensure the persistent device token layout table is generated automatically
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS device_push_tokens (
+        id SERIAL PRIMARY KEY,
+        team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        endpoint TEXT UNIQUE NOT NULL,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     console.log('✅ Tables created');
 
     const teamCount = await client.query('SELECT COUNT(*) FROM teams');
@@ -202,12 +211,11 @@ app.post('/api/notifications/subscribe', async (req, res) => {
       return res.status(400).json({ error: 'Missing subscription parameter mapping.' });
     }
 
-    // Extract encryption keys safely from the payload bundle
     const endpoint = subscription.endpoint;
     const p256dh = subscription.keys?.p256dh || '';
     const auth = subscription.keys?.auth || '';
 
-    // Insert or update the token securely inside the database table row
+    // Insert or update handset tokens directly into the persistent PostgreSQL row space
     await pool.query(`
       INSERT INTO device_push_tokens (team_id, endpoint, p256dh, auth)
       VALUES ($1, $2, $3, $4)
@@ -236,7 +244,6 @@ app.post('/api/notifications/broadcast', async (req, res) => {
       url: "/submit.html"
     });
 
-    // Query tokens from database based on target selection parameters
     let rows = [];
     if (target === 'all') {
       const result = await pool.query('SELECT * FROM device_push_tokens');
@@ -247,21 +254,19 @@ app.post('/api/notifications/broadcast', async (req, res) => {
     }
 
     if (rows.length === 0) {
-      return res.json({ success: true, note: "Zero active devices found inside database layer." });
+      return res.json({ success: true, note: "Zero active devices discovered inside storage layer." });
     }
 
-    // Reconstruct the subscription payload objects and broadcast
     rows.forEach(row => {
       const pushSubscription = {
         endpoint: row.endpoint,
         keys: { p256dh: row.p256dh, auth: row.auth }
       };
 
-      webpush.sendNotification(pushSubscription, payload)
-        .catch(async () => {
-          // If a token is dead or expired, drop it out of the database permanently
-          await pool.query('DELETE FROM device_push_tokens WHERE id = $1', [row.id]);
-        });
+      webpush.sendNotification(pushSubscription, payload).catch(async () => {
+        // Drop dead or broken handset vector parameters cleanly out of database
+        await pool.query('DELETE FROM device_push_tokens WHERE id = $1', [row.id]);
+      });
     });
 
     res.json({ success: true });
@@ -447,16 +452,17 @@ app.put('/api/submissions/:id/approve', async (req, res) => {
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [sub.team_id]);
     await addLog(sub.team_id, '✅', team.name+' — '+sub.category_id+'-'+sub.task_num+' APPROVED');
 
-    // ── TRIGGER REAL-TIME PUSH NOTIFICATION ON APPROVAL ──
-    const approvedTeamDevices = pushSubscriptions.filter(device => device.teamId === sub.team_id);
+    // ── QUERY POSTGRES DEVICE TOKENS TABLE ON APPROVAL ROUTES ──
+    const approvedTeamDevices = await query('SELECT * FROM device_push_tokens WHERE team_id = $1', [sub.team_id]);
     const approvalPayload = JSON.stringify({
       title: "🎯 Task Approved!",
       body: `Excellent! Your submission for Task #${sub.task_num} has been verified and marked approved!`,
       url: "/submit.html"
     });
     approvedTeamDevices.forEach(device => {
-      webpush.sendNotification(device.subscription, approvalPayload).catch(() => {
-        pushSubscriptions = pushSubscriptions.filter(s => s.subscription.endpoint !== device.subscription.endpoint);
+      const pushSubscription = { endpoint: device.endpoint, keys: { p256dh: device.p256dh, auth: device.auth } };
+      webpush.sendNotification(pushSubscription, approvalPayload).catch(async () => {
+        await pool.query('DELETE FROM device_push_tokens WHERE id = $1', [device.id]);
       });
     });
 
@@ -475,16 +481,17 @@ app.put('/api/submissions/:id/reject', async (req, res) => {
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [sub.team_id]);
     await addLog(sub.team_id, '❌', team.name+' — '+sub.category_id+'-'+sub.task_num+' REJECTED'+(reason?': '+reason:''));
 
-    // ── TRIGGER REAL-TIME PUSH NOTIFICATION ON REJECTION ──
-    const rejectedTeamDevices = pushSubscriptions.filter(device => device.teamId === sub.team_id);
+    // ── QUERY POSTGRES DEVICE TOKENS TABLE ON REJECTION ROUTES ──
+    const rejectedTeamDevices = await query('SELECT * FROM device_push_tokens WHERE team_id = $1', [sub.team_id]);
     const rejectionPayload = JSON.stringify({
       title: "❌ Revision Flagged",
       body: `Task #${sub.task_num} needs updates. Check comments to fix and retry!`,
       url: "/submit.html"
     });
     rejectedTeamDevices.forEach(device => {
-      webpush.sendNotification(device.subscription, rejectionPayload).catch(() => {
-        pushSubscriptions = pushSubscriptions.filter(s => s.subscription.endpoint !== device.subscription.endpoint);
+      const pushSubscription = { endpoint: device.endpoint, keys: { p256dh: device.p256dh, auth: device.auth } };
+      webpush.sendNotification(pushSubscription, rejectionPayload).catch(async () => {
+        await pool.query('DELETE FROM device_push_tokens WHERE id = $1', [device.id]);
       });
     });
 
