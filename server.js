@@ -10,9 +10,9 @@ const PORT = process.env.PORT || 3000;
 
 // Configure web-push keys derived directly from secure Railway context variables
 webpush.setVapidDetails(
-  'mailto:ibrahimantarr@gmail.com', // Operational validation signature mail
-  process.env.BLmXKSzzax0C3iuhJJ5HvPJ54vYmj2PPdQbXHy1OZwixB62DealPJober-xd3n95OxqvpBQFBm9LLIsWaExx3Wk,
-  process.env.xRiVttR8yXLvv2EqoebYHuq986xVZPDxAXH14E0fUEw
+  'mailto:ibrahimantarr@gmail.com', 
+  process.env.VAPID_PUBLIC_KEY, 
+  process.env.VAPID_PRIVATE_KEY
 );
 
 // In-memory array storage pool tracking device registration handset nodes
