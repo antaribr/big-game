@@ -906,7 +906,8 @@ async function configurePushSubscription() {
     }
   } catch (e) {
     console.error("Subscription vector generation failed in frontend layout canvas:", e);
-    alert("Could not register push endpoints with device gateway.");
+    // UPDATE THIS LINE TO PRINT THE REAL ERROR VALUE ON YOUR PHONE SCREEN:
+    alert("CRITICAL ERROR: " + e.name + " - " + e.message);
   }
 }
 
