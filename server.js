@@ -195,21 +195,37 @@ app.post('/api/admin/login', (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 // PUSH NOTIFICATIONS REGISTER ENDPOINT
 // ═══════════════════════════════════════════════════════════════
-app.post('/api/notifications/subscribe', (req, res) => {
-  const { teamId, subscription } = req.body;
-  if (!teamId || !subscription) return res.status(400).json({ error: 'Missing fields' });
+app.post('/api/notifications/subscribe', async (req, res) => {
+  try {
+    const { teamId, subscription } = req.body;
+    if (!teamId || !subscription || !subscription.endpoint) {
+      return res.status(400).json({ error: 'Missing subscription parameter mapping.' });
+    }
 
-  // Filter out any stale/duplicate endpoint nodes to clean out redundancy memory
-  pushSubscriptions = pushSubscriptions.filter(sub => sub.subscription.endpoint !== subscription.endpoint);
-  
-  pushSubscriptions.push({ teamId: parseInt(teamId), subscription });
-  res.json({ success: true });
+    // Extract encryption keys safely from the payload bundle
+    const endpoint = subscription.endpoint;
+    const p256dh = subscription.keys?.p256dh || '';
+    const auth = subscription.keys?.auth || '';
+
+    // Insert or update the token securely inside the database table row
+    await pool.query(`
+      INSERT INTO device_push_tokens (team_id, endpoint, p256dh, auth)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (endpoint) 
+      DO UPDATE SET team_id = EXCLUDED.team_id, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth
+    `, [parseInt(teamId), endpoint, p256dh, auth]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Token registration failure:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════
 // PUSH NOTIFICATIONS CUSTOM FIELD BROADCAST ENDPOINT
 // ═══════════════════════════════════════════════════════════════
-app.post('/api/notifications/broadcast', (req, res) => {
+app.post('/api/notifications/broadcast', async (req, res) => {
   try {
     const { target, message } = req.body;
     if (!message) return res.status(400).json({ success: false, error: "Message content empty" });
@@ -220,16 +236,32 @@ app.post('/api/notifications/broadcast', (req, res) => {
       url: "/submit.html"
     });
 
-    // Filter by target metric criteria
-    const targetDevices = target === 'all' 
-      ? pushSubscriptions 
-      : pushSubscriptions.filter(sub => sub.teamId === parseInt(target));
+    // Query tokens from database based on target selection parameters
+    let rows = [];
+    if (target === 'all') {
+      const result = await pool.query('SELECT * FROM device_push_tokens');
+      rows = result.rows;
+    } else {
+      const result = await pool.query('SELECT * FROM device_push_tokens WHERE team_id = $1', [parseInt(target)]);
+      rows = result.rows;
+    }
 
-    targetDevices.forEach(device => {
-      webpush.sendNotification(device.subscription, payload).catch(() => {
-        // Automatically purge dead handset configurations from array stack memory
-        pushSubscriptions = pushSubscriptions.filter(s => s.subscription.endpoint !== device.subscription.endpoint);
-      });
+    if (rows.length === 0) {
+      return res.json({ success: true, note: "Zero active devices found inside database layer." });
+    }
+
+    // Reconstruct the subscription payload objects and broadcast
+    rows.forEach(row => {
+      const pushSubscription = {
+        endpoint: row.endpoint,
+        keys: { p256dh: row.p256dh, auth: row.auth }
+      };
+
+      webpush.sendNotification(pushSubscription, payload)
+        .catch(async () => {
+          // If a token is dead or expired, drop it out of the database permanently
+          await pool.query('DELETE FROM device_push_tokens WHERE id = $1', [row.id]);
+        });
     });
 
     res.json({ success: true });
