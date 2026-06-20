@@ -291,8 +291,9 @@ app.get('/api/state', async (req, res) => {
 app.post('/api/teams', async (req, res) => {
   const client = await pool.connect();
   try {
-    const { name, color, members } = req.body;
+    const { name, color, pin, members } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
+    if (!pin || !/^\d{4}$/.test(String(pin))) return res.status(400).json({ error: 'PIN must be exactly 4 digits' });
     if (!members || members.length < 1) return res.status(400).json({ error: 'Need at least 1 member' });
     if (members.length > 8) return res.status(400).json({ error: 'Max 8 members' });
 
@@ -301,7 +302,7 @@ app.post('/api/teams', async (req, res) => {
     let teamId;
     try {
       // Quotes explicitly protect against reserved keyword syntax errors
-      const result = await client.query('INSERT INTO teams ("name", "color") VALUES ($1, $2) RETURNING "id"', [name, color || '#f97316']);
+      const result = await client.query('INSERT INTO teams ("name", "color", "pin") VALUES ($1, $2, $3) RETURNING "id"', [name, color || '#f97316', String(pin)]);
       teamId = result.rows[0].id;
     } catch (err) {
       throw new Error('Team Insert Error: ' + err.message);
