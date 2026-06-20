@@ -207,15 +207,13 @@
   }
 
   .cat-progress-list { display: flex; flex-direction: column; gap: 10px; }
-  .cp-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm); }
+  .cp-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm); cursor: pointer; transition: all 0.2s; }
+  .cp-card:active { border-color: var(--orange); background: var(--orange-light); }
   .cp-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .cp-name { font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
   .cp-pts { font-weight: 800; font-size: 0.9rem; color: var(--text); }
   .cp-bar { height: 6px; background: #f1f5f9; border-radius: 100px; overflow: hidden; }
   .cp-fill { height: 100%; border-radius: 100px; transition: width 0.4s ease; }
-
-  .cp-card { cursor: pointer; transition: all 0.2s; }
-  .cp-card:active { border-color: var(--orange); background: var(--orange-light); }
 
   .task-list { display: flex; flex-direction: column; gap: 10px; }
   .task-btn { padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); cursor: pointer; text-align: left; transition: all 0.2s; display: flex; align-items: center; gap: 12px; font-family: inherit; box-shadow: var(--shadow-sm); min-height: 64px; }
@@ -253,7 +251,10 @@
   .upload-area .up-file { font-size: 0.8rem; color: #065f46; font-weight: 700; margin-top: 8px; background: var(--green-light); display: inline-block; padding: 4px 12px; border-radius: 30px; border: 1px solid #bbf7d0; }
   
   .file-preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
-  .preview-thumb { width: 100%; height: 80px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+  .preview-wrap { position: relative; }
+  .preview-thumb { width: 100%; height: 80px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: block; }
+  .preview-del { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(15,23,42,0.75); color: #fff; font-size: 0.8rem; font-weight: 800; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .preview-del:active { background: var(--red); }
 
   textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 16px; font-family: inherit; background: var(--card); color: var(--text); outline: none; resize: none; min-height: 72px; margin-top: 12px; box-shadow: var(--shadow-sm); }
   textarea:focus { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-light); }
@@ -351,7 +352,7 @@
       <div class="upload-area" id="uploadArea">
         <input type="file" id="evidenceFile" accept="image/*" multiple onchange="onFileChange()">
         <div class="up-icon">📸</div>
-        <div class="up-text"><strong>Tap to attach evidence</strong><br>(Up to 5 images / camera snaps)</div>
+        <div class="up-text"><strong>Tap to add a photo</strong><br>(Add up to 5 — tap again for each)</div>
         <div class="up-file" id="fileName" style="display:none"></div>
       </div>
       <div class="file-preview-grid" id="previewGrid"></div>
@@ -395,6 +396,7 @@ const LOCK_KEY='event_team_lock';
 const SEEN_SUBS_KEY='event_seen_submissions';
 
 let teams=[], myTeamId=null, myCatId=null, myTaskNum=null, doneMap={}, pendingMap={}, allSubs=[];
+let evidenceFiles=[]; // accumulates attached/captured images so mobile can add more than one
 let activeSection = 'home';
 
 async function loadCategoriesFromDB() {
@@ -438,7 +440,10 @@ function showSec(id,btn){
   document.getElementById('sec-'+id).classList.add('active');
   document.querySelectorAll('.nav-bar button').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
-  
+
+  // Tapping the Progress tab always returns to the category list (step 1)
+  if (id === 'home') backToCats();
+
   if (id === 'history') {
     clearUnreadCounters();
   }
@@ -634,6 +639,7 @@ function pickTask(num){
   myTaskNum=num;const cat=CATEGORIES.find(c=>c.id===myCatId);const task=cat.tasks.find(t=>t.num===num);
   document.getElementById('selTaskName').textContent=task.name;
   document.getElementById('selTaskMeta').innerHTML='<span class="lvl lvl-'+task.level.toLowerCase()+'">'+task.level+'</span> &bull; '+task.pts+' pts &bull; Requirement: '+task.evidence;
+  evidenceFiles=[];
   document.getElementById('evidenceFile').value='';document.getElementById('fileName').style.display='none';
   document.getElementById('previewGrid').innerHTML='';document.getElementById('uploadArea').classList.remove('has-file');
   document.getElementById('note').value='';document.getElementById('msg').style.display='none';document.getElementById('submitBtn').disabled=true;
@@ -642,38 +648,64 @@ function pickTask(num){
 function backToTasks(){document.getElementById('submitStep2').style.display='block';document.getElementById('submitStep3').style.display='none';}
 
 function onFileChange(){
-  const files=document.getElementById('evidenceFile').files;
-  const pGrid=document.getElementById('previewGrid');
+  const input = document.getElementById('evidenceFile');
+  const newFiles = Array.from(input.files).filter(f => f.type.startsWith('image/'));
+  // Clear the input right away so the SAME photo can be re-picked and the change event refires
+  input.value = '';
+
+  if(!newFiles.length) return;
+
+  for(const f of newFiles){
+    if(evidenceFiles.length >= 5){
+      alert("You can attach a maximum of 5 photos.");
+      break;
+    }
+    evidenceFiles.push(f);
+  }
+  renderEvidence();
+}
+
+function removeEvidence(idx){
+  evidenceFiles.splice(idx, 1);
+  renderEvidence();
+}
+
+function renderEvidence(){
+  const pGrid = document.getElementById('previewGrid');
+  const fn = document.getElementById('fileName');
+  const area = document.getElementById('uploadArea');
   pGrid.innerHTML = '';
-  
-  if(!files.length)return;
-  
-  if (files.length > 5) {
-    alert("You can upload a maximum of 5 evidence files per challenge iteration loop.");
-    document.getElementById('evidenceFile').value = '';
-    document.getElementById('uploadArea').classList.remove('has-file');
-    document.getElementById('fileName').style.display = 'none';
+
+  if(!evidenceFiles.length){
+    area.classList.remove('has-file');
+    fn.style.display = 'none';
     document.getElementById('submitBtn').disabled = true;
     return;
   }
-  
-  document.getElementById('uploadArea').classList.add('has-file');
-  const fn = document.getElementById('fileName');
-  fn.textContent = '📎 '+files.length+' file package attached';
+
+  area.classList.add('has-file');
+  fn.textContent = '📎 '+evidenceFiles.length+'/5 photo'+(evidenceFiles.length>1?'s':'')+' attached';
   fn.style.display = 'inline-block';
   document.getElementById('submitBtn').disabled = false;
 
-  Array.from(files).forEach(f => {
-    if(f.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = document.createElement('img');
-        img.className = 'preview-thumb';
-        img.src = e.target.result;
-        pGrid.appendChild(img);
-      };
-      reader.readAsDataURL(f);
-    }
+  evidenceFiles.forEach((f, idx) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preview-wrap';
+      const img = document.createElement('img');
+      img.className = 'preview-thumb';
+      img.src = e.target.result;
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'preview-del';
+      del.textContent = '✕';
+      del.onclick = (ev) => { ev.stopPropagation(); removeEvidence(idx); };
+      wrap.appendChild(img);
+      wrap.appendChild(del);
+      pGrid.appendChild(wrap);
+    };
+    reader.readAsDataURL(f);
   });
 }
 
@@ -681,24 +713,19 @@ async function submitTask(){
   const btn=document.getElementById('submitBtn'),msg=document.getElementById('msg');
   btn.disabled=true;btn.textContent='Compressing & Syncing Data...';
   try {
-    const files=document.getElementById('evidenceFile').files;
+    const files=evidenceFiles;
     const evidence=[];
     for(let i=0;i<files.length;i++){
       const f=files[i];
-      if (f.type.startsWith('image/')) {
-        const compressedData = await compressImage(f, 1200, 0.75);
-        evidence.push({name: f.name, data: compressedData});
-      } else {
-        const data=await new Promise(r=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.readAsDataURL(f)});
-        evidence.push({name:f.name,data:data});
-      }
+      const compressedData = await compressImage(f, 1200, 0.75);
+      evidence.push({name: f.name || ('photo'+(i+1)+'.jpg'), data: compressedData});
     }
     const jsonData={ teamId:myTeamId, categoryId:myCatId, taskNum:myTaskNum, note:document.getElementById('note').value, evidence:evidence };
     const res=await fetch('/api/submissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(jsonData)});
     const result=await res.json();
     if(result.success){
       msg.className='msg ok'; msg.textContent='✅ Asset batch indexed successfully for verification review loops'; msg.style.display='block';
-      document.getElementById('evidenceFile').value=''; document.getElementById('fileName').style.display='none'; document.getElementById('previewGrid').innerHTML=''; document.getElementById('uploadArea').classList.remove('has-file'); document.getElementById('note').value='';
+      evidenceFiles=[]; document.getElementById('evidenceFile').value=''; document.getElementById('fileName').style.display='none'; document.getElementById('previewGrid').innerHTML=''; document.getElementById('uploadArea').classList.remove('has-file'); document.getElementById('note').value='';
       await loadSubs(); renderAll(); renderTasks();
       setTimeout(() => { backToTasks(); }, 1200);
     } else { msg.className='msg err'; msg.textContent='❌ '+(result.error||'Failed'); msg.style.display='block'; }
@@ -785,5 +812,5 @@ async function manualRefresh() { if(myTeamId){await loadSubs();renderAll();if(ac
 init();
 setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();if(activeSection==='home'&&myCatId)renderTasks();}},3000);
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ec9c88eb36c6b7',t:'MTc4MTk3Nzc4MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
