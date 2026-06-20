@@ -47,13 +47,18 @@ async function initDatabase() {
       )
     `);
 
+    // UPDATED: Added the phone column
     await client.query(`
       CREATE TABLE IF NOT EXISTS members (
         id SERIAL PRIMARY KEY,
         team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-        name TEXT NOT NULL
+        name TEXT NOT NULL,
+        phone TEXT
       )
     `);
+    
+    // Safely upgrade existing database tables to add the phone column if it's missing
+    try { await client.query('ALTER TABLE members ADD COLUMN phone TEXT'); } catch(e) {}
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS completions (
@@ -141,7 +146,7 @@ async function initDatabase() {
     console.log('✅ Tables created');
 
     const teamCount = await client.query('SELECT COUNT(*) FROM teams');
-    // FIXED MISSING
+    // FIXED RESTORED
     if (parseInt(teamCount.rows.count) === 0) {
       await seedDatabase(client);
     }
@@ -165,7 +170,7 @@ async function query(sql, params) {
 
 async function queryOne(sql, params) {
   const result = await pool.query(sql, params);
-  // FIXED MISSING
+  // FIXED RESTORED
   return result.rows || null;
 }
 
@@ -180,7 +185,8 @@ async function getTeamsFull() {
 
   return teams.map(t => ({
     id: t.id, name: t.name, color: t.color, pin: t.pin || '0000', disqualified: !!t.disqualified,
-    members: members.filter(m => m.team_id === t.id).map(m => m.name),
+    // UPDATED: Formats the name and phone for the UI cleanly
+    members: members.filter(m => m.team_id === t.id).map(m => m.phone ? `${m.name} (${m.phone})` : m.name),
     completions: completions.filter(c => c.team_id === t.id).map(c => ({ categoryId: c.category_id, taskNum: c.task_num }))
   }));
 }
@@ -203,7 +209,7 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// PUSH NOTIFICATIONS REGISTER ENDPOINT
+// PUSH NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════════
 app.post('/api/notifications/subscribe', async (req, res) => {
   try {
@@ -225,14 +231,10 @@ app.post('/api/notifications/subscribe', async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Token registration failure:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ═══════════════════════════════════════════════════════════════
-// PUSH NOTIFICATIONS CUSTOM FIELD BROADCAST ENDPOINT
-// ═══════════════════════════════════════════════════════════════
 app.post('/api/notifications/broadcast', async (req, res) => {
   try {
     const { target, message } = req.body;
@@ -297,10 +299,15 @@ app.post('/api/teams', async (req, res) => {
     if (members.length > 8) return res.status(400).json({ error: 'Max 8 members' });
     const result = await pool.query('INSERT INTO teams (name, color) VALUES ($1, $2) RETURNING id', [name, color || '#f97316']);
     
-    // FIXED MISSING
+    // FIXED RESTORED
     const teamId = result.rows.id;
     
-    for (const m of members) await pool.query('INSERT INTO members (team_id, name) VALUES ($1, $2)', [teamId, m]);
+    for (const m of members) {
+      // UPDATED: Supports objects {name, phone} instead of just strings
+      const mName = typeof m === 'object' ? m.name : m;
+      const mPhone = typeof m === 'object' ? m.phone : null;
+      await pool.query('INSERT INTO members (team_id, name, phone) VALUES ($1, $2, $3)', [teamId, mName, mPhone]);
+    }
     await addLog(teamId, '🆕', 'Team "'+name+'" created');
     res.json({ success: true, teamId });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -315,7 +322,12 @@ app.put('/api/teams/:id', async (req, res) => {
     await pool.query('UPDATE teams SET name=$1, color=$2 WHERE id=$3', [name||team.name, color||team.color, id]);
     if (members && Array.isArray(members)) {
       await pool.query('DELETE FROM members WHERE team_id=$1', [id]);
-      for (const m of members) await pool.query('INSERT INTO members (team_id, name) VALUES ($1, $2)', [id, m]);
+      for (const m of members) {
+        // UPDATED: Supports objects {name, phone} instead of just strings
+        const mName = typeof m === 'object' ? m.name : m;
+        const mPhone = typeof m === 'object' ? m.phone : null;
+        await pool.query('INSERT INTO members (team_id, name, phone) VALUES ($1, $2, $3)', [id, mName, mPhone]);
+      }
     }
     await addLog(id, '✏️', 'Team "'+name+'" updated');
     res.json({ success: true });
@@ -337,11 +349,11 @@ app.delete('/api/teams/:id', async (req, res) => {
 app.post('/api/teams/:id/members', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name } = req.body;
+    const { name, phone } = req.body; // UPDATED to accept phone
     if (!name) return res.status(400).json({ error: 'Name required' });
     const count = await queryOne('SELECT COUNT(*) as c FROM members WHERE team_id=$1', [id]);
     if (parseInt(count.c) >= 8) return res.status(400).json({ error: 'Max 8 members' });
-    await pool.query('INSERT INTO members (team_id, name) VALUES ($1, $2)', [id, name]);
+    await pool.query('INSERT INTO members (team_id, name, phone) VALUES ($1, $2, $3)', [id, name, phone || null]);
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [id]);
     await addLog(id, '👤', name+' joined '+team.name);
     res.json({ success: true });
@@ -521,7 +533,7 @@ app.post('/api/advisors', async (req, res) => {
     if (existing) return res.status(400).json({ error: 'Username already exists' });
     const result = await pool.query('INSERT INTO advisors (username, password, name) VALUES ($1, $2, $3) RETURNING id', [username, password, name]);
     
-    // FIXED MISSING
+    // FIXED RESTORED
     const aid = result.rows.id;
     
     for (const tid of teams) await pool.query('INSERT INTO advisor_teams (advisor_id, team_id) VALUES ($1, $2)', [aid, tid]);
@@ -672,9 +684,8 @@ app.delete('/api/categories/:catId', async (req, res) => {
     if (tasks.length === 0) return res.status(404).json({ error: 'Category not found' });
     await pool.query('DELETE FROM tasks WHERE category_id=$1', [catId]);
     
-    // FIXED MISSING
+    // FIXED RESTORED
     await addLog(null, '🗑️', 'Category deleted: ' + (tasks.category_name || catId) + ' (' + tasks.length + ' tasks)');
-    
     res.json({ success: true, deleted: tasks.length });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -708,7 +719,7 @@ app.post('/api/tasks/import', async (req, res) => {
     const lines = csv.trim().split('\n');
     if (lines.length < 2) return res.status(400).json({ error: 'CSV is empty' });
     
-    // FIXED MISSING
+    // FIXED RESTORED
     const header = lines.toLowerCase();
     
     if (!header.includes('category') || !header.includes('task')) return res.status(400).json({ error: 'Invalid CSV format' });
@@ -729,7 +740,7 @@ app.post('/api/tasks/import', async (req, res) => {
       cols.push(current.trim());
       if (cols.length < 4) continue;
       
-      // FIXED MISSING INDEX BRACKETS
+      // FIXED RESTORED INDICES
       const catId = cols, catName = cols, taskNum = parseInt(cols), taskName = cols;
       const evidence = cols || '', level = cols || 'Easy', comment = cols || '';
       
