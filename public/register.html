@@ -22,6 +22,7 @@
     --orange-dark: #ea580c;
     --green: #10b981;
     --green-light: #ecfdf5;
+    --red: #ef4444;
     --radius-md: 0.85rem;
     --font: 'Plus Jakarta Sans', system-ui, sans-serif;
     --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
@@ -109,15 +110,22 @@
     border-radius: 8px;
     background: #f8fafc;
     margin-bottom: 12px;
+    position: relative;
   }
   
   .participant-box h3 {
     font-size: 0.9rem; font-weight: 800; margin-bottom: 10px; color: var(--text-dim);
+    display: flex; align-items: center; justify-content: space-between;
   }
 
   .participant-box .grid {
     display: grid;
     gap: 10px;
+  }
+
+  .remove-mem {
+    border: none; background: #fef2f2; color: var(--red); font-weight: 800;
+    width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.9rem;
   }
 
   .submit-btn {
@@ -146,11 +154,32 @@
     cursor: not-allowed;
   }
 
+  .btn-secondary {
+    width: 100%; padding: 13px; border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--card); color: var(--text); font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; margin-top: 10px; transition: background 0.2s;
+  }
+  .btn-secondary:active { background: var(--bg); }
+
+  .btn-ghost {
+    background: none; border: none; color: var(--text-muted); font-size: 0.85rem;
+    cursor: pointer; font-family: inherit; font-weight: 600; text-decoration: underline;
+  }
+
+  .add-mem-btn {
+    width: 100%; padding: 12px; border: 1.5px dashed var(--border); border-radius: 8px;
+    background: none; color: var(--orange-dark); font-weight: 800; cursor: pointer; font-family: inherit;
+    font-size: 0.9rem; margin-top: 4px;
+  }
+  .add-mem-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
   .msg {
     padding: 12px; border-radius: 8px; margin-top: 16px; font-size: 0.85rem; font-weight: 600; text-align: center; display: none;
   }
   .msg.err { background: #fef2f2; color: #9f1239; border: 1px solid #fecdd3; display: block; }
   .msg.ok { background: var(--green-light); color: #065f46; border: 1px solid #a7f3d0; display: block; }
+
+  .hidden { display: none !important; }
 
 </style>
 </head>
@@ -159,98 +188,177 @@
 <div class="container">
   <div class="header">
     <img src="/jiba_logo.png" alt="Logo" onerror="this.style.display='none'">
-    <h1>Team Registration</h1>
-    <p>Sign up your team to join the Big Game!</p>
+    <h1 id="pageTitle">Team Portal</h1>
+    <p id="pageSubtitle">Register a new team or manage your existing one.</p>
   </div>
 
-  <form id="registrationForm" onsubmit="handleRegistration(event)">
-    
+  <!-- ════════ VIEW 1: LANDING ════════ -->
+  <div id="landingView">
     <div class="card">
+      <h2 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 4px;">New here?</h2>
+      <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 14px;">Create your team and add your participants.</p>
+      <button class="submit-btn" style="margin-top:0" onclick="showView('register')">➕ Register a New Team</button>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 4px;">Already registered?</h2>
+      <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 14px;">Enter your team name and PIN to open your control panel and edit your details anytime.</p>
+      <div class="form-group">
+        <label>Team Name</label>
+        <input type="text" id="loginName" placeholder="Your team name">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label>Team PIN</label>
+        <input type="tel" id="loginPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4-digit code">
+      </div>
+      <button class="btn-secondary" onclick="handleLogin()" id="loginBtn">🔓 Open Team Control Panel</button>
+      <div id="loginMsg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- ════════ VIEW 2: REGISTER ════════ -->
+  <div id="registerView" class="hidden">
+    <form id="registrationForm" onsubmit="handleRegistration(event)">
+      <div class="card">
+        <div class="form-group">
+          <label>Team Name <span>*</span></label>
+          <input type="text" id="teamName" placeholder="Enter your creative team name" required>
+        </div>
+        <div class="form-group">
+          <label>Team Color</label>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="color" id="teamColor" value="#f97316" style="width: 50px; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0; background: none;">
+            <span style="font-size: 0.8rem; color: var(--text-dim);">Pick a color for the leaderboard</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label>Team PIN <span>*</span></label>
+          <input type="tel" id="teamPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4-digit code (e.g. 1234)" required>
+          <span style="display:block; font-size: 0.78rem; color: var(--text-muted); margin-top: 6px;">You'll use your team name + this code to log in and edit your team later. Keep it safe!</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 16px;">Participants</h2>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px;">A minimum of 4 members is required. Members 5 and 6 are optional.</p>
+
+        <div class="participant-box">
+          <h3>Participant 1 <span>*</span></h3>
+          <div class="grid">
+            <input type="text" id="p1_name" placeholder="Full Name" required>
+            <input type="tel" id="p1_phone" placeholder="Phone Number" required>
+          </div>
+        </div>
+
+        <div class="participant-box">
+          <h3>Participant 2 <span>*</span></h3>
+          <div class="grid">
+            <input type="text" id="p2_name" placeholder="Full Name" required>
+            <input type="tel" id="p2_phone" placeholder="Phone Number" required>
+          </div>
+        </div>
+
+        <div class="participant-box">
+          <h3>Participant 3 <span>*</span></h3>
+          <div class="grid">
+            <input type="text" id="p3_name" placeholder="Full Name" required>
+            <input type="tel" id="p3_phone" placeholder="Phone Number" required>
+          </div>
+        </div>
+
+        <div class="participant-box">
+          <h3>Participant 4 <span>*</span></h3>
+          <div class="grid">
+            <input type="text" id="p4_name" placeholder="Full Name" required>
+            <input type="tel" id="p4_phone" placeholder="Phone Number" required>
+          </div>
+        </div>
+
+        <div class="participant-box">
+          <h3>Participant 5 <span style="color:var(--text-muted);font-weight:600">(Optional)</span></h3>
+          <div class="grid">
+            <input type="text" id="p5_name" placeholder="Full Name">
+            <input type="tel" id="p5_phone" placeholder="Phone Number">
+          </div>
+        </div>
+
+        <div class="participant-box">
+          <h3>Participant 6 <span style="color:var(--text-muted);font-weight:600">(Optional)</span></h3>
+          <div class="grid">
+            <input type="text" id="p6_name" placeholder="Full Name">
+            <input type="tel" id="p6_phone" placeholder="Phone Number">
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">Register Team</button>
+      <button type="button" class="btn-secondary" onclick="showView('landing')">← Back</button>
+      <div id="statusMsg" class="msg"></div>
+    </form>
+  </div>
+
+  <!-- ════════ VIEW 3: CONTROL PANEL ════════ -->
+  <div id="panelView" class="hidden">
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+        <h2 style="font-size: 1.1rem; font-weight: 800;">Team Details</h2>
+        <span id="panelDot" style="width:16px;height:16px;border-radius:50%;display:inline-block;box-shadow:0 0 0 4px var(--bg)"></span>
+      </div>
+      <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px;">Edit anything here, then tap Save Changes.</p>
+
       <div class="form-group">
         <label>Team Name <span>*</span></label>
-        <input type="text" id="teamName" placeholder="Enter your creative team name" required>
+        <input type="text" id="e_teamName" placeholder="Team name">
       </div>
       <div class="form-group">
         <label>Team Color</label>
         <div style="display: flex; align-items: center; gap: 10px;">
-          <input type="color" id="teamColor" value="#f97316" style="width: 50px; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0; background: none;">
-          <span style="font-size: 0.8rem; color: var(--text-dim);">Pick a color for the leaderboard</span>
+          <input type="color" id="e_teamColor" value="#f97316" style="width: 50px; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0; background: none;" onchange="document.getElementById('panelDot').style.background=this.value">
+          <span style="font-size: 0.8rem; color: var(--text-dim);">Leaderboard color</span>
         </div>
       </div>
       <div class="form-group" style="margin-bottom: 0;">
         <label>Team PIN <span>*</span></label>
-        <input type="tel" id="teamPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4-digit code (e.g. 1234)" required>
-        <span style="display:block; font-size: 0.78rem; color: var(--text-muted); margin-top: 6px;">Your team will use this code to log in and submit tasks. Keep it safe!</span>
+        <input type="tel" id="e_teamPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4-digit code">
+        <span style="display:block; font-size: 0.78rem; color: var(--text-muted); margin-top: 6px;">Changing this changes the code you and your team use to log in.</span>
       </div>
     </div>
 
     <div class="card">
-      <h2 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 16px;">Participants</h2>
-      <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px;">A minimum of 4 members is required. Members 5 and 6 are optional.</p>
-
-      <div class="participant-box">
-        <h3>Participant 1 <span>*</span></h3>
-        <div class="grid">
-          <input type="text" id="p1_name" placeholder="Full Name" required>
-          <input type="tel" id="p1_phone" placeholder="Phone Number" required>
-        </div>
-      </div>
-
-      <div class="participant-box">
-        <h3>Participant 2 <span>*</span></h3>
-        <div class="grid">
-          <input type="text" id="p2_name" placeholder="Full Name" required>
-          <input type="tel" id="p2_phone" placeholder="Phone Number" required>
-        </div>
-      </div>
-
-      <div class="participant-box">
-        <h3>Participant 3 <span>*</span></h3>
-        <div class="grid">
-          <input type="text" id="p3_name" placeholder="Full Name" required>
-          <input type="tel" id="p3_phone" placeholder="Phone Number" required>
-        </div>
-      </div>
-
-      <div class="participant-box">
-        <h3>Participant 4 <span>*</span></h3>
-        <div class="grid">
-          <input type="text" id="p4_name" placeholder="Full Name" required>
-          <input type="tel" id="p4_phone" placeholder="Phone Number" required>
-        </div>
-      </div>
-
-      <div class="participant-box">
-        <h3>Participant 5 <span style="color:var(--text-muted);font-weight:600">(Optional)</span></h3>
-        <div class="grid">
-          <input type="text" id="p5_name" placeholder="Full Name">
-          <input type="tel" id="p5_phone" placeholder="Phone Number">
-        </div>
-      </div>
-
-      <div class="participant-box">
-        <h3>Participant 6 <span style="color:var(--text-muted);font-weight:600">(Optional)</span></h3>
-        <div class="grid">
-          <input type="text" id="p6_name" placeholder="Full Name">
-          <input type="tel" id="p6_phone" placeholder="Phone Number">
-        </div>
-      </div>
-
+      <h2 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 4px;">Members</h2>
+      <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px;">Minimum 4, maximum 8 members.</p>
+      <div id="memberList"></div>
+      <button type="button" class="add-mem-btn" id="addMemBtn" onclick="addMemberRow()">＋ Add Member</button>
     </div>
 
-    <button type="submit" class="submit-btn" id="submitBtn">Register Team</button>
-    <div id="statusMsg" class="msg"></div>
+    <button type="button" class="submit-btn" style="margin-top:0" onclick="handleSavePanel()" id="saveBtn">💾 Save Changes</button>
+    <button type="button" class="btn-secondary" onclick="logoutPanel()">Log Out</button>
+    <div id="panelMsg" class="msg"></div>
+  </div>
 
-  </form>
 </div>
 
 <script>
+  let currentTeamId = null;
+
+  function showView(view) {
+    document.getElementById('landingView').classList.toggle('hidden', view !== 'landing');
+    document.getElementById('registerView').classList.toggle('hidden', view !== 'register');
+    document.getElementById('panelView').classList.toggle('hidden', view !== 'panel');
+
+    const title = document.getElementById('pageTitle');
+    const sub = document.getElementById('pageSubtitle');
+    if (view === 'register') { title.textContent = 'Team Registration'; sub.textContent = 'Sign up your team to join the Big Game!'; }
+    else if (view === 'panel') { title.textContent = 'Team Control Panel'; sub.textContent = 'Manage your team details and members.'; }
+    else { title.textContent = 'Team Portal'; sub.textContent = 'Register a new team or manage your existing one.'; }
+    window.scrollTo(0, 0);
+  }
+
+  // ════════ REGISTRATION ════════
   async function handleRegistration(event) {
-    event.preventDefault(); // Prevents the browser from doing a raw page reload
-    
+    event.preventDefault();
     const btn = document.getElementById('submitBtn');
     const msg = document.getElementById('statusMsg');
-    
     btn.disabled = true;
     btn.textContent = 'Registering...';
     msg.style.display = 'none';
@@ -265,16 +373,12 @@
       return;
     }
 
-    // Loop through inputs 1 to 6
     for (let i = 1; i <= 6; i++) {
       const name = document.getElementById(`p${i}_name`).value.trim();
       const phone = document.getElementById(`p${i}_phone`).value.trim();
-
       if (name && phone) {
-        // CHANGED HERE: Now pushes an object with separate name and phone properties
         members.push({ name: name, phone: phone });
       } else if (name || phone) {
-        // If they filled one field but not the other
         showError(`Please provide both Name and Phone Number for Participant ${i}.`);
         return;
       }
@@ -289,24 +393,20 @@
       const response = await fetch('/api/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: teamName, 
-          color: teamColor, 
-          pin: teamPin,
-          members: members 
-        })
+        body: JSON.stringify({ name: teamName, color: teamColor, pin: teamPin, members: members })
       });
-
       const result = await response.json();
 
       if (result.success) {
         msg.className = 'msg ok';
-        msg.innerHTML = `🎉 <strong>Success!</strong> Your team has been registered. Redirecting...`;
-        
-        // Wait 2 seconds, then send them to the team login screen
-        setTimeout(() => {
-          window.location.href = '/submit.html';
-        }, 2000);
+        msg.innerHTML = `🎉 <strong>Success!</strong> Your team has been registered. Opening your control panel...`;
+        // Load the freshly created team straight into the control panel (NO redirect to submit.html)
+        setTimeout(async () => {
+          await loadTeamIntoPanel(result.teamId);
+          showView('panel');
+          btn.disabled = false;
+          btn.textContent = 'Register Team';
+        }, 1200);
       } else {
         showError(result.error || 'Server rejected the registration. Please try again.');
       }
@@ -324,7 +424,168 @@
     btn.disabled = false;
     btn.textContent = 'Register Team';
   }
+
+  // ════════ LOGIN (existing team) ════════
+  async function handleLogin() {
+    const btn = document.getElementById('loginBtn');
+    const msg = document.getElementById('loginMsg');
+    const name = document.getElementById('loginName').value.trim();
+    const pin = document.getElementById('loginPin').value.trim();
+    msg.style.display = 'none';
+
+    if (!name || !/^\d{4}$/.test(pin)) {
+      msg.className = 'msg err';
+      msg.innerHTML = '❌ Enter your team name and 4-digit PIN.';
+      return;
+    }
+
+    btn.disabled = true;
+    const oldTxt = btn.textContent;
+    btn.textContent = 'Checking...';
+
+    try {
+      const res = await fetch('/api/team/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, pin })
+      });
+      const data = await res.json();
+      if (data.success) {
+        fillPanel(data.team);
+        showView('panel');
+      } else {
+        msg.className = 'msg err';
+        msg.innerHTML = `❌ ${data.error || 'Could not log in.'}`;
+      }
+    } catch (e) {
+      msg.className = 'msg err';
+      msg.innerHTML = '❌ Network error. Is your server running?';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = oldTxt;
+    }
+  }
+
+  // ════════ CONTROL PANEL ════════
+  async function loadTeamIntoPanel(teamId) {
+    const res = await fetch('/api/team/' + teamId);
+    const team = await res.json();
+    fillPanel(team);
+  }
+
+  function fillPanel(team) {
+    currentTeamId = team.id;
+    document.getElementById('e_teamName').value = team.name || '';
+    document.getElementById('e_teamColor').value = team.color || '#f97316';
+    document.getElementById('e_teamPin').value = team.pin || '';
+    document.getElementById('panelDot').style.background = team.color || '#f97316';
+    renderMembers(team.members || []);
+  }
+
+  function renderMembers(members) {
+    const list = document.getElementById('memberList');
+    list.innerHTML = '';
+    if (members.length === 0) members = [{ name: '', phone: '' }];
+    members.forEach(m => addMemberRow(m.name, m.phone));
+    updateMemberUI();
+  }
+
+  function addMemberRow(name = '', phone = '') {
+    const list = document.getElementById('memberList');
+    if (list.children.length >= 8) return;
+    const box = document.createElement('div');
+    box.className = 'participant-box';
+    box.innerHTML =
+      '<h3><span class="mem-label"></span>' +
+      '<button type="button" class="remove-mem" onclick="removeMemberRow(this)">✕</button></h3>' +
+      '<div class="grid">' +
+        '<input type="text" class="mem-name" placeholder="Full Name">' +
+        '<input type="tel" class="mem-phone" placeholder="Phone Number">' +
+      '</div>';
+    box.querySelector('.mem-name').value = name;
+    box.querySelector('.mem-phone').value = phone;
+    list.appendChild(box);
+    updateMemberUI();
+  }
+
+  function removeMemberRow(btn) {
+    const list = document.getElementById('memberList');
+    if (list.children.length <= 1) return;
+    btn.closest('.participant-box').remove();
+    updateMemberUI();
+  }
+
+  function updateMemberUI() {
+    const list = document.getElementById('memberList');
+    const rows = [...list.children];
+    rows.forEach((row, i) => {
+      row.querySelector('.mem-label').textContent = 'Member ' + (i + 1);
+      // keep at least 1 visible remove button disabled-ish when only one row
+      row.querySelector('.remove-mem').style.visibility = rows.length <= 1 ? 'hidden' : 'visible';
+    });
+    document.getElementById('addMemBtn').disabled = rows.length >= 8;
+  }
+
+  async function handleSavePanel() {
+    const btn = document.getElementById('saveBtn');
+    const msg = document.getElementById('panelMsg');
+    msg.style.display = 'none';
+
+    const name = document.getElementById('e_teamName').value.trim();
+    const color = document.getElementById('e_teamColor').value;
+    const pin = document.getElementById('e_teamPin').value.trim();
+
+    if (!name) return panelError('Team name is required.');
+    if (!/^\d{4}$/.test(pin)) return panelError('PIN must be exactly 4 digits.');
+
+    const members = [];
+    const rows = [...document.getElementById('memberList').children];
+    for (let i = 0; i < rows.length; i++) {
+      const mName = rows[i].querySelector('.mem-name').value.trim();
+      const mPhone = rows[i].querySelector('.mem-phone').value.trim();
+      if (mName && mPhone) members.push({ name: mName, phone: mPhone });
+      else if (mName || mPhone) return panelError(`Please fill both Name and Phone for Member ${i + 1}.`);
+    }
+    if (members.length < 4) return panelError('You need at least 4 complete members.');
+
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+      const res = await fetch('/api/teams/' + currentTeamId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, color, pin, members })
+      });
+      const data = await res.json();
+      if (data.success) {
+        msg.className = 'msg ok';
+        msg.innerHTML = '✅ <strong>Saved!</strong> Your team has been updated.';
+      } else {
+        panelError(data.error || 'Could not save changes.');
+      }
+    } catch (e) {
+      panelError('Network error. Is your server running?');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '💾 Save Changes';
+    }
+  }
+
+  function panelError(text) {
+    const msg = document.getElementById('panelMsg');
+    msg.className = 'msg err';
+    msg.innerHTML = `❌ ${text}`;
+  }
+
+  function logoutPanel() {
+    currentTeamId = null;
+    document.getElementById('loginName').value = '';
+    document.getElementById('loginPin').value = '';
+    document.getElementById('loginMsg').style.display = 'none';
+    showView('landing');
+  }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0eba12d6d78e28d',t:'MTc4MTk2NzQ4NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebcf454ede98d2',t:'MTc4MTk2OTM3Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
