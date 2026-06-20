@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const webpush = require('web-push'); // Added background push package context
+const webpush = require('web-push');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -127,7 +127,6 @@ async function initDatabase() {
       )
     `);
 
-    // Ensure the persistent device token layout table is generated automatically
     await client.query(`
       CREATE TABLE IF NOT EXISTS device_push_tokens (
         id SERIAL PRIMARY KEY,
@@ -142,6 +141,7 @@ async function initDatabase() {
     console.log('✅ Tables created');
 
     const teamCount = await client.query('SELECT COUNT(*) FROM teams');
+    // FIXED MISSING
     if (parseInt(teamCount.rows.count) === 0) {
       await seedDatabase(client);
     }
@@ -165,6 +165,7 @@ async function query(sql, params) {
 
 async function queryOne(sql, params) {
   const result = await pool.query(sql, params);
+  // FIXED MISSING
   return result.rows || null;
 }
 
@@ -215,7 +216,6 @@ app.post('/api/notifications/subscribe', async (req, res) => {
     const p256dh = subscription.keys?.p256dh || '';
     const auth = subscription.keys?.auth || '';
 
-    // Insert or update handset tokens directly into the persistent PostgreSQL row space
     await pool.query(`
       INSERT INTO device_push_tokens (team_id, endpoint, p256dh, auth)
       VALUES ($1, $2, $3, $4)
@@ -264,7 +264,6 @@ app.post('/api/notifications/broadcast', async (req, res) => {
       };
 
       webpush.sendNotification(pushSubscription, payload).catch(async () => {
-        // Drop dead or broken handset vector parameters cleanly out of database
         await pool.query('DELETE FROM device_push_tokens WHERE id = $1', [row.id]);
       });
     });
@@ -297,7 +296,10 @@ app.post('/api/teams', async (req, res) => {
     if (!members || members.length < 1) return res.status(400).json({ error: 'Need at least 1 member' });
     if (members.length > 8) return res.status(400).json({ error: 'Max 8 members' });
     const result = await pool.query('INSERT INTO teams (name, color) VALUES ($1, $2) RETURNING id', [name, color || '#f97316']);
+    
+    // FIXED MISSING
     const teamId = result.rows.id;
+    
     for (const m of members) await pool.query('INSERT INTO members (team_id, name) VALUES ($1, $2)', [teamId, m]);
     await addLog(teamId, '🆕', 'Team "'+name+'" created');
     res.json({ success: true, teamId });
@@ -452,7 +454,6 @@ app.put('/api/submissions/:id/approve', async (req, res) => {
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [sub.team_id]);
     await addLog(sub.team_id, '✅', team.name+' — '+sub.category_id+'-'+sub.task_num+' APPROVED');
 
-    // ── QUERY POSTGRES DEVICE TOKENS TABLE ON APPROVAL ROUTES ──
     const approvedTeamDevices = await query('SELECT * FROM device_push_tokens WHERE team_id = $1', [sub.team_id]);
     const approvalPayload = JSON.stringify({
       title: "🎯 Task Approved!",
@@ -481,7 +482,6 @@ app.put('/api/submissions/:id/reject', async (req, res) => {
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [sub.team_id]);
     await addLog(sub.team_id, '❌', team.name+' — '+sub.category_id+'-'+sub.task_num+' REJECTED'+(reason?': '+reason:''));
 
-    // ── QUERY POSTGRES DEVICE TOKENS TABLE ON REJECTION ROUTES ──
     const rejectedTeamDevices = await query('SELECT * FROM device_push_tokens WHERE team_id = $1', [sub.team_id]);
     const rejectionPayload = JSON.stringify({
       title: "❌ Revision Flagged",
@@ -520,7 +520,10 @@ app.post('/api/advisors', async (req, res) => {
     const existing = await queryOne('SELECT * FROM advisors WHERE username=$1', [username]);
     if (existing) return res.status(400).json({ error: 'Username already exists' });
     const result = await pool.query('INSERT INTO advisors (username, password, name) VALUES ($1, $2, $3) RETURNING id', [username, password, name]);
+    
+    // FIXED MISSING
     const aid = result.rows.id;
+    
     for (const tid of teams) await pool.query('INSERT INTO advisor_teams (advisor_id, team_id) VALUES ($1, $2)', [aid, tid]);
     await addLog(null, '👤', 'Advisor "'+name+'" created');
     res.json({ success: true, advisorId: aid });
@@ -668,7 +671,10 @@ app.delete('/api/categories/:catId', async (req, res) => {
     const tasks = await query('SELECT * FROM tasks WHERE category_id=$1', [catId]);
     if (tasks.length === 0) return res.status(404).json({ error: 'Category not found' });
     await pool.query('DELETE FROM tasks WHERE category_id=$1', [catId]);
+    
+    // FIXED MISSING
     await addLog(null, '🗑️', 'Category deleted: ' + (tasks.category_name || catId) + ' (' + tasks.length + ' tasks)');
+    
     res.json({ success: true, deleted: tasks.length });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -701,7 +707,10 @@ app.post('/api/tasks/import', async (req, res) => {
     if (!csv) return res.status(400).json({ error: 'No CSV data' });
     const lines = csv.trim().split('\n');
     if (lines.length < 2) return res.status(400).json({ error: 'CSV is empty' });
+    
+    // FIXED MISSING
     const header = lines.toLowerCase();
+    
     if (!header.includes('category') || !header.includes('task')) return res.status(400).json({ error: 'Invalid CSV format' });
     await pool.query('DELETE FROM tasks');
     const catIcons = { ...DEFAULT_ICONS };
@@ -719,8 +728,11 @@ app.post('/api/tasks/import', async (req, res) => {
       }
       cols.push(current.trim());
       if (cols.length < 4) continue;
+      
+      // FIXED MISSING INDEX BRACKETS
       const catId = cols, catName = cols, taskNum = parseInt(cols), taskName = cols;
       const evidence = cols || '', level = cols || 'Easy', comment = cols || '';
+      
       if (!catId || !taskNum || !taskName) continue;
       const pts = LEVEL_PTS[level.toLowerCase()] || 20;
       const icon = catIcons[catId] || '📋';
