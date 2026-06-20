@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Team Registration — Jiba w Siba</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #0f172a;
+    --text-dim: #475569;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+    --orange: #f97316;
+    --orange-dark: #ea580c;
+    --green: #10b981;
+    --green-light: #ecfdf5;
+    --radius-md: 0.85rem;
+    --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  
+  .header img {
+    width: 64px; height: 64px; border-radius: 14px; box-shadow: var(--shadow-md); margin-bottom: 8px;
+  }
+
+  .header h1 {
+    font-size: 1.45rem; font-weight: 800; letter-spacing: -0.03em;
+  }
+  
+  .header p {
+    font-size: 0.85rem; color: var(--text-dim); font-weight: 500; margin-top: 4px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  
+  .form-group label span {
+    color: #ef4444; /* red asterisk */
+  }
+
+  input[type="text"], input[type="tel"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus, input[type="tel"]:focus {
+    border-color: var(--orange);
+    background: #fff;
+  }
+
+  .participant-box {
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #f8fafc;
+    margin-bottom: 12px;
+  }
+  
+  .participant-box h3 {
+    font-size: 0.9rem; font-weight: 800; margin-bottom: 10px; color: var(--text-dim);
+  }
+
+  .participant-box .grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--orange);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: var(--shadow-md);
+    margin-top: 10px;
+    transition: background 0.2s;
+  }
+  
+  .submit-btn:active {
+    background: var(--orange-dark);
+    transform: scale(0.99);
+  }
+  
+  .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .msg {
+    padding: 12px; border-radius: 8px; margin-top: 16px; font-size: 0.85rem; font-weight: 600; text-align: center; display: none;
+  }
+  .msg.err { background: #fef2f2; color: #9f1239; border: 1px solid #fecdd3; display: block; }
+  .msg.ok { background: var(--green-light); color: #065f46; border: 1px solid #a7f3d0; display: block; }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <img src="/jiba_logo.png" alt="Logo" onerror="this.style.display='none'">
+    <h1>Team Registration</h1>
+    <p>Sign up your team to join the Big Game!</p>
+  </div>
+
+  <form id="registrationForm" onsubmit="handleRegistration(event)">
+    
+    <div class="card">
+      <div class="form-group">
+        <label>Team Name <span>*</span></label>
+        <input type="text" id="teamName" placeholder="Enter your creative team name" required>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label>Team Color</label>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <input type="color" id="teamColor" value="#f97316" style="width: 50px; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0; background: none;">
+          <span style="font-size: 0.8rem; color: var(--text-dim);">Pick a color for the leaderboard</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 16px;">Participants</h2>
+      <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px;">A minimum of 4 members is required. Members 5 and 6 are optional.</p>
+
+      <div class="participant-box">
+        <h3>Participant 1 <span>*</span></h3>
+        <div class="grid">
+          <input type="text" id="p1_name" placeholder="Full Name" required>
+          <input type="tel" id="p1_phone" placeholder="Phone Number" required>
+        </div>
+      </div>
+
+      <div class="participant-box">
+        <h3>Participant 2 <span>*</span></h3>
+        <div class="grid">
+          <input type="text" id="p2_name" placeholder="Full Name" required>
+          <input type="tel" id="p2_phone" placeholder="Phone Number" required>
+        </div>
+      </div>
+
+      <div class="participant-box">
+        <h3>Participant 3 <span>*</span></h3>
+        <div class="grid">
+          <input type="text" id="p3_name" placeholder="Full Name" required>
+          <input type="tel" id="p3_phone" placeholder="Phone Number" required>
+        </div>
+      </div>
+
+      <div class="participant-box">
+        <h3>Participant 4 <span>*</span></h3>
+        <div class="grid">
+          <input type="text" id="p4_name" placeholder="Full Name" required>
+          <input type="tel" id="p4_phone" placeholder="Phone Number" required>
+        </div>
+      </div>
+
+      <div class="participant-box">
+        <h3>Participant 5 <span style="color:var(--text-muted);font-weight:600">(Optional)</span></h3>
+        <div class="grid">
+          <input type="text" id="p5_name" placeholder="Full Name">
+          <input type="tel" id="p5_phone" placeholder="Phone Number">
+        </div>
+      </div>
+
+      <div class="participant-box">
+        <h3>Participant 6 <span style="color:var(--text-muted);font-weight:600">(Optional)</span></h3>
+        <div class="grid">
+          <input type="text" id="p6_name" placeholder="Full Name">
+          <input type="tel" id="p6_phone" placeholder="Phone Number">
+        </div>
+      </div>
+
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn">Register Team</button>
+    <div id="statusMsg" class="msg"></div>
+
+  </form>
+</div>
+
+<script>
+  async function handleRegistration(event) {
+    event.preventDefault();
+    
+    const btn = document.getElementById('submitBtn');
+    const msg = document.getElementById('statusMsg');
+    
+    btn.disabled = true;
+    btn.textContent = 'Registering...';
+    msg.style.display = 'none';
+
+    const teamName = document.getElementById('teamName').value.trim();
+    const teamColor = document.getElementById('teamColor').value;
+    const members = [];
+
+    // Loop through inputs 1 to 6
+    for (let i = 1; i <= 6; i++) {
+      const name = document.getElementById(`p${i}_name`).value.trim();
+      const phone = document.getElementById(`p${i}_phone`).value.trim();
+
+      if (name && phone) {
+        // We combine the name and phone so it fits nicely into your database
+        members.push(`${name} (${phone})`);
+      } else if (name || phone) {
+        // If they filled one field but not the other
+        showError(`Please provide both Name and Phone Number for Participant ${i}.`);
+        return;
+      }
+    }
+
+    if (members.length < 4) {
+      showError('You must register at least 4 participants.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          name: teamName, 
+          color: teamColor, 
+          members: members 
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        msg.className = 'msg ok';
+        msg.innerHTML = `🎉 <strong>Success!</strong> Your team has been registered. Redirecting to login...`;
+        
+        // Redirect them to the player dashboard to select their team
+        setTimeout(() => {
+          window.location.href = '/submit.html';
+        }, 2000);
+      } else {
+        showError(result.error || 'Failed to create team. Please try again.');
+      }
+    } catch (error) {
+      showError('Network error. Please check your connection and try again.');
+    }
+  }
+
+  function showError(text) {
+    const btn = document.getElementById('submitBtn');
+    const msg = document.getElementById('statusMsg');
+    msg.className = 'msg err';
+    msg.innerHTML = `❌ ${text}`;
+    btn.disabled = false;
+    btn.textContent = 'Register Team';
+  }
+</script>
+
+</body>
+</html>
