@@ -214,12 +214,8 @@
   .cp-bar { height: 6px; background: #f1f5f9; border-radius: 100px; overflow: hidden; }
   .cp-fill { height: 100%; border-radius: 100px; transition: width 0.4s ease; }
 
-  .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .cat-btn { padding: 16px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); cursor: pointer; text-align: left; transition: all 0.2s; font-family: inherit; box-shadow: var(--shadow-sm); min-height: 110px; display: flex; flex-direction: column; justify-content: space-between; }
-  .cat-btn:active { border-color: var(--orange); background: var(--orange-light); }
-  .cat-btn .cb-icon { font-size: 1.6rem; }
-  .cat-btn .cb-name { font-weight: 800; font-size: 0.9rem; line-height: 1.2; color: var(--text); margin-top: 8px; }
-  .cat-btn .cb-meta { font-size: 0.72rem; color: var(--text-dim); font-weight: 600; }
+  .cp-card { cursor: pointer; transition: all 0.2s; }
+  .cp-card:active { border-color: var(--orange); background: var(--orange-light); }
 
   .task-list { display: flex; flex-direction: column; gap: 10px; }
   .task-btn { padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); cursor: pointer; text-align: left; transition: all 0.2s; display: flex; align-items: center; gap: 12px; font-family: inherit; box-shadow: var(--shadow-sm); min-height: 64px; }
@@ -327,7 +323,6 @@
 
   <div class="nav-bar" id="mainNav" style="display:none">
     <button class="active" onclick="showSec('home',this)">🏠<span>Progress</span></button>
-    <button onclick="showSec('submit',this)">📝<span>Submit</span></button>
     <button id="historyTabBtn" onclick="showSec('history',this)">
       📋<span>My Tasks</span>
       <span id="badgeApproved" class="btn-badge badge-approved" style="display:none">0</span>
@@ -338,14 +333,10 @@
   </div>
 
   <div class="sec active" id="sec-home">
-    <div class="sec-title">📊 Category Progress</div>
-    <div class="cat-progress-list" id="catProgressList"></div>
-  </div>
-
-  <div class="sec" id="sec-submit">
     <div id="submitStep1">
-      <div class="sec-title">📂 Choose Challenge Category</div>
-      <div class="cat-grid" id="catGrid"></div>
+      <div class="sec-title">📊 Category Progress</div>
+      <p style="font-size:0.78rem;color:var(--text-muted);margin:-4px 0 12px;font-weight:600">Tap a category to view its tasks and submit evidence.</p>
+      <div class="cat-progress-list" id="catProgressList"></div>
     </div>
     <div id="submitStep2" style="display:none">
       <div class="sec-title"><div class="st-back" onclick="backToCats()">←</div> <span id="catTitle">Tasks</span></div>
@@ -599,7 +590,7 @@ function renderAll(){
     '<div class="stat"><div class="s-num" style="color:var(--blue)">'+pendingCount+'</div><div class="s-label">Pending</div></div>'+
     '<div class="stat"><div class="s-num" style="color:var(--purple)">#'+rank+'</div><div class="s-label">Rank</div></div>';
 
-  renderCatProgress();renderCats();renderHistory();renderLB();
+  renderCatProgress();renderHistory();renderLB();
 }
 
 function renderCatProgress(){
@@ -609,19 +600,13 @@ function renderCatProgress(){
     const catMax=cat.tasks.reduce((s,t)=>s+t.pts,0);
     const catEarned=cat.tasks.reduce((s,t)=>s+(done[cat.id+'-'+t.num]?t.pts:0),0);
     const pct=Math.round((catDone/cat.tasks.length)*100);
-    return '<div class="cp-card"><div class="cp-top"><div class="cp-name">'+cat.icon+' '+cat.name+'</div><div class="cp-pts">'+catEarned+'/'+catMax+'</div></div>'+
+    return '<div class="cp-card" onclick="pickCat(\''+cat.id+'\')" style="cursor:pointer"><div class="cp-top"><div class="cp-name">'+cat.icon+' '+cat.name+'</div><div class="cp-pts">'+catEarned+'/'+catMax+'</div></div>'+
       '<div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-dim);margin-bottom:6px;font-weight:600"><span>'+catDone+'/'+cat.tasks.length+' completed</span><span>'+pct+'%</span></div>'+
-      '<div class="cp-bar"><div class="cp-fill" style="width:'+pct+'%;background:'+myTeam().color+'"></div></div></div>';
+      '<div class="cp-bar"><div class="cp-fill" style="width:'+pct+'%;background:'+myTeam().color+'"></div></div>'+
+      '<div style="text-align:right;font-size:.72rem;color:var(--text-muted);font-weight:700;margin-top:8px">Tap to submit →</div></div>';
   }).join('');
 }
 
-function renderCats(){
-  const done=getDoneMap(myTeam());
-  document.getElementById('catGrid').innerHTML=CATEGORIES.map(c=>{
-    const total=c.tasks.length;const dn=c.tasks.filter(t=>done[c.id+'-'+t.num]).length;
-    return '<div class="cat-btn" onclick="pickCat(\''+c.id+'\')"><div class="cb-icon">'+c.icon+'</div><div class="cb-name">'+c.name+'</div><div class="cb-meta">'+dn+'/'+total+' done</div></div>';
-  }).join('');
-}
 function pickCat(id){
   myCatId=id;const cat=CATEGORIES.find(c=>c.id===id);
   document.getElementById('catTitle').textContent=cat.icon+' '+cat.name;
@@ -795,10 +780,10 @@ function renderLB(){
   }).join('');
 }
 
-async function manualRefresh() { if(myTeamId){await loadSubs();renderAll();if(activeSection==='submit'&&myCatId)renderTasks();} toast('🔄','Refreshed'); }
+async function manualRefresh() { if(myTeamId){await loadSubs();renderAll();if(activeSection==='home'&&myCatId)renderTasks();} toast('🔄','Refreshed'); }
 
 init();
-setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();if(activeSection==='submit'&&myCatId)renderTasks();}},3000);
+setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();if(activeSection==='home'&&myCatId)renderTasks();}},3000);
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebec4f8bec11b4',t:'MTc4MTk3MDU2Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
