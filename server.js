@@ -169,7 +169,7 @@ async function query(sql, params) {
 
 async function queryOne(sql, params) {
   const result = await pool.query(sql, params);
-  return result.rows || null;
+  return result.rows[0] || null;
 }
 
 async function addLog(teamId, icon, message) {
