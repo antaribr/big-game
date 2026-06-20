@@ -124,6 +124,13 @@ async function initDatabase() {
       )
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `);
+
     console.log('✅ Tables created');
 
     const teamCount = await client.query('SELECT COUNT(*) FROM teams');
@@ -157,6 +164,14 @@ async function addLog(teamId, icon, message) {
   await pool.query('INSERT INTO activity_log ("team_id", "icon", "message") VALUES ($1, $2, $3)', [teamId, icon, message]);
 }
 
+async function getSetting(key, fallback) {
+  const row = await queryOne('SELECT value FROM settings WHERE key=$1', [key]);
+  return row ? row.value : fallback;
+}
+async function setSetting(key, value) {
+  await pool.query('INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value', [key, String(value)]);
+}
+
 async function getTeamsFull() {
   const teams = await query('SELECT * FROM teams ORDER BY id');
   const members = await query('SELECT * FROM members ORDER BY id');
@@ -187,6 +202,30 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// SETTINGS (e.g. lock/unlock the Rank section for teams)
+// ═══════════════════════════════════════════════════════════════
+app.get('/api/settings', async (req, res) => {
+  try {
+    const rankLocked = (await getSetting('rank_locked', '0')) === '1';
+    res.json({ rankLocked });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/settings/rank-lock', async (req, res) => {
+  try {
+    let locked = req.body.locked;
+    // If not provided, toggle the current value
+    if (typeof locked === 'undefined') {
+      locked = (await getSetting('rank_locked', '0')) !== '1';
+    }
+    locked = !!locked;
+    await setSetting('rank_locked', locked ? '1' : '0');
+    await addLog(null, locked ? '🔒' : '🔓', locked ? 'Rankings hidden from teams' : 'Rankings shown to teams');
+    res.json({ success: true, rankLocked: locked });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // API ROUTES
 // ═══════════════════════════════════════════════════════════════
 
@@ -196,11 +235,12 @@ app.get('/api/state', async (req, res) => {
     const log = await query('SELECT * FROM activity_log ORDER BY id DESC LIMIT 200');
     const pending = await query("SELECT s.*, t.name as team_name, t.color as team_color FROM submissions s JOIN teams t ON s.team_id = t.id WHERE s.status = 'pending' ORDER BY s.submitted_at DESC");
     const reviewed = await query("SELECT s.*, t.name as team_name, t.color as team_color FROM submissions s JOIN teams t ON s.team_id = t.id WHERE s.status != 'pending' ORDER BY s.reviewed_at DESC LIMIT 100");
-    res.json({ teams, log, submissions: { pending, reviewed } });
+    const rankLocked = (await getSetting('rank_locked', '0')) === '1';
+    res.json({ teams, log, submissions: { pending, reviewed }, rankLocked });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Teams CRUD - PROTECTED IDENTIFIERS
+// Teams CRUD
 app.post('/api/teams', async (req, res) => {
   const client = await pool.connect();
   try {
@@ -208,13 +248,12 @@ app.post('/api/teams', async (req, res) => {
     if (!name) return res.status(400).json({ error: 'Name required' });
     if (!pin || !/^\d{4}$/.test(String(pin))) return res.status(400).json({ error: 'PIN must be exactly 4 digits' });
     if (!members || members.length < 1) return res.status(400).json({ error: 'Need at least 1 member' });
-    if (members.length > 8) return res.status(400).json({ error: 'Max 8 members' });
+    if (members.length > 6) return res.status(400).json({ error: 'Max 6 members' });
 
     await client.query('BEGIN');
 
     let teamId;
     try {
-      // Quotes explicitly protect against reserved keyword syntax errors
       const result = await client.query('INSERT INTO teams ("name", "color", "pin") VALUES ($1, $2, $3) RETURNING "id"', [name, color || '#f97316', String(pin)]);
       teamId = result.rows[0].id;
     } catch (err) {
@@ -317,7 +356,7 @@ app.post('/api/teams/:id/members', async (req, res) => {
     const { name, phone } = req.body; 
     if (!name) return res.status(400).json({ error: 'Name required' });
     const count = await queryOne('SELECT COUNT(*) as c FROM members WHERE team_id=$1', [id]);
-    if (parseInt(count.c) >= 8) return res.status(400).json({ error: 'Max 8 members' });
+    if (parseInt(count.c) >= 6) return res.status(400).json({ error: 'Max 6 members' });
     await pool.query('INSERT INTO members ("team_id", "name", "phone") VALUES ($1, $2, $3)', [id, name, phone || null]);
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [id]);
     await addLog(id, '👤', name+' joined '+team.name);
@@ -731,7 +770,7 @@ app.post('/api/reset', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// EXPLICIT REGISTRATION ROUTE
+// REGISTRATION ROUTE
 // ═══════════════════════════════════════════════════════════════
 app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'register.html'));
