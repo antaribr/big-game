@@ -221,33 +221,6 @@
       </div>
     </div>
     <div class="team-manage-grid" id="teamManageGrid" style="margin-bottom: 24px;"></div>
-
-    <div class="section-card">
-      <div class="section-header">
-        <h2>📢 Live Field Broadcast Alerts</h2>
-      </div>
-      <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 14px;">
-        Push a custom banner alert directly to your participants' handset lock screens.
-      </p>
-      
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        <div>
-          <label style="display:block; font-size:0.75rem; font-weight:700; margin-bottom:4px;">TARGET AUDIENCE</label>
-          <select id="broadcastTarget" style="width: 100%; max-width: 100%; height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 0.5rem; font-family: inherit; font-weight: 500; background: var(--card); color: var(--text);">
-            <option value="all">— Broadcast to ALL Active Teams —</option>
-          </select>
-        </div>
-        
-        <div>
-          <label style="display:block; font-size:0.75rem; font-weight:700; margin-bottom:4px;">NOTIFICATION MESSAGE</label>
-          <input type="text" id="broadcastMessage" placeholder="Type your custom announcement here..." style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:0.5rem; font-size:0.9rem; outline:none; font-family: inherit;">
-        </div>
-        
-        <button class="btn btn-primary" onclick="fireCustomBroadcast()" style="justify-content: center; min-height: 44px; width: 100%;">
-          🚀 Dispatch Field Broadcast
-        </button>
-      </div>
-    </div>
   </div>
 
   <div class="section" id="section-submissions">
@@ -532,14 +505,6 @@ function populateTeamDropdowns() {
     pdfSel.value = currentPdfSelection || "all";
   }
 
-  // Populate custom live field broadcast dropdown target selection box
-  const broadcastSel = document.getElementById('broadcastTarget');
-  if (broadcastSel) {
-    const cachedTarget = broadcastSel.value;
-    broadcastSel.innerHTML = '<option value="all">— Broadcast to ALL Active Teams —</option>' + 
-      teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-    broadcastSel.value = cachedTarget || "all";
-  }
 }
 
 function renderTeamView() {
@@ -1050,27 +1015,6 @@ async function adminLogin() {
   } else { alert('Access Denied: Invalid Password Verification'); }
 }
 
-async function fireCustomBroadcast() {
-  const target = document.getElementById('broadcastTarget').value;
-  const msg = document.getElementById('broadcastMessage').value.trim();
-
-  if (!msg) {
-    alert("Please enter an announcement message before broadcasting!");
-    return;
-  }
-
-  if (!confirm("Are you sure you want to dispatch this custom alert message?")) return;
-
-  const res = await api('POST', '/notifications/broadcast', { target, message: msg });
-  
-  if (res.success) {
-    showToast('📢', 'Custom field broadcast successfully dispatched');
-    document.getElementById('broadcastMessage').value = '';
-  } else {
-    alert("Transmission Failed: " + (res.error || "Could not push alert tokens."));
-  }
-}
-
 function formatTime(isoString) {
   if (!isoString) return 'Pending...';
   const d = new Date(isoString);
@@ -1095,5 +1039,5 @@ setInterval(async () => {
   if (localStorage.getItem('evt_admin_session') === '1') { await loadState(); renderSubmissions(); renderActivityLogs(); renderMetrics(); }
 }, 3000);
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebc098eb5998d2',t:'MTc4MTk2ODc3MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
