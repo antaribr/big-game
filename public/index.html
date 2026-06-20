@@ -548,6 +548,30 @@ function renderTeamView() {
   target.innerHTML = html;
 }
 
+// Brand palette + logo paths for the Summary Report PDF (matches the official template)
+const PDF_RED = '#d71d25';
+const PDF_YELLOW = '#fde204';
+const PDF_JIBA_LOGO = '/report_jiba_logo.png';   // جيبا وصيبا dartboard logo
+const PDF_FLEUR_LOGO = '/report_fleur.png';      // Lebanese Scout fleur-de-lis
+
+// Load an image and return a base64 data URI so html2canvas always captures it
+function loadImageAsDataURL(src) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img, 0, 0);
+        resolve(c.toDataURL('image/png'));
+      } catch (e) { resolve(src); }
+    };
+    img.onerror = () => resolve('');
+    img.src = src;
+  });
+}
+
 async function generateGameSummaryPDF() {
   let tasksMatrix = [];
   let allSubs = [];
@@ -556,14 +580,22 @@ async function generateGameSummaryPDF() {
     tasksMatrix = await res.json() || [];
     const state = await (await fetch('/api/state')).json();
     allSubs = [...(state.submissions?.pending || []), ...(state.submissions?.reviewed || [])];
-  } catch(e) { 
-    alert("Pipeline Error: Failed to fetch system data."); 
-    return; 
+  } catch(e) {
+    alert("Could not load data for the report. Please try again.");
+    return;
   }
+
+  // Preload the brand logos as data URIs (guarantees they render in the PDF)
+  const [jibaLogo, fleurLogo] = await Promise.all([
+    loadImageAsDataURL(PDF_JIBA_LOGO),
+    loadImageAsDataURL(PDF_FLEUR_LOGO)
+  ]);
 
   const activeTeams = typeof teams !== 'undefined' ? teams : [];
   const selectedTargetId = document.getElementById('pdfTeamSelector').value;
   let targetTeamsList = selectedTargetId === 'all' ? [...activeTeams] : [activeTeams.find(t => t.id === parseInt(selectedTargetId))];
+  targetTeamsList = targetTeamsList.filter(Boolean);
+  if (!targetTeamsList.length) { alert('No team selected to export.'); return; }
 
   const calcPts = (team) => {
     let pts = 0;
@@ -574,83 +606,135 @@ async function generateGameSummaryPDF() {
     return pts;
   };
   const globalRankings = [...activeTeams].sort((a, b) => calcPts(b) - calcPts(a));
+  const ordinal = (n) => { const s = ['th','st','nd','rd'], v = n % 100; return n + (s[(v-20)%10] || s[v] || s[0]); };
 
-  const element = document.createElement('div');
-  element.style.padding = '30px';
-  element.style.fontFamily = "'Inter', sans-serif";
+  // Shared page styling
+  const DOTS = `background-color:#ffffff;background-image:radial-gradient(#dcdcdc 1.5px, transparent 1.5px);background-size:26px 26px;`;
+  const PAGE = `width:1122px;height:793px;box-sizing:border-box;overflow:hidden;position:relative;font-family:'Inter',sans-serif;${DOTS}`;
 
-  let htmlContent = `<h1 style="text-align: center; border-bottom: 2px solid #ddd; padding-bottom: 12px; font-weight:800; letter-spacing:-0.03em; color:#0f172a; margin-bottom: 24px;">Event Operations Audit Ledger</h1>`;
+  const scoutHeader = `
+    <div style="display:flex;align-items:center;gap:18px;">
+      ${fleurLogo ? `<img src="${fleurLogo}" style="height:92px;width:auto;" />` : ''}
+      <div>
+        <div style="font-size:28px;font-weight:800;color:#1f2937;letter-spacing:-0.01em;line-height:1.15;">Lebanese Scout Association</div>
+        <div style="font-size:19px;font-weight:700;color:#6b7280;letter-spacing:-0.01em;margin-top:2px;">South District - Saida One Group</div>
+      </div>
+    </div>`;
 
-  targetTeamsList.forEach((team, index) => {
-    if (!team) return;
-    const approvedSubs = allSubs.filter(s => s.team_id === team.id && s.status === 'approved');
+  const statCard = (label, value) => `
+    <div style="background:${PDF_RED};border-radius:16px;padding:16px 22px;min-width:170px;box-shadow:0 6px 12px rgba(215,29,37,0.25);">
+      <div style="color:${PDF_YELLOW};font-weight:800;font-size:19px;letter-spacing:-0.01em;margin-bottom:6px;">${label}</div>
+      <div style="color:#ffffff;font-weight:600;font-size:17px;line-height:1.2;word-break:break-word;">${value}</div>
+    </div>`;
+
+  // Build the pages
+  const pages = [];
+
+  targetTeamsList.forEach((team) => {
     const score = calcPts(team);
     const rank = globalRankings.findIndex(t => t.id === team.id) + 1;
 
-    htmlContent += `
-      <div style="${index > 0 ? 'page-break-before: always;' : ''} margin-bottom: 40px;">
-        <div style="background: #f8fafc; padding: 18px; border-radius: 8px; border-left: 6px solid ${team.color || '#f97316'}; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
-          <h2 style="margin: 0; font-size:1.4rem; font-weight:800; letter-spacing:-0.02em; color:#0f172a;">${team.name}</h2>
-          <p style="font-size: 12px; margin: 6px 0; color:#475569; font-weight:500;"><strong>Team:</strong> ${team.members.join(', ')}</p>
-          <div style="font-size: 12px; font-weight: 700; color: #f97316; text-transform: uppercase; letter-spacing: 0.03em; margin-top:4px;">
-            Approved Actions: ${approvedSubs.length} &bull; Final Points: ${score} &bull; Standings Rank: #${rank}
+    // ── COVER PAGE ──
+    pages.push(`
+      <div style="${PAGE}display:flex;">
+        <div style="flex:1;padding:58px 50px 50px;display:flex;flex-direction:column;">
+          ${scoutHeader}
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:42px;">
+            <h1 style="font-size:70px;font-weight:800;color:${PDF_RED};letter-spacing:-0.02em;line-height:1;margin:0;">Summary Report</h1>
+            <div style="display:flex;gap:20px;flex-wrap:wrap;">
+              ${statCard('Team Name', team.name)}
+              ${statCard('Total Points', score)}
+              ${statCard('Rank', rank ? ordinal(rank) : '—')}
+            </div>
           </div>
         </div>
+        <div style="width:2px;background:#1f2937;margin:90px 0;"></div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px;">
+          ${jibaLogo ? `<img src="${jibaLogo}" style="max-width:84%;max-height:70%;width:auto;height:auto;" />` : `<div style="font-size:40px;font-weight:800;color:${PDF_RED}">جيبا وصيبا</div>`}
+        </div>
+      </div>`);
 
-        <table style="width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 11.5px;">
-          <thead>
-            <tr style="background: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1; color:#475569;">
-              <th style="padding: 10px 8px; font-weight:700; width:50px;">LOG #</th>
-              <th style="padding: 10px 8px; font-weight:700;">TASK CHALLENGE NAME</th>
-              <th style="padding: 10px 8px; font-weight:700; width:140px;">OPERATIONAL TIMESTAMPS</th>
-              <th style="padding: 10px 8px; font-weight:700; width:80px;">PTS IMPACT</th>
-              <th style="padding: 10px 8px; font-weight:700; width:90px; text-align:right;">STATUS</th>
-            </tr>
-          </thead>
-          <tbody>`;
+    // ── LOGS PAGE(S) ──
+    const teamLogs = allSubs.filter(s => s.team_id === team.id)
+      .sort((a,b) => new Date(a.submitted_at) - new Date(b.submitted_at));
 
-    const teamLogs = allSubs.filter(s => s.team_id === team.id).sort((a,b) => new Date(a.submitted_at) - new Date(b.submitted_at));
-    
-    if(!teamLogs.length) {
-      htmlContent += `<tr><td colspan="5" style="padding:16px; text-align:center; font-style:italic; color:#94a3b8; border-bottom:1px solid #e2e8f0;">No activity yet.</td></tr>`;
+    let rows = '';
+    if (!teamLogs.length) {
+      rows = `<tr><td colspan="6" style="padding:26px;text-align:center;font-style:italic;color:#94a3b8;">No activity recorded for this team yet.</td></tr>`;
     } else {
-      teamLogs.forEach((s, logIdx) => {
+      teamLogs.forEach((s, i) => {
         const task = tasksMatrix.find(t => t.category_id === s.category_id && t.task_num === s.task_num);
         const points = task ? task.points : 0;
-        const colorStatus = s.status === 'approved' ? '#10b981' : s.status === 'rejected' ? '#ef4444' : '#3b82f6';
-        
-        const punchedAt = formatTime(s.submitted_at);
-        const verifiedAt = s.reviewed_at ? formatTime(s.reviewed_at) : 'N/A (Pending)';
-
-        htmlContent += `
-          <tr style="border-bottom: 1px solid #e2e8f0; vertical-align: top;">
-            <td style="padding: 10px 8px; font-weight:700; color:#64748b;">${logIdx + 1}</td>
-            <td style="padding: 10px 8px;">
-              <div style="font-weight: 700; color:#0f172a; font-size:12px;">${task ? task.task_name : s.category_id + '-' + s.task_num}</div>
-              ${s.note ? `<div style="color:#64748b; font-size:10.5px; margin-top:2px; font-style:italic;">Team message: "${s.note}"</div>` : ''}
-              ${s.rejection_comment ? `<div style="color: #dc2626; font-size: 11px; margin-top:4px; background:#fef2f2; padding:4px 8px; border-radius:4px; border-left:2px solid #ef4444;"><strong>❌ Rejection Feedback Note:</strong> ${s.rejection_comment}</div>` : ''}
+        const taskName = task ? task.task_name : (s.category_id + '-' + s.task_num);
+        const statusColor = s.status === 'approved' ? '#16a34a' : s.status === 'rejected' ? PDF_RED : '#2563eb';
+        const statusBg = s.status === 'approved' ? '#dcfce7' : s.status === 'rejected' ? '#fde2e3' : '#dbeafe';
+        const zebra = i % 2 ? '#fafafa' : '#ffffff';
+        rows += `
+          <tr style="background:${zebra};vertical-align:top;">
+            <td style="padding:11px 12px;font-weight:700;color:#9ca3af;border-bottom:1px solid #eee;">${i + 1}</td>
+            <td style="padding:11px 12px;border-bottom:1px solid #eee;">
+              <div style="font-weight:700;color:#111827;font-size:13px;">${taskName}</div>
+              ${s.note ? `<div style="color:#6b7280;font-size:11px;margin-top:3px;font-style:italic;">Note: "${s.note}"</div>` : ''}
+              ${s.rejection_comment ? `<div style="color:${PDF_RED};font-size:11px;margin-top:4px;background:#fde2e3;padding:4px 8px;border-radius:5px;"><strong>Rejection:</strong> ${s.rejection_comment}</div>` : ''}
             </td>
-            <td style="padding: 10px 8px; color:#475569; font-size:10.5px; line-height:1.4;">
-              <div><strong>📥 Punched:</strong> ${punchedAt}</div>
-              <div style="margin-top:2px; color:${s.status !== 'pending' ? '#475569' : 'var(--text-muted)'}"><strong>⏱️ Verified:</strong> ${verifiedAt}</div>
+            <td style="padding:11px 12px;color:#374151;font-size:11.5px;border-bottom:1px solid #eee;white-space:nowrap;">${formatTime(s.submitted_at)}</td>
+            <td style="padding:11px 12px;color:#374151;font-size:11.5px;border-bottom:1px solid #eee;white-space:nowrap;">${s.reviewed_at ? formatTime(s.reviewed_at) : '—'}</td>
+            <td style="padding:11px 12px;font-weight:800;color:${s.status === 'approved' ? '#16a34a' : '#9ca3af'};border-bottom:1px solid #eee;">${s.status === 'approved' ? '+' + points : '0'}</td>
+            <td style="padding:11px 12px;border-bottom:1px solid #eee;text-align:right;">
+              <span style="display:inline-block;padding:4px 12px;border-radius:50px;background:${statusBg};color:${statusColor};font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:0.03em;">${s.status}</span>
             </td>
-            <td style="padding: 10px 8px; font-weight:700; color:${s.status === 'approved' ? '#10b981' : '#94a3b8'}">${s.status === 'approved' ? '+' + points : '0'}</td>
-            <td style="padding: 10px 8px; font-weight:800; text-align:right; color:${colorStatus}; letter-spacing:0.02em; font-size:10.5px;">${s.status.toUpperCase()}</td>
           </tr>`;
       });
     }
 
-    htmlContent += `</tbody></table></div>`;
+    pages.push(`
+      <div style="${DOTS}box-sizing:border-box;width:1122px;min-height:793px;padding:46px 55px;position:relative;font-family:'Inter',sans-serif;">
+        <div style="display:flex;align-items:center;gap:18px;border-bottom:3px solid ${PDF_RED};padding-bottom:18px;">
+          ${jibaLogo ? `<img src="${jibaLogo}" style="height:66px;width:auto;" />` : ''}
+          <div style="width:2px;height:54px;background:#1f2937;"></div>
+          <div style="font-size:30px;font-weight:800;color:${PDF_RED};line-height:1.05;letter-spacing:-0.01em;">Summary<br>Report</div>
+          <div style="margin-left:auto;text-align:right;">
+            <div style="display:inline-flex;align-items:center;gap:8px;font-size:20px;font-weight:800;color:#111827;">
+              <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${team.color || PDF_RED};"></span>${team.name}
+            </div>
+            <div style="font-size:12.5px;color:#6b7280;font-weight:600;margin-top:3px;">${score} pts &bull; Rank ${rank ? ordinal(rank) : '—'} &bull; ${team.members.length} members</div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:#6b7280;font-weight:600;margin:16px 0 14px;">
+          <strong style="color:#374151;">Members:</strong> ${team.members.join(' • ')}
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:${PDF_RED};color:#fff;text-align:left;">
+              <th style="padding:12px;font-weight:800;width:46px;border-radius:8px 0 0 0;">#</th>
+              <th style="padding:12px;font-weight:800;">Task / Challenge</th>
+              <th style="padding:12px;font-weight:800;width:150px;">Submitted</th>
+              <th style="padding:12px;font-weight:800;width:150px;">Reviewed</th>
+              <th style="padding:12px;font-weight:800;width:80px;">Points</th>
+              <th style="padding:12px;font-weight:800;width:110px;text-align:right;border-radius:0 8px 0 0;">Status</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`);
   });
 
-  element.innerHTML = htmlContent;
-  
-  const fileLabel = selectedTargetId === 'all' ? 'Full_Event_Audit' : targetTeamsList[0].name.replace(/\s+/g, '_');
+  // Stitch pages: page-break before every page except the first (avoids trailing blank pages)
+  const element = document.createElement('div');
+  element.style.fontFamily = "'Inter', sans-serif";
+  element.innerHTML = pages.map((p, i) =>
+    `<div style="${i > 0 ? 'page-break-before:always;' : ''}">${p}</div>`
+  ).join('');
+
+  const fileLabel = selectedTargetId === 'all' ? 'All_Teams' : targetTeamsList[0].name.replace(/\s+/g, '_');
   html2pdf().set({
-    margin: 14,
-    filename: `Log_Audit_Summary_${fileLabel}_${new Date().toISOString().split('T')[0]}.pdf`,
-    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    margin: 0,
+    filename: `Jiba_w_Siba_Summary_${fileLabel}_${new Date().toISOString().split('T')[0]}.pdf`,
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+    pagebreak: { mode: ['css', 'legacy'] }
   }).from(element).save();
 }
 
@@ -1033,5 +1117,5 @@ setInterval(async () => {
   if (localStorage.getItem('evt_admin_session') === '1') { await loadState(); renderSubmissions(); renderActivityLogs(); renderMetrics(); }
 }, 3000);
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebed05faab11b4',t:'MTc4MTk3MDU5MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
