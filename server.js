@@ -36,10 +36,11 @@ const pool = new Pool({
 async function initDatabase() {
   const client = await pool.connect();
   try {
+    // ADDED UNIQUE CONSTRAINT TO NAME
     await client.query(`
       CREATE TABLE IF NOT EXISTS teams (
         id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
+        name TEXT NOT NULL UNIQUE, 
         color TEXT NOT NULL DEFAULT '#f97316',
         pin TEXT NOT NULL DEFAULT '0000',
         disqualified INTEGER NOT NULL DEFAULT 0,
@@ -47,7 +48,9 @@ async function initDatabase() {
       )
     `);
 
-    // UPDATED: Added the phone column
+    // Safety fallback: forces existing databases to apply the UNIQUE rule
+    try { await client.query('ALTER TABLE teams ADD CONSTRAINT teams_name_key UNIQUE (name)'); } catch(e) {}
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS members (
         id SERIAL PRIMARY KEY,
@@ -57,8 +60,8 @@ async function initDatabase() {
       )
     `);
     
-    // Safely upgrade existing database tables to add the phone column if it's missing
-    try { await client.query('ALTER TABLE members ADD COLUMN phone TEXT'); } catch(e) {}
+    // Safety check to force the phone column to exist
+    try { await client.query('ALTER TABLE members ADD COLUMN IF NOT EXISTS phone TEXT'); } catch(e) {}
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS completions (
@@ -146,7 +149,6 @@ async function initDatabase() {
     console.log('✅ Tables created');
 
     const teamCount = await client.query('SELECT COUNT(*) FROM teams');
-    // FIXED RESTORED
     if (parseInt(teamCount.rows.count) === 0) {
       await seedDatabase(client);
     }
@@ -170,7 +172,6 @@ async function query(sql, params) {
 
 async function queryOne(sql, params) {
   const result = await pool.query(sql, params);
-  // FIXED RESTORED
   return result.rows || null;
 }
 
@@ -185,7 +186,6 @@ async function getTeamsFull() {
 
   return teams.map(t => ({
     id: t.id, name: t.name, color: t.color, pin: t.pin || '0000', disqualified: !!t.disqualified,
-    // UPDATED: Formats the name and phone for the UI cleanly
     members: members.filter(m => m.team_id === t.id).map(m => m.phone ? `${m.name} (${m.phone})` : m.name),
     completions: completions.filter(c => c.team_id === t.id).map(c => ({ categoryId: c.category_id, taskNum: c.task_num }))
   }));
@@ -292,46 +292,84 @@ app.get('/api/state', async (req, res) => {
 
 // Teams CRUD
 app.post('/api/teams', async (req, res) => {
+  const client = await pool.connect();
   try {
     const { name, color, members } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
     if (!members || members.length < 1) return res.status(400).json({ error: 'Need at least 1 member' });
     if (members.length > 8) return res.status(400).json({ error: 'Max 8 members' });
-    const result = await pool.query('INSERT INTO teams (name, color) VALUES ($1, $2) RETURNING id', [name, color || '#f97316']);
-    
-    // FIXED RESTORED
+
+    await client.query('BEGIN');
+
+    const result = await client.query('INSERT INTO teams (name, color) VALUES ($1, $2) RETURNING id', [name, color || '#f97316']);
     const teamId = result.rows.id;
     
     for (const m of members) {
-      // UPDATED: Supports objects {name, phone} instead of just strings
       const mName = typeof m === 'object' ? m.name : m;
       const mPhone = typeof m === 'object' ? m.phone : null;
-      await pool.query('INSERT INTO members (team_id, name, phone) VALUES ($1, $2, $3)', [teamId, mName, mPhone]);
+      await client.query('INSERT INTO members (team_id, name, phone) VALUES ($1, $2, $3)', [teamId, mName, mPhone]);
     }
-    await addLog(teamId, '🆕', 'Team "'+name+'" created');
+    
+    await client.query('INSERT INTO activity_log (team_id, icon, message) VALUES ($1, $2, $3)', [teamId, '🆕', 'Team "'+name+'" created']);
+    
+    await client.query('COMMIT');
     res.json({ success: true, teamId });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    
+    // CATCH DUPLICATE NAME ERRORS (Postgres code 23505 = Unique Violation)
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'That Team Name is already taken! Please choose another one.' });
+    }
+    
+    console.error("🚨 CRASH DURING TEAM CREATION:", err.message);
+    res.status(500).json({ error: "Failed to save to the database: " + err.message });
+  } finally {
+    client.release();
+  }
 });
 
 app.put('/api/teams/:id', async (req, res) => {
+  const client = await pool.connect();
   try {
     const id = parseInt(req.params.id);
     const { name, color, members } = req.body;
-    const team = await queryOne('SELECT * FROM teams WHERE id=$1', [id]);
-    if (!team) return res.status(404).json({ error: 'Not found' });
-    await pool.query('UPDATE teams SET name=$1, color=$2 WHERE id=$3', [name||team.name, color||team.color, id]);
+    
+    await client.query('BEGIN');
+    
+    const teamRes = await client.query('SELECT * FROM teams WHERE id=$1', [id]);
+    if (teamRes.rows.length === 0) {
+       await client.query('ROLLBACK');
+       return res.status(404).json({ error: 'Not found' });
+    }
+    const team = teamRes.rows;
+    
+    await client.query('UPDATE teams SET name=$1, color=$2 WHERE id=$3', [name||team.name, color||team.color, id]);
+    
     if (members && Array.isArray(members)) {
-      await pool.query('DELETE FROM members WHERE team_id=$1', [id]);
+      await client.query('DELETE FROM members WHERE team_id=$1', [id]);
       for (const m of members) {
-        // UPDATED: Supports objects {name, phone} instead of just strings
         const mName = typeof m === 'object' ? m.name : m;
         const mPhone = typeof m === 'object' ? m.phone : null;
-        await pool.query('INSERT INTO members (team_id, name, phone) VALUES ($1, $2, $3)', [id, mName, mPhone]);
+        await client.query('INSERT INTO members (team_id, name, phone) VALUES ($1, $2, $3)', [id, mName, mPhone]);
       }
     }
-    await addLog(id, '✏️', 'Team "'+name+'" updated');
+    
+    await client.query('INSERT INTO activity_log (team_id, icon, message) VALUES ($1, $2, $3)', [id, '✏️', 'Team "'+name+'" updated']);
+    
+    await client.query('COMMIT');
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    await client.query('ROLLBACK');
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'That Team Name is already taken!' });
+    }
+    console.error("🚨 CRASH DURING TEAM UPDATE:", err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
 });
 
 app.delete('/api/teams/:id', async (req, res) => {
@@ -349,7 +387,7 @@ app.delete('/api/teams/:id', async (req, res) => {
 app.post('/api/teams/:id/members', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, phone } = req.body; // UPDATED to accept phone
+    const { name, phone } = req.body; 
     if (!name) return res.status(400).json({ error: 'Name required' });
     const count = await queryOne('SELECT COUNT(*) as c FROM members WHERE team_id=$1', [id]);
     if (parseInt(count.c) >= 8) return res.status(400).json({ error: 'Max 8 members' });
@@ -532,10 +570,7 @@ app.post('/api/advisors', async (req, res) => {
     const existing = await queryOne('SELECT * FROM advisors WHERE username=$1', [username]);
     if (existing) return res.status(400).json({ error: 'Username already exists' });
     const result = await pool.query('INSERT INTO advisors (username, password, name) VALUES ($1, $2, $3) RETURNING id', [username, password, name]);
-    
-    // FIXED RESTORED
     const aid = result.rows.id;
-    
     for (const tid of teams) await pool.query('INSERT INTO advisor_teams (advisor_id, team_id) VALUES ($1, $2)', [aid, tid]);
     await addLog(null, '👤', 'Advisor "'+name+'" created');
     res.json({ success: true, advisorId: aid });
@@ -683,8 +718,6 @@ app.delete('/api/categories/:catId', async (req, res) => {
     const tasks = await query('SELECT * FROM tasks WHERE category_id=$1', [catId]);
     if (tasks.length === 0) return res.status(404).json({ error: 'Category not found' });
     await pool.query('DELETE FROM tasks WHERE category_id=$1', [catId]);
-    
-    // FIXED RESTORED
     await addLog(null, '🗑️', 'Category deleted: ' + (tasks.category_name || catId) + ' (' + tasks.length + ' tasks)');
     res.json({ success: true, deleted: tasks.length });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -718,8 +751,6 @@ app.post('/api/tasks/import', async (req, res) => {
     if (!csv) return res.status(400).json({ error: 'No CSV data' });
     const lines = csv.trim().split('\n');
     if (lines.length < 2) return res.status(400).json({ error: 'CSV is empty' });
-    
-    // FIXED RESTORED
     const header = lines.toLowerCase();
     
     if (!header.includes('category') || !header.includes('task')) return res.status(400).json({ error: 'Invalid CSV format' });
@@ -740,7 +771,6 @@ app.post('/api/tasks/import', async (req, res) => {
       cols.push(current.trim());
       if (cols.length < 4) continue;
       
-      // FIXED RESTORED INDICES
       const catId = cols, catName = cols, taskNum = parseInt(cols), taskName = cols;
       const evidence = cols || '', level = cols || 'Easy', comment = cols || '';
       
