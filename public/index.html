@@ -551,8 +551,9 @@ function renderTeamView() {
 // Brand palette + logo paths for the Summary Report PDF (matches the official template)
 const PDF_RED = '#d71d25';
 const PDF_YELLOW = '#fde204';
-const PDF_JIBA_LOGO = '/jiba_logo.png';   // جيبا وصيبا dartboard logo
-const PDF_FLEUR_LOGO = '/report_fleur.png';      // Lebanese Scout fleur-de-lis
+const PDF_JIBA_LOGO = '/report_jiba_logo.png';     // جيبا وصيبا dartboard logo
+const PDF_SCOUT_LOGO = '/report_scout_full.png';   // Lebanese Scout logo (fleur + text baked in)
+const PDF_BG = '/background.png';                   // full-page background image
 
 // Load an image and return a base64 data URI so html2canvas always captures it
 function loadImageAsDataURL(src) {
@@ -585,10 +586,11 @@ async function generateGameSummaryPDF() {
     return;
   }
 
-  // Preload the brand logos as data URIs (guarantees they render in the PDF)
-  const [jibaLogo, fleurLogo] = await Promise.all([
+  // Preload the brand assets as data URIs (guarantees they render in the PDF)
+  const [jibaLogo, scoutLogo, bgImage] = await Promise.all([
     loadImageAsDataURL(PDF_JIBA_LOGO),
-    loadImageAsDataURL(PDF_FLEUR_LOGO)
+    loadImageAsDataURL(PDF_SCOUT_LOGO),
+    loadImageAsDataURL(PDF_BG)
   ]);
 
   const activeTeams = typeof teams !== 'undefined' ? teams : [];
@@ -608,18 +610,18 @@ async function generateGameSummaryPDF() {
   const globalRankings = [...activeTeams].sort((a, b) => calcPts(b) - calcPts(a));
   const ordinal = (n) => { const s = ['th','st','nd','rd'], v = n % 100; return n + (s[(v-20)%10] || s[v] || s[0]); };
 
-  // Shared page styling
-  const DOTS = `background-color:#ffffff;background-image:radial-gradient(#dcdcdc 1.5px, transparent 1.5px);background-size:26px 26px;`;
-  const PAGE = `width:1122px;height:793px;box-sizing:border-box;overflow:hidden;position:relative;font-family:'Inter',sans-serif;${DOTS}`;
+  // Shared page background — use the supplied background.png, else a dotted fallback
+  const BG = bgImage
+    ? `background-color:#ffffff;background-image:url('${bgImage}');background-size:cover;background-position:center;background-repeat:no-repeat;`
+    : `background-color:#ffffff;background-image:radial-gradient(#dcdcdc 1.5px, transparent 1.5px);background-size:26px 26px;`;
+  const PAGE = `width:1122px;height:793px;box-sizing:border-box;overflow:hidden;position:relative;font-family:'Inter',sans-serif;${BG}`;
 
-  const scoutHeader = `
-    <div style="display:flex;align-items:center;gap:18px;">
-      ${fleurLogo ? `<img src="${fleurLogo}" style="height:92px;width:auto;" />` : ''}
-      <div>
-        <div style="font-size:28px;font-weight:800;color:#1f2937;letter-spacing:-0.01em;line-height:1.15;">Lebanese Scout Association</div>
-        <div style="font-size:19px;font-weight:700;color:#6b7280;letter-spacing:-0.01em;margin-top:2px;">South District - Saida One Group</div>
-      </div>
-    </div>`;
+  const scoutHeader = scoutLogo
+    ? `<img src="${scoutLogo}" style="height:96px;width:auto;" />`
+    : `<div>
+        <div style="font-size:28px;font-weight:800;color:#1f2937;line-height:1.15;">Lebanese Scout Association</div>
+        <div style="font-size:19px;font-weight:700;color:#6b7280;margin-top:2px;">South District - Saida One Group</div>
+      </div>`;
 
   const statCard = (label, value) => `
     <div style="background:${PDF_RED};border-radius:16px;padding:16px 22px;min-width:170px;box-shadow:0 6px 12px rgba(215,29,37,0.25);">
@@ -688,7 +690,7 @@ async function generateGameSummaryPDF() {
     }
 
     pages.push(`
-      <div style="${DOTS}box-sizing:border-box;width:1122px;min-height:793px;padding:46px 55px;position:relative;font-family:'Inter',sans-serif;">
+      <div style="${BG}box-sizing:border-box;width:1122px;min-height:793px;padding:46px 55px;position:relative;font-family:'Inter',sans-serif;">
         <div style="display:flex;align-items:center;gap:18px;border-bottom:3px solid ${PDF_RED};padding-bottom:18px;">
           ${jibaLogo ? `<img src="${jibaLogo}" style="height:66px;width:auto;" />` : ''}
           <div style="width:2px;height:54px;background:#1f2937;"></div>
@@ -1117,5 +1119,5 @@ setInterval(async () => {
   if (localStorage.getItem('evt_admin_session') === '1') { await loadState(); renderSubmissions(); renderActivityLogs(); renderMetrics(); }
 }, 3000);
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ec4a314fd8e211',t:'MTc4MTk3NDQwNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
