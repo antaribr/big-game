@@ -322,7 +322,7 @@
     <img src="/jiba_logo.png" style="width: 44px; height: 44px; border-radius: 10px; box-shadow: var(--shadow-sm);" onerror="this.src='https://placehold.co/100?text=🏆'">
     <div style="flex: 1;">
       <div style="font-weight: 800; font-size: 0.95rem; color: var(--text);">Install Jiba w Siba</div>
-      <div style="font-size: 0.78rem; color: var(--text-dim); font-weight: 500;">Add to Home Screen for full-screen challenge tracking and instant live advisor notifications.</div>
+      <div style="font-size: 0.78rem; color: var(--text-dim); font-weight: 500;">Add to Home Screen for full-screen challenge tracking.</div>
     </div>
     <button onclick="document.getElementById('iosInstallBanner').style.display='none'" style="border: none; background: #f1f5f9; width: 28px; height: 28px; border-radius: 50%; font-weight: 700; color: var(--text-dim); cursor: pointer;">×</button>
   </div>
@@ -342,13 +342,6 @@
 
   <div id="teamBanner" class="team-banner" style="display:none"></div>
   <div class="stats-grid" id="myStats" style="display:none"></div>
-
-  <div class="sec-card card" id="notificationPromptBox" style="margin-bottom: 16px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); box-shadow: var(--shadow-sm); text-align: center; display: none; animation: slideUp 0.25s ease;">
-    <div style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 8px;">Stay Updated Live</div>
-    <button class="btn btn-sm" id="pushBtn" onclick="requestNotificationAccess()" style="background: var(--blue-light); color: var(--blue); border-color: #bfdbfe; width: 100%; min-height: 40px; border-radius: 6px; font-weight: 700; cursor: pointer; border: 1px solid #bfdbfe; font-family: inherit;">
-      🔔 Enable Live Push Notifications
-    </button>
-  </div>
 
   <div class="nav-bar" id="mainNav" style="display:none">
     <button class="active" onclick="showSec('home',this)">🏠<span>Progress</span></button>
@@ -427,18 +420,9 @@
 let CATEGORIES = [];
 const LOCK_KEY='event_team_lock';
 const SEEN_SUBS_KEY='event_seen_submissions';
-// Explicit configuration target for your Railway VAPID Public key parameters
-const VAPID_PUBLIC_KEY = "BLmXKSzzax0C3iuhJJ5HvPJ54vYmj2PPdQbXHy1OZwixB62DealPJober-xd3n95OxqvpBQFBm9LLIsWaExx3Wk";
 
 let teams=[], myTeamId=null, myCatId=null, myTaskNum=null, doneMap={}, pendingMap={}, allSubs=[];
 let activeSection = 'home';
-
-// Register standard tracking Service Worker logic context directly 
-if ('serviceWorker' in navigator && 'PushManager' in window) {
-  navigator.serviceWorker.register('/sw.js')
-    .then(reg => console.log('Service Worker scoped online successfully:', reg.scope))
-    .catch(err => console.error('Service Worker fallback context initialization dropped:', err));
-}
 
 async function loadCategoriesFromDB() {
   try {
@@ -505,7 +489,6 @@ function showTeamSelect(){
   document.getElementById('mainNav').style.display='none';
   document.getElementById('myStats').style.display='none';
   document.getElementById('teamBanner').style.display='none';
-  document.getElementById('notificationPromptBox').style.display='none';
   document.getElementById('teamGrid').innerHTML=teams.map(t=>
     '<div style="padding:16px 12px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--card);cursor:pointer;text-align:center;box-shadow:var(--shadow-sm);" onclick="pickTeam('+t.id+')">'+
     '<div style="width:12px;height:12px;border-radius:50%;background:'+t.color+';margin:0 auto 8px;box-shadow:0 0 0 4px var(--bg)"></div>'+
@@ -544,10 +527,6 @@ async function lockTeam(id){
   document.getElementById('teamBanner').style.display='grid';
   document.getElementById('myStats').style.display='grid';
   document.getElementById('mainNav').style.display='flex';
-  
-  // Turn on the toggle prompt card once secure workspace profile is verified
-  document.getElementById('notificationPromptBox').style.display='block';
-  checkExistingPushSubscription();
   
   document.getElementById('teamBanner').innerHTML =
     '<div class="tb-dot" style="background:'+team.color+'"></div>' +
@@ -847,94 +826,9 @@ function runPwaInstallationWatchdog() {
   }
 }
 
-// Check if a push subscription is already active to safely toggle button layout states
-async function checkExistingPushSubscription() {
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.getSubscription();
-    if (sub) {
-      document.getElementById('pushBtn').textContent = "✅ Live Alerts Active";
-      document.getElementById('pushBtn').style.pointerEvents = "none";
-    }
-  } catch (e) { console.error("Error evaluating internal token maps:", e); }
-}
-
-async function requestNotificationAccess() {
-  if (!('Notification' in window)) {
-    alert("This device layout container does not support hardware push managers.");
-    return;
-  }
-
-  if (window.navigator.standalone === false && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    alert("iOS Constraint: You must tap 'Add to Home Screen' in Safari first before enabling live notifications!");
-    return;
-  }
-
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
-    alert("Permission denied. Alerts will not be pushed to this node vector.");
-    return;
-  }
-
-  configurePushSubscription();
-}
-
-async function configurePushSubscription() {
-  try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-    });
-
-    if (myTeamId) {
-      // Destructure internal sub details cleanly to stringify payload maps for server.js compatibility rules
-      const subJSON = subscription.toJSON();
-      const payload = {
-        teamId: myTeamId,
-        subscription: {
-          endpoint: subJSON.endpoint,
-          keys: {
-            p256dh: subJSON.keys?.p256dh,
-            auth: subJSON.keys?.auth
-          }
-        }
-      };
-
-      const response = await fetch('/api/notifications/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        document.getElementById('pushBtn').textContent = "✅ Live Alerts Active";
-        document.getElementById('pushBtn').style.pointerEvents = "none";
-        toast('🔔', 'Live alerts linked to this handset node!');
-      } else {
-        alert("Server storage dropped subscription: " + (result.error || "Unknown response verification flaw."));
-      }
-    }
-  } catch (e) {
-    console.error("Subscription vector generation failed in frontend layout canvas:", e);
-    // FORCE THE HANDSET TO POP UP THE RAW OPERATIONAL SYSTEM REASON
-    alert("🚨 PUSH ERROR CAPTURED:\nName: " + e.name + "\nMessage: " + e.message);
-  }
-}
-
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
-  return outputArray;
-}
-
 window.addEventListener('DOMContentLoaded', runPwaInstallationWatchdog);
 init();
 setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();if(activeSection==='submit'&&myCatId)renderTasks();}},3000);
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebc16cad3c98d2',t:'MTc4MTk2ODgwNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
