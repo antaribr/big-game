@@ -126,7 +126,7 @@
 
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
     gap: 8px;
     margin-bottom: 20px;
   }
@@ -596,7 +596,7 @@ function renderAll(){
     '<div class="stat"><div class="s-num">'+pts+'</div><div class="s-label">Score</div></div>'+
     '<div class="stat"><div class="s-num" style="color:var(--green)">'+doneCount+'</div><div class="s-label">Approved</div></div>'+
     '<div class="stat"><div class="s-num" style="color:var(--blue)">'+pendingCount+'</div><div class="s-label">Pending</div></div>'+
-    '<div class="stat"><div class="s-num" style="color:var(--purple)">#'+rank+'</div><div class="s-label">Rank</div></div>';
+    (rankLocked ? '' : '<div class="stat"><div class="s-num" style="color:var(--purple)">#'+rank+'</div><div class="s-label">Rank</div></div>');
 
   renderCatProgress();renderHistory();renderLB();
   applyRankLock();
@@ -815,6 +815,7 @@ function renderHistory(){
 }
 
 function renderLB(){
+  if(rankLocked){document.getElementById('miniLB').innerHTML='';return;}
   const calcPts=t=>{const d=getDoneMap(t);let p=0;CATEGORIES.forEach(c=>c.tasks.forEach(tk=>{if(d[c.id+'-'+tk.num])p+=tk.pts;}));return p;};
   const sorted=[...teams].sort((a,b)=>calcPts(b)-calcPts(a));
   document.getElementById('miniLB').innerHTML=sorted.map((t,i)=>{
