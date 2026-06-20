@@ -614,7 +614,10 @@ async function generateGameSummaryPDF() {
   const BG = bgImage
     ? `background-color:#ffffff;background-image:url('${bgImage}');background-size:cover;background-position:center;background-repeat:no-repeat;`
     : `background-color:#ffffff;background-image:radial-gradient(#dcdcdc 1.5px, transparent 1.5px);background-size:26px 26px;`;
-  const PAGE = `width:1122px;height:793px;box-sizing:border-box;overflow:hidden;position:relative;font-family:'Inter',sans-serif;${BG}`;
+  // Every page is an EXACT fixed A4-landscape block (1122x793px @96dpi) so html2pdf
+  // never merges content across sheets. Cover = 1 page; logs are paginated into fixed pages.
+  const PAGE_BOX = `width:1122px;height:793px;box-sizing:border-box;overflow:hidden;position:relative;font-family:'Inter',sans-serif;${BG}`;
+  const ROWS_PER_PAGE = 9; // conservative so rows with notes/rejection never overflow a page
 
   const scoutHeader = scoutLogo
     ? `<img src="${scoutLogo}" style="height:96px;width:auto;" />`
@@ -636,9 +639,9 @@ async function generateGameSummaryPDF() {
     const score = calcPts(team);
     const rank = globalRankings.findIndex(t => t.id === team.id) + 1;
 
-    // ── COVER PAGE ──
+    // ── COVER PAGE (fixed full page) ──
     pages.push(`
-      <div style="${PAGE}display:flex;">
+      <div style="${PAGE_BOX}display:flex;">
         <div style="flex:1;padding:58px 50px 50px;display:flex;flex-direction:column;">
           ${scoutHeader}
           <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:42px;">
@@ -660,74 +663,82 @@ async function generateGameSummaryPDF() {
     const teamLogs = allSubs.filter(s => s.team_id === team.id)
       .sort((a,b) => new Date(a.submitted_at) - new Date(b.submitted_at));
 
-    let rows = '';
-    if (!teamLogs.length) {
-      rows = `<tr><td colspan="6" style="padding:26px;text-align:center;font-style:italic;color:#94a3b8;">No activity recorded for this team yet.</td></tr>`;
-    } else {
-      teamLogs.forEach((s, i) => {
-        const task = tasksMatrix.find(t => t.category_id === s.category_id && t.task_num === s.task_num);
-        const points = task ? task.points : 0;
-        const taskName = task ? task.task_name : (s.category_id + '-' + s.task_num);
-        const statusColor = s.status === 'approved' ? '#16a34a' : s.status === 'rejected' ? PDF_RED : '#2563eb';
-        const statusBg = s.status === 'approved' ? '#dcfce7' : s.status === 'rejected' ? '#fde2e3' : '#dbeafe';
-        const zebra = i % 2 ? '#fafafa' : '#ffffff';
-        rows += `
-          <tr style="background:${zebra};vertical-align:top;">
-            <td style="padding:11px 12px;font-weight:700;color:#9ca3af;border-bottom:1px solid #eee;">${i + 1}</td>
-            <td style="padding:11px 12px;border-bottom:1px solid #eee;">
-              <div style="font-weight:700;color:#111827;font-size:13px;">${taskName}</div>
-              ${s.note ? `<div style="color:#6b7280;font-size:11px;margin-top:3px;font-style:italic;">Note: "${s.note}"</div>` : ''}
-              ${s.rejection_comment ? `<div style="color:${PDF_RED};font-size:11px;margin-top:4px;background:#fde2e3;padding:4px 8px;border-radius:5px;"><strong>Rejection:</strong> ${s.rejection_comment}</div>` : ''}
-            </td>
-            <td style="padding:11px 12px;color:#374151;font-size:11.5px;border-bottom:1px solid #eee;white-space:nowrap;">${formatTime(s.submitted_at)}</td>
-            <td style="padding:11px 12px;color:#374151;font-size:11.5px;border-bottom:1px solid #eee;white-space:nowrap;">${s.reviewed_at ? formatTime(s.reviewed_at) : '—'}</td>
-            <td style="padding:11px 12px;font-weight:800;color:${s.status === 'approved' ? '#16a34a' : '#9ca3af'};border-bottom:1px solid #eee;">${s.status === 'approved' ? '+' + points : '0'}</td>
-            <td style="padding:11px 12px;border-bottom:1px solid #eee;text-align:right;">
-              <span style="display:inline-block;padding:4px 12px;border-radius:50px;background:${statusBg};color:${statusColor};font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:0.03em;">${s.status}</span>
-            </td>
-          </tr>`;
-      });
-    }
+    const buildRow = (s, i) => {
+      const task = tasksMatrix.find(t => t.category_id === s.category_id && t.task_num === s.task_num);
+      const points = task ? task.points : 0;
+      const taskName = task ? task.task_name : (s.category_id + '-' + s.task_num);
+      const statusColor = s.status === 'approved' ? '#16a34a' : s.status === 'rejected' ? PDF_RED : '#2563eb';
+      const statusBg = s.status === 'approved' ? '#dcfce7' : s.status === 'rejected' ? '#fde2e3' : '#dbeafe';
+      const zebra = i % 2 ? '#fafafa' : '#ffffff';
+      return `
+        <tr style="background:${zebra};vertical-align:top;">
+          <td style="padding:11px 12px;font-weight:700;color:#9ca3af;border-bottom:1px solid #eee;">${i + 1}</td>
+          <td style="padding:11px 12px;border-bottom:1px solid #eee;">
+            <div style="font-weight:700;color:#111827;font-size:13px;">${taskName}</div>
+            ${s.note ? `<div style="color:#6b7280;font-size:11px;margin-top:3px;font-style:italic;">Note: "${s.note}"</div>` : ''}
+            ${s.rejection_comment ? `<div style="color:${PDF_RED};font-size:11px;margin-top:4px;background:#fde2e3;padding:4px 8px;border-radius:5px;"><strong>Rejection:</strong> ${s.rejection_comment}</div>` : ''}
+          </td>
+          <td style="padding:11px 12px;color:#374151;font-size:11.5px;border-bottom:1px solid #eee;white-space:nowrap;">${formatTime(s.submitted_at)}</td>
+          <td style="padding:11px 12px;color:#374151;font-size:11.5px;border-bottom:1px solid #eee;white-space:nowrap;">${s.reviewed_at ? formatTime(s.reviewed_at) : '—'}</td>
+          <td style="padding:11px 12px;font-weight:800;color:${s.status === 'approved' ? '#16a34a' : '#9ca3af'};border-bottom:1px solid #eee;">${s.status === 'approved' ? '+' + points : '0'}</td>
+          <td style="padding:11px 12px;border-bottom:1px solid #eee;text-align:right;">
+            <span style="display:inline-block;padding:4px 12px;border-radius:50px;background:${statusBg};color:${statusColor};font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:0.03em;">${s.status}</span>
+          </td>
+        </tr>`;
+    };
 
-    pages.push(`
-      <div style="${BG}box-sizing:border-box;width:1122px;min-height:793px;padding:46px 55px;position:relative;font-family:'Inter',sans-serif;">
-        <div style="display:flex;align-items:center;gap:18px;border-bottom:3px solid ${PDF_RED};padding-bottom:18px;">
-          ${jibaLogo ? `<img src="${jibaLogo}" style="height:66px;width:auto;" />` : ''}
-          <div style="width:2px;height:54px;background:#1f2937;"></div>
-          <div style="font-size:30px;font-weight:800;color:${PDF_RED};line-height:1.05;letter-spacing:-0.01em;">Summary<br>Report</div>
-          <div style="margin-left:auto;text-align:right;">
-            <div style="display:inline-flex;align-items:center;gap:8px;font-size:20px;font-weight:800;color:#111827;">
-              <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${team.color || PDF_RED};"></span>${team.name}
+    // Split logs into fixed-size chunks; each chunk = one physical page with its own header
+    const chunks = teamLogs.length ? [] : [[]];
+    for (let i = 0; i < teamLogs.length; i += ROWS_PER_PAGE) chunks.push(teamLogs.slice(i, i + ROWS_PER_PAGE));
+
+    chunks.forEach((chunk, ci) => {
+      const startIdx = ci * ROWS_PER_PAGE;
+      const rows = chunk.length
+        ? chunk.map((s, k) => buildRow(s, startIdx + k)).join('')
+        : `<tr><td colspan="6" style="padding:26px;text-align:center;font-style:italic;color:#94a3b8;">No activity recorded for this team yet.</td></tr>`;
+      const pageLabel = chunks.length > 1 ? ` (${ci + 1}/${chunks.length})` : '';
+
+      pages.push(`
+        <div style="${PAGE_BOX}padding:40px 55px;">
+          <div style="display:flex;align-items:center;gap:18px;border-bottom:3px solid ${PDF_RED};padding-bottom:16px;">
+            ${jibaLogo ? `<img src="${jibaLogo}" style="height:62px;width:auto;" />` : ''}
+            <div style="width:2px;height:50px;background:#1f2937;"></div>
+            <div style="font-size:28px;font-weight:800;color:${PDF_RED};line-height:1.05;letter-spacing:-0.01em;">Summary<br>Report</div>
+            <div style="margin-left:auto;text-align:right;">
+              <div style="display:inline-flex;align-items:center;gap:8px;font-size:20px;font-weight:800;color:#111827;">
+                <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${team.color || PDF_RED};"></span>${team.name}${pageLabel}
+              </div>
+              <div style="font-size:12.5px;color:#6b7280;font-weight:600;margin-top:3px;">${score} pts &bull; Rank ${rank ? ordinal(rank) : '—'} &bull; ${team.members.length} members</div>
             </div>
-            <div style="font-size:12.5px;color:#6b7280;font-weight:600;margin-top:3px;">${score} pts &bull; Rank ${rank ? ordinal(rank) : '—'} &bull; ${team.members.length} members</div>
           </div>
-        </div>
 
-        <div style="font-size:12px;color:#6b7280;font-weight:600;margin:16px 0 14px;">
-          <strong style="color:#374151;">Members:</strong> ${team.members.join(' • ')}
-        </div>
+          <div style="font-size:12px;color:#6b7280;font-weight:600;margin:14px 0 12px;">
+            <strong style="color:#374151;">Members:</strong> ${team.members.join(' • ')}
+          </div>
 
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead>
-            <tr style="background:${PDF_RED};color:#fff;text-align:left;">
-              <th style="padding:12px;font-weight:800;width:46px;border-radius:8px 0 0 0;">#</th>
-              <th style="padding:12px;font-weight:800;">Task / Challenge</th>
-              <th style="padding:12px;font-weight:800;width:150px;">Submitted</th>
-              <th style="padding:12px;font-weight:800;width:150px;">Reviewed</th>
-              <th style="padding:12px;font-weight:800;width:80px;">Points</th>
-              <th style="padding:12px;font-weight:800;width:110px;text-align:right;border-radius:0 8px 0 0;">Status</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>`);
+          <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;">
+            <thead>
+              <tr style="background:${PDF_RED};color:#fff;text-align:left;">
+                <th style="padding:11px 12px;font-weight:800;width:46px;border-radius:8px 0 0 0;">#</th>
+                <th style="padding:11px 12px;font-weight:800;">Task / Challenge</th>
+                <th style="padding:11px 12px;font-weight:800;width:150px;">Submitted</th>
+                <th style="padding:11px 12px;font-weight:800;width:150px;">Reviewed</th>
+                <th style="padding:11px 12px;font-weight:800;width:80px;">Points</th>
+                <th style="padding:11px 12px;font-weight:800;width:110px;text-align:right;border-radius:0 8px 0 0;">Status</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`);
+    });
   });
 
-  // Stitch pages: page-break before every page except the first (avoids trailing blank pages)
+  // Stitch: each page is its own fixed-size sheet. Force a hard break BEFORE every page
+  // except the first, and prevent any internal splitting of a page block.
   const element = document.createElement('div');
   element.style.fontFamily = "'Inter', sans-serif";
   element.innerHTML = pages.map((p, i) =>
-    `<div style="${i > 0 ? 'page-break-before:always;' : ''}">${p}</div>`
+    `<div style="${i > 0 ? 'page-break-before:always;' : ''}page-break-inside:avoid;break-inside:avoid;">${p}</div>`
   ).join('');
 
   const fileLabel = selectedTargetId === 'all' ? 'All_Teams' : targetTeamsList[0].name.replace(/\s+/g, '_');
@@ -1119,5 +1130,5 @@ setInterval(async () => {
   if (localStorage.getItem('evt_admin_session') === '1') { await loadState(); renderSubmissions(); renderActivityLogs(); renderMetrics(); }
 }, 3000);
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ec4a314fd8e211',t:'MTc4MTk3NDQwNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
