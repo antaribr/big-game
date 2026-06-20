@@ -260,7 +260,8 @@
       const phone = document.getElementById(`p${i}_phone`).value.trim();
 
       if (name && phone) {
-        members.push(`${name} (${phone})`);
+        // CHANGED HERE: Now pushes an object with separate name and phone properties
+        members.push({ name: name, phone: phone });
       } else if (name || phone) {
         // If they filled one field but not the other
         showError(`Please provide both Name and Phone Number for Participant ${i}.`);
