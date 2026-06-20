@@ -316,21 +316,6 @@
 </head>
 <body>
 
-<div id="iosInstallBanner" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid var(--border); box-shadow: 0 -10px 25px rgba(0,0,0,0.1); padding: 16px 20px; z-index: 999; animation: slideUp 0.4s ease;">
-  <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
-    <!-- FIXED IMAGE EMBED SYNTAX HERE -->
-    <img src="/jiba_logo.png" style="width: 44px; height: 44px; border-radius: 10px; box-shadow: var(--shadow-sm);" onerror="this.src='https://placehold.co/100?text=🏆'">
-    <div style="flex: 1;">
-      <div style="font-weight: 800; font-size: 0.95rem; color: var(--text);">Install Jiba w Siba</div>
-      <div style="font-size: 0.78rem; color: var(--text-dim); font-weight: 500;">Add to Home Screen for full-screen challenge tracking.</div>
-    </div>
-    <button onclick="document.getElementById('iosInstallBanner').style.display='none'" style="border: none; background: #f1f5f9; width: 28px; height: 28px; border-radius: 50%; font-weight: 700; color: var(--text-dim); cursor: pointer;">×</button>
-  </div>
-  <div style="background: var(--bg); padding: 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; text-align: center; color: var(--text-dim);">
-    Tap the browser share icon <span style="font-size: 1.1rem; vertical-align: middle;">⎋</span> below, then scroll down and tap <strong style="color: var(--text);">"Add to Home Screen"</strong>.
-  </div>
-</div>
-
 <div class="toast-container" id="toastContainer"></div>
 
 <div class="container">
@@ -816,19 +801,8 @@ function renderLB(){
 
 async function manualRefresh() { if(myTeamId){await loadSubs();renderAll();if(activeSection==='submit'&&myCatId)renderTasks();} toast('🔄','Dashboard Synchronized'); }
 
-// Handle PWA context guidelines viewports display logic maps
-function runPwaInstallationWatchdog() {
-  const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-
-  if (isIos && !isStandalone) {
-    document.getElementById('iosInstallBanner').style.display = 'block';
-  }
-}
-
-window.addEventListener('DOMContentLoaded', runPwaInstallationWatchdog);
 init();
 setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();if(activeSection==='submit'&&myCatId)renderTasks();}},3000);
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebc16cad3c98d2',t:'MTc4MTk2ODgwNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebc45dd9d698d2',t:'MTc4MTk2ODkyNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
