@@ -3,17 +3,9 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const webpush = require('web-push');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Configure web-push keys derived directly from secure Railway context variables
-webpush.setVapidDetails(
-  'mailto:ibrahimantarr@gmail.com', 
-  process.env.VAPID_PUBLIC_KEY, 
-  process.env.VAPID_PRIVATE_KEY
-);
 
 // Ensure uploads directory exists
 const UPLOADS_DIR = process.env.VERCEL ? '/tmp/uploads' : path.join(__dirname, 'uploads');
@@ -132,17 +124,6 @@ async function initDatabase() {
       )
     `);
 
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS device_push_tokens (
-        id SERIAL PRIMARY KEY,
-        team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-        endpoint TEXT UNIQUE NOT NULL,
-        p256dh TEXT NOT NULL,
-        auth TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
     console.log('✅ Tables created');
 
     const teamCount = await client.query('SELECT COUNT(*) FROM teams');
@@ -200,74 +181,6 @@ app.post('/api/admin/login', (req, res) => {
     } else {
       res.status(401).json({ error: 'Wrong password' });
     }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════
-// PUSH NOTIFICATIONS
-// ═══════════════════════════════════════════════════════════════
-app.post('/api/notifications/subscribe', async (req, res) => {
-  try {
-    const { teamId, subscription } = req.body;
-    if (!teamId || !subscription || !subscription.endpoint) {
-      return res.status(400).json({ error: 'Missing subscription parameter mapping.' });
-    }
-
-    const endpoint = subscription.endpoint;
-    const p256dh = subscription.keys?.p256dh || '';
-    const auth = subscription.keys?.auth || '';
-
-    await pool.query(`
-      INSERT INTO device_push_tokens (team_id, endpoint, p256dh, auth)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (endpoint) 
-      DO UPDATE SET team_id = EXCLUDED.team_id, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth
-    `, [parseInt(teamId), endpoint, p256dh, auth]);
-
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/notifications/broadcast', async (req, res) => {
-  try {
-    const { target, message } = req.body;
-    if (!message) return res.status(400).json({ success: false, error: "Message content empty" });
-
-    const payload = JSON.stringify({
-      title: "📢 Admin Announcement",
-      body: message,
-      url: "/submit.html"
-    });
-
-    let rows = [];
-    if (target === 'all') {
-      const result = await pool.query('SELECT * FROM device_push_tokens');
-      rows = result.rows;
-    } else {
-      const result = await pool.query('SELECT * FROM device_push_tokens WHERE team_id = $1', [parseInt(target)]);
-      rows = result.rows;
-    }
-
-    if (rows.length === 0) {
-      return res.json({ success: true, note: "Zero active devices discovered inside storage layer." });
-    }
-
-    rows.forEach(row => {
-      const pushSubscription = {
-        endpoint: row.endpoint,
-        keys: { p256dh: row.p256dh, auth: row.auth }
-      };
-
-      webpush.sendNotification(pushSubscription, payload).catch(async () => {
-        await pool.query('DELETE FROM device_push_tokens WHERE id = $1', [row.id]);
-      });
-    });
-
-    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -514,19 +427,6 @@ app.put('/api/submissions/:id/approve', async (req, res) => {
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [sub.team_id]);
     await addLog(sub.team_id, '✅', team.name+' — '+sub.category_id+'-'+sub.task_num+' APPROVED');
 
-    const approvedTeamDevices = await query('SELECT * FROM device_push_tokens WHERE team_id = $1', [sub.team_id]);
-    const approvalPayload = JSON.stringify({
-      title: "🎯 Task Approved!",
-      body: `Excellent! Your submission for Task #${sub.task_num} has been verified and marked approved!`,
-      url: "/submit.html"
-    });
-    approvedTeamDevices.forEach(device => {
-      const pushSubscription = { endpoint: device.endpoint, keys: { p256dh: device.p256dh, auth: device.auth } };
-      webpush.sendNotification(pushSubscription, approvalPayload).catch(async () => {
-        await pool.query('DELETE FROM device_push_tokens WHERE id = $1', [device.id]);
-      });
-    });
-
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -541,19 +441,6 @@ app.put('/api/submissions/:id/reject', async (req, res) => {
     await pool.query("UPDATE submissions SET status='rejected', reviewed_at=NOW(), rejection_comment=$1 WHERE id=$2", [reason, id]);
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [sub.team_id]);
     await addLog(sub.team_id, '❌', team.name+' — '+sub.category_id+'-'+sub.task_num+' REJECTED'+(reason?': '+reason:''));
-
-    const rejectedTeamDevices = await query('SELECT * FROM device_push_tokens WHERE team_id = $1', [sub.team_id]);
-    const rejectionPayload = JSON.stringify({
-      title: "❌ Revision Flagged",
-      body: `Task #${sub.task_num} needs updates. Check comments to fix and retry!`,
-      url: "/submit.html"
-    });
-    rejectedTeamDevices.forEach(device => {
-      const pushSubscription = { endpoint: device.endpoint, keys: { p256dh: device.p256dh, auth: device.auth } };
-      webpush.sendNotification(pushSubscription, rejectionPayload).catch(async () => {
-        await pool.query('DELETE FROM device_push_tokens WHERE id = $1', [device.id]);
-      });
-    });
 
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
