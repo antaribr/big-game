@@ -326,7 +326,7 @@
 
     <div class="card">
       <h2 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 4px;">Members</h2>
-      <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px;">Minimum 4, maximum 8 members.</p>
+      <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px;">Minimum 4, maximum 6 members.</p>
       <div id="memberList"></div>
       <button type="button" class="add-mem-btn" id="addMemBtn" onclick="addMemberRow()">＋ Add Member</button>
     </div>
@@ -492,7 +492,7 @@
 
   function addMemberRow(name = '', phone = '') {
     const list = document.getElementById('memberList');
-    if (list.children.length >= 8) return;
+    if (list.children.length >= 6) return;
     const box = document.createElement('div');
     box.className = 'participant-box';
     box.innerHTML =
@@ -523,7 +523,7 @@
       // keep at least 1 visible remove button disabled-ish when only one row
       row.querySelector('.remove-mem').style.visibility = rows.length <= 1 ? 'hidden' : 'visible';
     });
-    document.getElementById('addMemBtn').disabled = rows.length >= 8;
+    document.getElementById('addMemBtn').disabled = rows.length >= 6;
   }
 
   async function handleSavePanel() {
@@ -587,5 +587,5 @@
   }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebcf454ede98d2',t:'MTc4MTk2OTM3Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebd5677fd611b4',t:'MTc4MTk2OTYyNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
