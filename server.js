@@ -142,7 +142,7 @@ async function initDatabase() {
     console.log('✅ Tables created');
 
     const teamCount = await client.query('SELECT COUNT(*) FROM teams');
-    if (parseInt(teamCount.rows[0].count) === 0) {
+    if (parseInt(teamCount.rows.count) === 0) {
       await seedDatabase(client);
     }
   } finally {
@@ -165,7 +165,7 @@ async function query(sql, params) {
 
 async function queryOne(sql, params) {
   const result = await pool.query(sql, params);
-  return result.rows[0] || null;
+  return result.rows || null;
 }
 
 async function addLog(teamId, icon, message) {
@@ -297,7 +297,7 @@ app.post('/api/teams', async (req, res) => {
     if (!members || members.length < 1) return res.status(400).json({ error: 'Need at least 1 member' });
     if (members.length > 8) return res.status(400).json({ error: 'Max 8 members' });
     const result = await pool.query('INSERT INTO teams (name, color) VALUES ($1, $2) RETURNING id', [name, color || '#f97316']);
-    const teamId = result.rows[0].id;
+    const teamId = result.rows.id;
     for (const m of members) await pool.query('INSERT INTO members (team_id, name) VALUES ($1, $2)', [teamId, m]);
     await addLog(teamId, '🆕', 'Team "'+name+'" created');
     res.json({ success: true, teamId });
@@ -520,7 +520,7 @@ app.post('/api/advisors', async (req, res) => {
     const existing = await queryOne('SELECT * FROM advisors WHERE username=$1', [username]);
     if (existing) return res.status(400).json({ error: 'Username already exists' });
     const result = await pool.query('INSERT INTO advisors (username, password, name) VALUES ($1, $2, $3) RETURNING id', [username, password, name]);
-    const aid = result.rows[0].id;
+    const aid = result.rows.id;
     for (const tid of teams) await pool.query('INSERT INTO advisor_teams (advisor_id, team_id) VALUES ($1, $2)', [aid, tid]);
     await addLog(null, '👤', 'Advisor "'+name+'" created');
     res.json({ success: true, advisorId: aid });
@@ -668,7 +668,7 @@ app.delete('/api/categories/:catId', async (req, res) => {
     const tasks = await query('SELECT * FROM tasks WHERE category_id=$1', [catId]);
     if (tasks.length === 0) return res.status(404).json({ error: 'Category not found' });
     await pool.query('DELETE FROM tasks WHERE category_id=$1', [catId]);
-    await addLog(null, '🗑️', 'Category deleted: ' + (tasks[0].category_name || catId) + ' (' + tasks.length + ' tasks)');
+    await addLog(null, '🗑️', 'Category deleted: ' + (tasks.category_name || catId) + ' (' + tasks.length + ' tasks)');
     res.json({ success: true, deleted: tasks.length });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -701,7 +701,7 @@ app.post('/api/tasks/import', async (req, res) => {
     if (!csv) return res.status(400).json({ error: 'No CSV data' });
     const lines = csv.trim().split('\n');
     if (lines.length < 2) return res.status(400).json({ error: 'CSV is empty' });
-    const header = lines[0].toLowerCase();
+    const header = lines.toLowerCase();
     if (!header.includes('category') || !header.includes('task')) return res.status(400).json({ error: 'Invalid CSV format' });
     await pool.query('DELETE FROM tasks');
     const catIcons = { ...DEFAULT_ICONS };
@@ -719,8 +719,8 @@ app.post('/api/tasks/import', async (req, res) => {
       }
       cols.push(current.trim());
       if (cols.length < 4) continue;
-      const catId = cols[0], catName = cols[1], taskNum = parseInt(cols[2]), taskName = cols[3];
-      const evidence = cols[4] || '', level = cols[5] || 'Easy', comment = cols[6] || '';
+      const catId = cols, catName = cols, taskNum = parseInt(cols), taskName = cols;
+      const evidence = cols || '', level = cols || 'Easy', comment = cols || '';
       if (!catId || !taskNum || !taskName) continue;
       const pts = LEVEL_PTS[level.toLowerCase()] || 20;
       const icon = catIcons[catId] || '📋';
@@ -752,6 +752,13 @@ app.post('/api/reset', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// EXPLICIT REGISTRATION ROUTE
+// ═══════════════════════════════════════════════════════════════
+app.get('/register', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'register.html'));
+});
+
 // Fallback
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
@@ -764,6 +771,7 @@ if (process.env.VERCEL) {
     app.listen(PORT, '0.0.0.0', () => {
       console.log('\n🏆 Event Dashboard: http://localhost:'+PORT);
       console.log('📝 Team Submit Page: http://localhost:'+PORT+'/submit.html');
+      console.log('✨ Team Registration: http://localhost:'+PORT+'/register');
       console.log('👤 Advisor Dashboard: http://localhost:'+PORT+'/advisor.html\n');
     });
   }).catch(err => { console.error('Failed:', err); process.exit(1); });
