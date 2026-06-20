@@ -612,7 +612,7 @@ async function generateGameSummaryPDF() {
     const teamLogs = allSubs.filter(s => s.team_id === team.id).sort((a,b) => new Date(a.submitted_at) - new Date(b.submitted_at));
     
     if(!teamLogs.length) {
-      htmlContent += `<tr><td colspan="5" style="padding:16px; text-align:center; font-style:italic; color:#94a3b8; border-bottom:1px solid #e2e8f0;">No history modifications parsed under this tracking registry node.</td></tr>`;
+      htmlContent += `<tr><td colspan="5" style="padding:16px; text-align:center; font-style:italic; color:#94a3b8; border-bottom:1px solid #e2e8f0;">No activity yet.</td></tr>`;
     } else {
       teamLogs.forEach((s, logIdx) => {
         const task = tasksMatrix.find(t => t.category_id === s.category_id && t.task_num === s.task_num);
@@ -755,7 +755,7 @@ function renderAdvisors() {
         <button class="btn btn-danger btn-sm" onclick="deleteAdvisor(${a.id})">Delete</button>
       </div>
     </div>
-  `).join('') : '<div class="empty-state">No advisor node monitors configured.</div>';
+  `).join('') : '<div class="empty-state">No advisors yet.</div>';
 }
 
 function renderActivityLogs() {
@@ -769,7 +769,7 @@ function renderActivityLogs() {
 function openModal(id) { document.getElementById(id).classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
-// ── ACTIONS & LIVE CRUD OPERATIONS ──
+// ── ACTIONS ──
 function openAddTaskModal() {
   document.getElementById('taskModalTitle').textContent = "➕ Setup New Target Task";
   document.getElementById('taskEditId').value = "";
@@ -846,7 +846,7 @@ async function addTeam() {
   
   if(!name || !rawMembers.length) { alert('Provide operational parameters'); return; }
   const res = await api('POST', '/teams', { name, color, members: rawMembers });
-  if(res.success) { closeModal('addTeamModal'); showToast('🆕', 'Operations team synchronized'); await loadState(); refreshAll(); }
+  if(res.success) { closeModal('addTeamModal'); showToast('🆕', 'Team added'); await loadState(); refreshAll(); }
   else { alert(res.error); }
 }
 
@@ -871,7 +871,7 @@ async function toggleDisqualify(teamId) {
 }
 
 async function deleteTeam(id) {
-  if(!confirm('Completely drop team registry?')) return;
+  if(!confirm('Delete this team permanently?')) return;
   const res = await api('DELETE', `/teams/` + id);
   if(res.success) { showToast('🗑️', 'Team record wiped'); await loadState(); refreshAll(); }
 }
@@ -908,7 +908,7 @@ function openAddAdvisorModal() {
   openModal('addAdvisorModal');
 }
 
-// Opens the modal and pre-fills it with the current advisor data
+// Open + prefill advisor edit modal
 function openEditAdvisorModal(id, name, username, password, assignedTeams) {
   document.getElementById('editAdvId').value = id;
   document.getElementById('editAdvName').value = name;
@@ -928,7 +928,7 @@ function openEditAdvisorModal(id, name, username, password, assignedTeams) {
   openModal('editAdvisorModal');
 }
 
-// Packages the edited data and fires it over to your backend API
+// Save edited advisor
 async function saveAdvisorEdit() {
   const id = document.getElementById('editAdvId').value;
   const checkboxes = document.querySelectorAll('input[name="editAdvTeams"]:checked');
@@ -997,12 +997,6 @@ async function resetDatabase() {
   if(res.success) { showToast('🔄', 'Wipe sequence finished. System clear.'); location.reload(); }
 }
 
-function selectTeamView(id) {
-  showSection('team', document.querySelector('button[onclick*="showSection(\'team\'"]'));
-  document.getElementById('teamViewSelect').value = id;
-  renderTeamView();
-}
-
 async function adminLogin() {
   const pass = document.getElementById('adminPassInput').value;
   const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pass }) });
@@ -1012,7 +1006,7 @@ async function adminLogin() {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
     await loadCategoriesFromDB(); await loadState(); refreshAll();
-  } else { alert('Access Denied: Invalid Password Verification'); }
+  } else { alert('Wrong password.'); }
 }
 
 function formatTime(isoString) {
@@ -1026,7 +1020,7 @@ function escapeHtml(str) {
   return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
 
-// Global Orchestrator Session Watchdog Verification Check Loop
+// Auto-refresh loop
 (function() {
   if (localStorage.getItem('evt_admin_session') === '1') {
     document.getElementById('loginScreen').style.display = 'none';
@@ -1039,5 +1033,5 @@ setInterval(async () => {
   if (localStorage.getItem('evt_admin_session') === '1') { await loadState(); renderSubmissions(); renderActivityLogs(); renderMetrics(); }
 }, 3000);
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebc098eb5998d2',t:'MTc4MTk2ODc3MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebed05faab11b4',t:'MTc4MTk3MDU5MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
