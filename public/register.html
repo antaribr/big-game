@@ -170,12 +170,17 @@
         <label>Team Name <span>*</span></label>
         <input type="text" id="teamName" placeholder="Enter your creative team name" required>
       </div>
-      <div class="form-group" style="margin-bottom: 0;">
+      <div class="form-group">
         <label>Team Color</label>
         <div style="display: flex; align-items: center; gap: 10px;">
           <input type="color" id="teamColor" value="#f97316" style="width: 50px; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0; background: none;">
           <span style="font-size: 0.8rem; color: var(--text-dim);">Pick a color for the leaderboard</span>
         </div>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label>Team PIN <span>*</span></label>
+        <input type="tel" id="teamPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4-digit code (e.g. 1234)" required>
+        <span style="display:block; font-size: 0.78rem; color: var(--text-muted); margin-top: 6px;">Your team will use this code to log in and submit tasks. Keep it safe!</span>
       </div>
     </div>
 
@@ -252,7 +257,13 @@
 
     const teamName = document.getElementById('teamName').value.trim();
     const teamColor = document.getElementById('teamColor').value;
+    const teamPin = document.getElementById('teamPin').value.trim();
     const members = [];
+
+    if (!/^\d{4}$/.test(teamPin)) {
+      showError('Please enter a 4-digit numeric PIN for your team.');
+      return;
+    }
 
     // Loop through inputs 1 to 6
     for (let i = 1; i <= 6; i++) {
@@ -281,6 +292,7 @@
         body: JSON.stringify({ 
           name: teamName, 
           color: teamColor, 
+          pin: teamPin,
           members: members 
         })
       });
@@ -314,5 +326,5 @@
   }
 </script>
 
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0eba12d6d78e28d',t:'MTc4MTk2NzQ4NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
