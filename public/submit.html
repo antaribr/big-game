@@ -6,11 +6,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Jiba w Siba">
-<!-- FIXED HTML SYNTAX ATTR HERE -->
 <link rel="apple-touch-icon" href="/jiba_logo.png">
 
 <title>Team Management Console</title>
-<!-- FIXED ACCIDENTAL HOLES IN FONT LINK MATRIX HERE -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -319,7 +317,6 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <div class="container">
-  <!-- INTEGRATED THE ACTIVE VISUAL BRAND EMBLEM INTO THE PANELS HERE -->
   <div class="header-panel">
     <img src="/jiba_logo.png" style="width: 64px; height: 64px; border-radius: 14px; box-shadow: var(--shadow-md); margin-bottom: 4px;" alt="Logo" onerror="this.style.display='none'">
     <h1>🏆 Big Game Dashboard</h1>
@@ -437,7 +434,7 @@ async function loadCategoriesFromDB() {
     Object.values(catMap).forEach(cat => cat.tasks.sort((a, b) => a.num - b.num));
     CATEGORIES = Object.values(catMap);
   } catch (e) {
-    console.error('Failed to parse remote event tasks matrix map:', e);
+    console.error('Failed to load tasks:', e);
   }
 }
 
@@ -500,7 +497,7 @@ async function verifyPin(){
     const res=await api('POST','/verify-pin',{teamId:pendingTeamId,pin});
     if(res.valid){document.getElementById('pinOverlay').classList.remove('show');localStorage.setItem(LOCK_KEY,pendingTeamId);lockTeam(pendingTeamId);}
     else{document.getElementById('pinInput').classList.add('error');document.getElementById('pinErr').style.display='block';document.getElementById('pinInput').value='';document.getElementById('pinInput').focus();}
-  }catch(e){document.getElementById('pinErr').textContent='❌ Infrastructure Error';document.getElementById('pinErr').style.display='block';}
+  }catch(e){document.getElementById('pinErr').textContent='❌ Connection error';document.getElementById('pinErr').style.display='block';}
   btn.style.pointerEvents='auto';btn.textContent='Verify & Unlock';
 }
 
@@ -519,7 +516,7 @@ async function lockTeam(id){
       '<div class="tb-name">'+team.name+'</div>' +
       '<div class="tb-sub">'+team.members.length+' participants</div>' +
     '</div>' +
-    '<button class="disconnect-btn" onclick="if(confirm(\'De-synchronize profile identity? PIN code verification checks will be wiped.\')){localStorage.removeItem(\'event_team_lock\');localStorage.removeItem(SEEN_SUBS_KEY);location.reload();}">Disconnect</button>';
+    '<button class="disconnect-btn" onclick="if(confirm(\'Log out of this team? You will need to enter the PIN again.\')){localStorage.removeItem(\'event_team_lock\');localStorage.removeItem(SEEN_SUBS_KEY);location.reload();}">Disconnect</button>';
 
   await loadSubs();renderAll();
 }
@@ -761,7 +758,6 @@ function renderHistory(){
     try{
       const ef = JSON.parse(s.evidence_file||'[]');
       if(Array.isArray(ef) && ef.length > 0) {
-        // FIXED BAD ATTR ROUTE TAG HERE
         ev = ef.map((f,i)=>`<a href="/uploads/${f}" target="_blank" style="color:var(--blue);font-size:.75rem;font-weight:600;text-decoration:none;margin-left:4px">📷 Asset ${(i+1)}</a>`).join(' ');
       }
     }catch(e){if(s.evidence_file && s.evidence_file.length>10)ev='<a href="/uploads/'+s.evidence_file+'" target="_blank" style="color:var(--blue);font-size:.75rem">📎 Map</a>';}
@@ -799,10 +795,10 @@ function renderLB(){
   }).join('');
 }
 
-async function manualRefresh() { if(myTeamId){await loadSubs();renderAll();if(activeSection==='submit'&&myCatId)renderTasks();} toast('🔄','Dashboard Synchronized'); }
+async function manualRefresh() { if(myTeamId){await loadSubs();renderAll();if(activeSection==='submit'&&myCatId)renderTasks();} toast('🔄','Refreshed'); }
 
 init();
 setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();if(activeSection==='submit'&&myCatId)renderTasks();}},3000);
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebc45dd9d698d2',t:'MTc4MTk2ODkyNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ebec4f8bec11b4',t:'MTc4MTk3MDU2Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
