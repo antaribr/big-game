@@ -257,8 +257,12 @@ app.put('/api/teams/:id', async (req, res) => {
   const client = await pool.connect();
   try {
     const id = parseInt(req.params.id);
-    const { name, color, members } = req.body;
-    
+    const { name, color, pin, members } = req.body;
+
+    if (pin !== undefined && !/^\d{4}$/.test(String(pin))) {
+      return res.status(400).json({ error: 'PIN must be exactly 4 digits' });
+    }
+
     await client.query('BEGIN');
     
     const teamRes = await client.query('SELECT * FROM teams WHERE "id"=$1', [id]);
@@ -266,9 +270,9 @@ app.put('/api/teams/:id', async (req, res) => {
        await client.query('ROLLBACK');
        return res.status(404).json({ error: 'Not found' });
     }
-    const team = teamRes.rows;
+    const team = teamRes.rows[0];
     
-    await client.query('UPDATE teams SET "name"=$1, "color"=$2 WHERE "id"=$3', [name||team.name, color||team.color, id]);
+    await client.query('UPDATE teams SET "name"=$1, "color"=$2, "pin"=$3 WHERE "id"=$4', [name||team.name, color||team.color, pin||team.pin, id]);
     
     if (members && Array.isArray(members)) {
       await client.query('DELETE FROM members WHERE "team_id"=$1', [id]);
@@ -541,6 +545,30 @@ app.post('/api/verify-pin', async (req, res) => {
     if (!team) return res.status(404).json({ error: 'Team not found' });
     if ((team.pin || '0000') !== String(pin)) return res.json({ valid: false });
     res.json({ valid: true, teamId: team.id, name: team.name });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Team self-service login (by team NAME + PIN) -> returns full editable team for the control panel
+app.post('/api/team/login', async (req, res) => {
+  try {
+    const { name, pin } = req.body;
+    if (!name || !pin) return res.status(400).json({ success: false, error: 'Team name and PIN are required.' });
+    const team = await queryOne('SELECT * FROM teams WHERE LOWER(name)=LOWER($1)', [String(name).trim()]);
+    if (!team) return res.json({ success: false, error: 'No team found with that name. Check the spelling or register a new team.' });
+    if ((team.pin || '0000') !== String(pin)) return res.json({ success: false, error: 'Incorrect PIN for this team.' });
+    const members = await query('SELECT name, phone FROM members WHERE team_id=$1 ORDER BY id', [team.id]);
+    res.json({ success: true, team: { id: team.id, name: team.name, color: team.color, pin: team.pin, members } });
+  } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+// Get one team's full editable data (used right after a fresh registration)
+app.get('/api/team/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const team = await queryOne('SELECT * FROM teams WHERE id=$1', [id]);
+    if (!team) return res.status(404).json({ error: 'Not found' });
+    const members = await query('SELECT name, phone FROM members WHERE team_id=$1 ORDER BY id', [id]);
+    res.json({ id: team.id, name: team.name, color: team.color, pin: team.pin, members });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
