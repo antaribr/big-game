@@ -36,7 +36,6 @@ const pool = new Pool({
 async function initDatabase() {
   const client = await pool.connect();
   try {
-    // ADDED UNIQUE CONSTRAINT TO NAME
     await client.query(`
       CREATE TABLE IF NOT EXISTS teams (
         id SERIAL PRIMARY KEY,
@@ -48,7 +47,6 @@ async function initDatabase() {
       )
     `);
 
-    // Safety fallback: forces existing databases to apply the UNIQUE rule
     try { await client.query('ALTER TABLE teams ADD CONSTRAINT teams_name_key UNIQUE (name)'); } catch(e) {}
 
     await client.query(`
@@ -60,7 +58,6 @@ async function initDatabase() {
       )
     `);
     
-    // Safety check to force the phone column to exist
     try { await client.query('ALTER TABLE members ADD COLUMN IF NOT EXISTS phone TEXT'); } catch(e) {}
 
     await client.query(`
@@ -176,7 +173,7 @@ async function queryOne(sql, params) {
 }
 
 async function addLog(teamId, icon, message) {
-  await pool.query('INSERT INTO activity_log (team_id, icon, message) VALUES ($1, $2, $3)', [teamId, icon, message]);
+  await pool.query('INSERT INTO activity_log ("team_id", "icon", "message") VALUES ($1, $2, $3)', [teamId, icon, message]);
 }
 
 async function getTeamsFull() {
@@ -290,7 +287,7 @@ app.get('/api/state', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Teams CRUD
+// Teams CRUD - PROTECTED IDENTIFIERS
 app.post('/api/teams', async (req, res) => {
   const client = await pool.connect();
   try {
@@ -301,16 +298,28 @@ app.post('/api/teams', async (req, res) => {
 
     await client.query('BEGIN');
 
-    const result = await client.query('INSERT INTO teams (name, color) VALUES ($1, $2) RETURNING id', [name, color || '#f97316']);
-    const teamId = result.rows.id;
-    
-    for (const m of members) {
-      const mName = typeof m === 'object' ? m.name : m;
-      const mPhone = typeof m === 'object' ? m.phone : null;
-      await client.query('INSERT INTO members (team_id, name, phone) VALUES ($1, $2, $3)', [teamId, mName, mPhone]);
+    let teamId;
+    try {
+      // Quotes explicitly protect against reserved keyword syntax errors
+      const result = await client.query('INSERT INTO teams ("name", "color") VALUES ($1, $2) RETURNING "id"', [name, color || '#f97316']);
+      teamId = result.rows.id;
+    } catch (err) {
+      throw new Error('Team Insert Error: ' + err.message);
     }
     
-    await client.query('INSERT INTO activity_log (team_id, icon, message) VALUES ($1, $2, $3)', [teamId, '🆕', 'Team "'+name+'" created']);
+    try {
+      for (const m of members) {
+        const mName = typeof m === 'object' ? m.name : m;
+        const mPhone = typeof m === 'object' ? m.phone : null;
+        await client.query('INSERT INTO members ("team_id", "name", "phone") VALUES ($1, $2, $3)', [teamId, mName, mPhone]);
+      }
+    } catch (err) {
+      throw new Error('Member Insert Error: ' + err.message);
+    }
+    
+    try {
+      await client.query('INSERT INTO activity_log ("team_id", "icon", "message") VALUES ($1, $2, $3)', [teamId, '🆕', 'Team "'+name+'" created']);
+    } catch (err) {}
     
     await client.query('COMMIT');
     res.json({ success: true, teamId });
@@ -318,13 +327,13 @@ app.post('/api/teams', async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     
-    // CATCH DUPLICATE NAME ERRORS (Postgres code 23505 = Unique Violation)
-    if (err.code === '23505') {
+    // Check if the team name already exists
+    if (err.message.includes('23505') || err.message.includes('unique constraint')) {
       return res.status(400).json({ error: 'That Team Name is already taken! Please choose another one.' });
     }
     
     console.error("🚨 CRASH DURING TEAM CREATION:", err.message);
-    res.status(500).json({ error: "Failed to save to the database: " + err.message });
+    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
@@ -338,31 +347,31 @@ app.put('/api/teams/:id', async (req, res) => {
     
     await client.query('BEGIN');
     
-    const teamRes = await client.query('SELECT * FROM teams WHERE id=$1', [id]);
+    const teamRes = await client.query('SELECT * FROM teams WHERE "id"=$1', [id]);
     if (teamRes.rows.length === 0) {
        await client.query('ROLLBACK');
        return res.status(404).json({ error: 'Not found' });
     }
     const team = teamRes.rows;
     
-    await client.query('UPDATE teams SET name=$1, color=$2 WHERE id=$3', [name||team.name, color||team.color, id]);
+    await client.query('UPDATE teams SET "name"=$1, "color"=$2 WHERE "id"=$3', [name||team.name, color||team.color, id]);
     
     if (members && Array.isArray(members)) {
-      await client.query('DELETE FROM members WHERE team_id=$1', [id]);
+      await client.query('DELETE FROM members WHERE "team_id"=$1', [id]);
       for (const m of members) {
         const mName = typeof m === 'object' ? m.name : m;
         const mPhone = typeof m === 'object' ? m.phone : null;
-        await client.query('INSERT INTO members (team_id, name, phone) VALUES ($1, $2, $3)', [id, mName, mPhone]);
+        await client.query('INSERT INTO members ("team_id", "name", "phone") VALUES ($1, $2, $3)', [id, mName, mPhone]);
       }
     }
     
-    await client.query('INSERT INTO activity_log (team_id, icon, message) VALUES ($1, $2, $3)', [id, '✏️', 'Team "'+name+'" updated']);
+    await client.query('INSERT INTO activity_log ("team_id", "icon", "message") VALUES ($1, $2, $3)', [id, '✏️', 'Team "'+name+'" updated']);
     
     await client.query('COMMIT');
     res.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');
-    if (err.code === '23505') {
+    if (err.message.includes('23505') || err.message.includes('unique constraint')) {
       return res.status(400).json({ error: 'That Team Name is already taken!' });
     }
     console.error("🚨 CRASH DURING TEAM UPDATE:", err.message);
@@ -391,7 +400,7 @@ app.post('/api/teams/:id/members', async (req, res) => {
     if (!name) return res.status(400).json({ error: 'Name required' });
     const count = await queryOne('SELECT COUNT(*) as c FROM members WHERE team_id=$1', [id]);
     if (parseInt(count.c) >= 8) return res.status(400).json({ error: 'Max 8 members' });
-    await pool.query('INSERT INTO members (team_id, name, phone) VALUES ($1, $2, $3)', [id, name, phone || null]);
+    await pool.query('INSERT INTO members ("team_id", "name", "phone") VALUES ($1, $2, $3)', [id, name, phone || null]);
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [id]);
     await addLog(id, '👤', name+' joined '+team.name);
     res.json({ success: true });
@@ -569,9 +578,9 @@ app.post('/api/advisors', async (req, res) => {
     if (teams.length > 4) return res.status(400).json({ error: 'Max 4 teams' });
     const existing = await queryOne('SELECT * FROM advisors WHERE username=$1', [username]);
     if (existing) return res.status(400).json({ error: 'Username already exists' });
-    const result = await pool.query('INSERT INTO advisors (username, password, name) VALUES ($1, $2, $3) RETURNING id', [username, password, name]);
+    const result = await pool.query('INSERT INTO advisors ("username", "password", "name") VALUES ($1, $2, $3) RETURNING "id"', [username, password, name]);
     const aid = result.rows.id;
-    for (const tid of teams) await pool.query('INSERT INTO advisor_teams (advisor_id, team_id) VALUES ($1, $2)', [aid, tid]);
+    for (const tid of teams) await pool.query('INSERT INTO advisor_teams ("advisor_id", "team_id") VALUES ($1, $2)', [aid, tid]);
     await addLog(null, '👤', 'Advisor "'+name+'" created');
     res.json({ success: true, advisorId: aid });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -583,13 +592,13 @@ app.put('/api/advisors/:id', async (req, res) => {
     const { password, name, teams, active } = req.body;
     const advisor = await queryOne('SELECT * FROM advisors WHERE id=$1', [id]);
     if (!advisor) return res.status(404).json({ error: 'Not found' });
-    if (password) await pool.query('UPDATE advisors SET password=$1 WHERE id=$2', [password, id]);
-    if (name) await pool.query('UPDATE advisors SET name=$1 WHERE id=$2', [name, id]);
-    if (active !== undefined) await pool.query('UPDATE advisors SET active=$1 WHERE id=$2', [active ? 1 : 0, id]);
+    if (password) await pool.query('UPDATE advisors SET "password"=$1 WHERE "id"=$2', [password, id]);
+    if (name) await pool.query('UPDATE advisors SET "name"=$1 WHERE "id"=$2', [name, id]);
+    if (active !== undefined) await pool.query('UPDATE advisors SET "active"=$1 WHERE "id"=$2', [active ? 1 : 0, id]);
     if (teams && Array.isArray(teams)) {
       if (teams.length > 4) return res.status(400).json({ error: 'Max 4 teams' });
-      await pool.query('DELETE FROM advisor_teams WHERE advisor_id=$1', [id]);
-      for (const tid of teams) await pool.query('INSERT INTO advisor_teams (advisor_id, team_id) VALUES ($1, $2)', [id, tid]);
+      await pool.query('DELETE FROM advisor_teams WHERE "advisor_id"=$1', [id]);
+      for (const tid of teams) await pool.query('INSERT INTO advisor_teams ("advisor_id", "team_id") VALUES ($1, $2)', [id, tid]);
     }
     await addLog(null, '✏️', 'Advisor "'+name+'" updated');
     res.json({ success: true });
@@ -674,7 +683,7 @@ app.post('/api/tasks', async (req, res) => {
     const pts = LEVEL_PTS[(level || 'easy').toLowerCase()] || 20;
     const icon = category_icon || DEFAULT_ICONS[category_id] || '📋';
     await pool.query(
-      'INSERT INTO tasks (category_id, category_name, category_icon, task_num, task_name, evidence, level, points, comment) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+      'INSERT INTO tasks ("category_id", "category_name", "category_icon", "task_num", "task_name", "evidence", "level", "points", "comment") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
       [category_id, category_name || category_id, icon, parseInt(task_num), task_name, evidence || '', level || 'Easy', pts, comment || '']
     );
     await addLog(null, '➕', 'Task added: ' + task_name);
@@ -691,7 +700,7 @@ app.put('/api/tasks/:id', async (req, res) => {
     if (!existing) return res.status(404).json({ error: 'Task not found' });
     const pts = LEVEL_PTS[(level || existing.level).toLowerCase()] || 20;
     await pool.query(
-      'UPDATE tasks SET category_name=$1, category_icon=$2, task_num=$3, task_name=$4, evidence=$5, level=$6, points=$7, comment=$8 WHERE id=$9',
+      'UPDATE tasks SET "category_name"=$1, "category_icon"=$2, "task_num"=$3, "task_name"=$4, "evidence"=$5, "level"=$6, "points"=$7, "comment"=$8 WHERE "id"=$9',
       [category_name || existing.category_name, category_icon || existing.category_icon, parseInt(task_num) || existing.task_num, task_name || existing.task_name, evidence || '', level || existing.level, pts, comment || '', id]
     );
     await addLog(null, '✏️', 'Task updated: ' + (task_name || existing.task_name));
@@ -777,7 +786,7 @@ app.post('/api/tasks/import', async (req, res) => {
       if (!catId || !taskNum || !taskName) continue;
       const pts = LEVEL_PTS[level.toLowerCase()] || 20;
       const icon = catIcons[catId] || '📋';
-      await pool.query('INSERT INTO tasks (category_id,category_name,category_icon,task_num,task_name,evidence,level,points,comment) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+      await pool.query('INSERT INTO tasks ("category_id","category_name","category_icon","task_num","task_name","evidence","level","points","comment") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
         [catId, catName, icon, taskNum, taskName, evidence, level, pts, comment]);
       imported++;
     }
