@@ -240,8 +240,10 @@
 </div>
 
 <script>
-  async function handleRegistration(event) {
-    event.preventDefault();
+  // Listen for the form submit
+  document.getElementById('registrationForm').addEventListener('submit', async function(event) {
+    event.preventDefault(); // Stop the page from reloading
+    console.log("Submit button clicked!"); // For debugging in the console
     
     const btn = document.getElementById('submitBtn');
     const msg = document.getElementById('statusMsg');
@@ -256,8 +258,11 @@
 
     // Loop through inputs 1 to 6
     for (let i = 1; i <= 6; i++) {
-      const name = document.getElementById(`p${i}_name`).value.trim();
-      const phone = document.getElementById(`p${i}_phone`).value.trim();
+      const nameInput = document.getElementById(`p${i}_name`);
+      const phoneInput = document.getElementById(`p${i}_phone`);
+      
+      const name = nameInput ? nameInput.value.trim() : '';
+      const phone = phoneInput ? phoneInput.value.trim() : '';
 
       if (name && phone) {
         // We combine the name and phone so it fits nicely into your database
@@ -269,8 +274,14 @@
       }
     }
 
+    // Manual validation just in case the browser misses it
+    if (!teamName) {
+      showError('Team Name is required.');
+      return;
+    }
+
     if (members.length < 4) {
-      showError('You must register at least 4 participants.');
+      showError('You must completely fill out the Name and Phone for at least 4 participants.');
       return;
     }
 
@@ -289,7 +300,7 @@
 
       if (result.success) {
         msg.className = 'msg ok';
-        msg.innerHTML = `🎉 <strong>Success!</strong> Your team has been registered. Redirecting to login...`;
+        msg.innerHTML = `🎉 <strong>Success!</strong> Your team has been registered. Redirecting...`;
         
         // Redirect them to the player dashboard to select their team
         setTimeout(() => {
@@ -299,9 +310,10 @@
         showError(result.error || 'Failed to create team. Please try again.');
       }
     } catch (error) {
-      showError('Network error. Please check your connection and try again.');
+      console.error(error);
+      showError('Network error. Is your server running? Please check your connection and try again.');
     }
-  }
+  });
 
   function showError(text) {
     const btn = document.getElementById('submitBtn');
