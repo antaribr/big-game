@@ -302,7 +302,7 @@ app.post('/api/teams', async (req, res) => {
     try {
       // Quotes explicitly protect against reserved keyword syntax errors
       const result = await client.query('INSERT INTO teams ("name", "color") VALUES ($1, $2) RETURNING "id"', [name, color || '#f97316']);
-      teamId = result.rows.id;
+      teamId = result.rows[0].id;
     } catch (err) {
       throw new Error('Team Insert Error: ' + err.message);
     }
@@ -579,7 +579,7 @@ app.post('/api/advisors', async (req, res) => {
     const existing = await queryOne('SELECT * FROM advisors WHERE username=$1', [username]);
     if (existing) return res.status(400).json({ error: 'Username already exists' });
     const result = await pool.query('INSERT INTO advisors ("username", "password", "name") VALUES ($1, $2, $3) RETURNING "id"', [username, password, name]);
-    const aid = result.rows.id;
+    const aid = result.rows[0].id;
     for (const tid of teams) await pool.query('INSERT INTO advisor_teams ("advisor_id", "team_id") VALUES ($1, $2)', [aid, tid]);
     await addLog(null, '👤', 'Advisor "'+name+'" created');
     res.json({ success: true, advisorId: aid });
