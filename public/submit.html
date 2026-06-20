@@ -329,7 +329,7 @@
       <span id="badgeApproved" class="btn-badge badge-approved" style="display:none">0</span>
       <span id="badgeRejected" class="btn-badge badge-rejected" style="display:none">0</span>
     </button>
-    <button onclick="showSec('leaderboard',this)">🏅<span>Rank</span></button>
+    <button id="rankTabBtn" onclick="showSec('leaderboard',this)">🏅<span>Rank</span></button>
     <button onclick="manualRefresh()" style="flex:0;min-width:44px;padding:0;background:transparent;box-shadow:none;" title="Sync">🔄</button>
   </div>
 
@@ -397,6 +397,7 @@ const SEEN_SUBS_KEY='event_seen_submissions';
 
 let teams=[], myTeamId=null, myCatId=null, myTaskNum=null, doneMap={}, pendingMap={}, allSubs=[];
 let evidenceFiles=[]; // accumulates attached/captured images so mobile can add more than one
+let rankLocked=false; // when true, admin has hidden the Rank section from teams
 let activeSection = 'home';
 
 async function loadCategoriesFromDB() {
@@ -435,6 +436,7 @@ async function api(m,p,b){const o={method:m,headers:{'Content-Type':'application
 function toast(icon,msg){const c=document.getElementById('toastContainer'),t=document.createElement('div');t.className='toast';t.innerHTML='<span>'+icon+'</span> '+msg;c.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},3000);}
 
 function showSec(id,btn){
+  if(id==='leaderboard' && rankLocked){ toast('🔒','Rankings are currently hidden'); return; }
   activeSection = id;
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-'+id).classList.add('active');
@@ -453,6 +455,7 @@ async function init(){
   await loadCategoriesFromDB();
   const data=await api('GET','/state');
   teams=data.teams||[];
+  rankLocked=!!data.rankLocked;
   const lockedId=localStorage.getItem(LOCK_KEY);
   if(lockedId){
     const team=teams.find(t=>t.id===parseInt(lockedId));
@@ -518,7 +521,7 @@ async function lockTeam(id){
 }
 
 async function loadSubs(){
-  const data=await api('GET','/state');teams=data.teams||[];
+  const data=await api('GET','/state');teams=data.teams||[];rankLocked=!!data.rankLocked;
   const subData=await fetch('/api/submissions?status=pending').then(r=>r.json());
   const appr=await fetch('/api/submissions?status=approved').then(r=>r.json());
   const rej=await fetch('/api/submissions?status=rejected').then(r=>r.json());
@@ -596,6 +599,22 @@ function renderAll(){
     '<div class="stat"><div class="s-num" style="color:var(--purple)">#'+rank+'</div><div class="s-label">Rank</div></div>';
 
   renderCatProgress();renderHistory();renderLB();
+  applyRankLock();
+}
+
+function applyRankLock(){
+  const btn=document.getElementById('rankTabBtn');
+  if(btn) btn.style.display = rankLocked ? 'none' : '';
+  // If a team is currently viewing the Rank section when it gets locked, bounce them home
+  if(rankLocked && activeSection==='leaderboard'){
+    document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+    document.getElementById('sec-home').classList.add('active');
+    document.querySelectorAll('.nav-bar button').forEach(b=>b.classList.remove('active'));
+    const homeBtn=document.querySelector('.nav-bar button');
+    if(homeBtn) homeBtn.classList.add('active');
+    activeSection='home';
+    backToCats();
+  }
 }
 
 function renderCatProgress(){
@@ -812,5 +831,5 @@ async function manualRefresh() { if(myTeamId){await loadSubs();renderAll();if(ac
 init();
 setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();if(activeSection==='home'&&myCatId)renderTasks();}},3000);
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ec9c88eb36c6b7',t:'MTc4MTk3Nzc4MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
