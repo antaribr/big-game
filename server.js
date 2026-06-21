@@ -187,12 +187,18 @@ async function getTeamsFull() {
 // ═══════════════════════════════════════════════════════════════
 // ADMIN LOGIN
 // ═══════════════════════════════════════════════════════════════
+function adminToken() { return 'adm_' + (process.env.ADMIN_PASSWORD || 'ibrahim'); }
+function isAdmin(req) {
+  const t = req.headers['x-admin-token'] || req.query.adminToken;
+  return t === adminToken();
+}
+
 app.post('/api/admin/login', (req, res) => {
   try {
     const { password } = req.body;
     const adminPass = process.env.ADMIN_PASSWORD || 'ibrahim';
     if (password === adminPass) {
-      res.json({ success: true });
+      res.json({ success: true, token: adminToken() });
     } else {
       res.status(401).json({ error: 'Wrong password' });
     }
@@ -229,14 +235,67 @@ app.post('/api/settings/rank-lock', async (req, res) => {
 // API ROUTES
 // ═══════════════════════════════════════════════════════════════
 
+// FULL state — ADMIN ONLY (contains every team's data + leaderboard)
 app.get('/api/state', async (req, res) => {
   try {
+    if (!isAdmin(req)) return res.status(403).json({ error: 'Forbidden' });
     const teams = await getTeamsFull();
     const log = await query('SELECT * FROM activity_log ORDER BY id DESC LIMIT 200');
     const pending = await query("SELECT s.*, t.name as team_name, t.color as team_color FROM submissions s JOIN teams t ON s.team_id = t.id WHERE s.status = 'pending' ORDER BY s.submitted_at DESC");
     const reviewed = await query("SELECT s.*, t.name as team_name, t.color as team_color FROM submissions s JOIN teams t ON s.team_id = t.id WHERE s.status != 'pending' ORDER BY s.reviewed_at DESC LIMIT 100");
     const rankLocked = (await getSetting('rank_locked', '0')) === '1';
     res.json({ teams, log, submissions: { pending, reviewed }, rankLocked });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PUBLIC team list — names/colors/member-count only (for the team-select screen). NO scores/completions.
+app.get('/api/teams/public', async (req, res) => {
+  try {
+    const teams = await query('SELECT id, name, color FROM teams ORDER BY id');
+    const members = await query('SELECT team_id FROM members');
+    res.json(teams.map(t => ({
+      id: t.id, name: t.name, color: t.color,
+      memberCount: members.filter(m => m.team_id === t.id).length
+    })));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// TEAM state — PIN-authenticated. Returns ONLY this team's data, plus the
+// leaderboard ONLY when rankings are unlocked. When locked, no rank data is sent.
+app.post('/api/team/state', async (req, res) => {
+  try {
+    const { teamId, pin } = req.body;
+    const team = await queryOne('SELECT * FROM teams WHERE id=$1', [teamId]);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if ((team.pin || '0000') !== String(pin)) return res.status(403).json({ error: 'Invalid PIN' });
+
+    const rankLocked = (await getSetting('rank_locked', '0')) === '1';
+
+    // This team's own profile (with completions) + own submissions
+    const members = await query('SELECT * FROM members WHERE team_id=$1 ORDER BY id', [teamId]);
+    const completions = await query('SELECT * FROM completions WHERE team_id=$1', [teamId]);
+    const mySubs = await query('SELECT * FROM submissions WHERE team_id=$1 ORDER BY id DESC', [teamId]);
+
+    const me = {
+      id: team.id, name: team.name, color: team.color, disqualified: !!team.disqualified,
+      members: members.map(m => m.phone ? `${m.name} (${m.phone})` : m.name),
+      completions: completions.map(c => ({ categoryId: c.category_id, taskNum: c.task_num }))
+    };
+
+    // Leaderboard ONLY when unlocked. When locked, this is null — nothing to inspect.
+    let leaderboard = null;
+    if (!rankLocked) {
+      const allTeams = await query('SELECT id, name, color FROM teams ORDER BY id');
+      const allComp = await query('SELECT team_id, category_id, task_num FROM completions');
+      const tasks = await query('SELECT category_id, task_num, points FROM tasks');
+      const ptOf = (cid, tn) => { const m = tasks.find(t => t.category_id === cid && t.task_num === tn); return m ? (m.points || 20) : 20; };
+      leaderboard = allTeams.map(t => ({
+        id: t.id, name: t.name, color: t.color,
+        points: allComp.filter(c => c.team_id === t.id).reduce((s, c) => s + ptOf(c.category_id, c.task_num), 0)
+      })).sort((a, b) => b.points - a.points);
+    }
+
+    res.json({ team: me, submissions: mySubs, rankLocked, leaderboard });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -453,7 +512,14 @@ app.post('/api/submissions', async (req, res) => {
 app.get('/api/submissions', async (req, res) => {
   try {
     const status = req.query.status || 'pending';
-    const rows = await query("SELECT s.*, t.name as team_name, t.color as team_color FROM submissions s JOIN teams t ON s.team_id=t.id WHERE s.status=$1 ORDER BY s.submitted_at DESC", [status]);
+    // Admins see all submissions; anyone else must scope to a single team.
+    if (isAdmin(req)) {
+      const rows = await query("SELECT s.*, t.name as team_name, t.color as team_color FROM submissions s JOIN teams t ON s.team_id=t.id WHERE s.status=$1 ORDER BY s.submitted_at DESC", [status]);
+      return res.json(rows);
+    }
+    const teamId = parseInt(req.query.teamId);
+    if (!teamId) return res.status(403).json({ error: 'teamId required' });
+    const rows = await query("SELECT s.*, t.name as team_name, t.color as team_color FROM submissions s JOIN teams t ON s.team_id=t.id WHERE s.status=$1 AND s.team_id=$2 ORDER BY s.submitted_at DESC", [status, teamId]);
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
