@@ -393,11 +393,14 @@
 <script>
 let CATEGORIES = [];
 const LOCK_KEY='event_team_lock';
+const PIN_KEY='event_team_pin';
 const SEEN_SUBS_KEY='event_seen_submissions';
 
 let teams=[], myTeamId=null, myCatId=null, myTaskNum=null, doneMap={}, pendingMap={}, allSubs=[];
 let evidenceFiles=[]; // accumulates attached/captured images so mobile can add more than one
 let rankLocked=false; // when true, admin has hidden the Rank section from teams
+let myPin=null;       // verified team PIN, used to authenticate team-scoped data requests
+let leaderboard=null; // team-visible leaderboard (only sent by server when unlocked)
 let activeSection = 'home';
 
 async function loadCategoriesFromDB() {
@@ -453,14 +456,13 @@ function showSec(id,btn){
 
 async function init(){
   await loadCategoriesFromDB();
-  const data=await api('GET','/state');
-  teams=data.teams||[];
-  rankLocked=!!data.rankLocked;
+  teams=await api('GET','/teams/public')||[];
   const lockedId=localStorage.getItem(LOCK_KEY);
-  if(lockedId){
+  const savedPin=localStorage.getItem(PIN_KEY);
+  if(lockedId && savedPin){
     const team=teams.find(t=>t.id===parseInt(lockedId));
-    if(team){lockTeam(team.id);return;}
-    else localStorage.removeItem(LOCK_KEY);
+    if(team){ myPin=savedPin; lockTeam(team.id); return; }
+    else { localStorage.removeItem(LOCK_KEY); localStorage.removeItem(PIN_KEY); }
   }
   showTeamSelect();
 }
@@ -474,7 +476,7 @@ function showTeamSelect(){
     '<div style="padding:16px 12px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--card);cursor:pointer;text-align:center;box-shadow:var(--shadow-sm);" onclick="pickTeam('+t.id+')">'+
     '<div style="width:12px;height:12px;border-radius:50%;background:'+t.color+';margin:0 auto 8px;box-shadow:0 0 0 4px var(--bg)"></div>'+
     '<div style="font-weight:800;font-size:0.9rem;color:var(--text)">'+t.name+'</div>'+
-    '<div style="font-size:.72rem;color:var(--text-dim);margin-top:2px;font-weight:600">'+t.members.length+' members</div></div>'
+    '<div style="font-size:.72rem;color:var(--text-dim);margin-top:2px;font-weight:600">'+(t.memberCount||0)+' members</div></div>'
   ).join('');
 }
 
@@ -494,43 +496,50 @@ async function verifyPin(){
   const btn=document.getElementById('pinBtn');btn.style.pointerEvents='none';btn.textContent='Verifying...';
   try{
     const res=await api('POST','/verify-pin',{teamId:pendingTeamId,pin});
-    if(res.valid){document.getElementById('pinOverlay').classList.remove('show');localStorage.setItem(LOCK_KEY,pendingTeamId);lockTeam(pendingTeamId);}
+    if(res.valid){myPin=pin;document.getElementById('pinOverlay').classList.remove('show');localStorage.setItem(LOCK_KEY,pendingTeamId);localStorage.setItem(PIN_KEY,pin);lockTeam(pendingTeamId);}
     else{document.getElementById('pinInput').classList.add('error');document.getElementById('pinErr').style.display='block';document.getElementById('pinInput').value='';document.getElementById('pinInput').focus();}
   }catch(e){document.getElementById('pinErr').textContent='❌ Connection error';document.getElementById('pinErr').style.display='block';}
   btn.style.pointerEvents='auto';btn.textContent='Verify & Unlock';
 }
 
 async function lockTeam(id){
-  myTeamId=id;const team=teams.find(t=>t.id===id);
-  doneMap={};pendingMap={};
-  if(team.completions)team.completions.forEach(c=>{doneMap[c.categoryId+'-'+c.taskNum]=true;});
+  myTeamId=id;
+  await loadSubs();
+  const team=myTeamData;
+  if(!team){ // PIN no longer valid (e.g. changed) — reset to selection
+    localStorage.removeItem(LOCK_KEY);localStorage.removeItem(PIN_KEY);location.reload();return;
+  }
   document.getElementById('teamSelectScreen').style.display='none';
   document.getElementById('teamBanner').style.display='grid';
   document.getElementById('myStats').style.display='grid';
   document.getElementById('mainNav').style.display='flex';
-  
+
   document.getElementById('teamBanner').innerHTML =
     '<div class="tb-dot" style="background:'+team.color+'"></div>' +
     '<div class="tb-info">' +
       '<div class="tb-name">'+team.name+'</div>' +
       '<div class="tb-sub">'+team.members.length+' participants</div>' +
     '</div>' +
-    '<button class="disconnect-btn" onclick="if(confirm(\'Log out of this team? You will need to enter the PIN again.\')){localStorage.removeItem(\'event_team_lock\');localStorage.removeItem(SEEN_SUBS_KEY);location.reload();}">Disconnect</button>';
+    '<button class="disconnect-btn" onclick="if(confirm(\'Log out of this team? You will need to enter the PIN again.\')){localStorage.removeItem(\'event_team_lock\');localStorage.removeItem(\'event_team_pin\');localStorage.removeItem(SEEN_SUBS_KEY);location.reload();}">Disconnect</button>';
 
-  await loadSubs();renderAll();
+  renderAll();
 }
 
+let myTeamData=null;
 async function loadSubs(){
-  const data=await api('GET','/state');teams=data.teams||[];rankLocked=!!data.rankLocked;
-  const subData=await fetch('/api/submissions?status=pending').then(r=>r.json());
-  const appr=await fetch('/api/submissions?status=approved').then(r=>r.json());
-  const rej=await fetch('/api/submissions?status=rejected').then(r=>r.json());
-  
-  const fetchedSubs=[...subData.filter(s=>s.team_id===myTeamId),...appr.filter(s=>s.team_id===myTeamId),...rej.filter(s=>s.team_id===myTeamId)];
-  fetchedSubs.sort((a,b)=>b.id-a.id);
-  
+  // PIN-authenticated: server returns ONLY our own data, plus leaderboard ONLY when unlocked
+  const data=await api('POST','/team/state',{teamId:myTeamId,pin:myPin});
+  if(data.error){ myTeamData=null; return; }
+  myTeamData=data.team;
+  rankLocked=!!data.rankLocked;
+  leaderboard=data.leaderboard; // null when locked
+
+  doneMap={};
+  if(myTeamData.completions)myTeamData.completions.forEach(c=>{doneMap[c.categoryId+'-'+c.taskNum]=true;});
+
+  const fetchedSubs=(data.submissions||[]).slice().sort((a,b)=>b.id-a.id);
   calculateUnreadBadges(fetchedSubs);
-  
+
   allSubs = fetchedSubs;
   pendingMap = {};
   allSubs.forEach(s=>{
@@ -574,7 +583,7 @@ function clearUnreadCounters() {
   document.getElementById('badgeRejected').style.display = 'none';
 }
 
-function myTeam(){return teams.find(t=>t.id===myTeamId);}
+function myTeam(){return myTeamData;}
 function myPoints(){
   const team=myTeam();if(!team)return 0;let pts=0;
   const done=getDoneMap(team);
@@ -588,15 +597,15 @@ function renderAll(){
   const team=myTeam();if(!team)return;
   const done=getDoneMap(team);const doneCount=Object.keys(done).length;
   const pts=myPoints();
-  const sorted=[...teams].sort((a,b)=>{const pa=getDoneMap(a);const pb=getDoneMap(b);let sa=0,sb=0;CATEGORIES.forEach(c=>c.tasks.forEach(t=>{if(pa[c.id+'-'+t.num])sa+=t.pts;if(pb[c.id+'-'+t.num])sb+=t.pts;}));return sb-sa;});
-  const rank=sorted.findIndex(t=>t.id===myTeamId)+1;
+  // Rank comes from the server-provided leaderboard (null when locked)
+  const rank = leaderboard ? (leaderboard.findIndex(t=>t.id===myTeamId)+1) : 0;
   const pendingCount=allSubs.filter(s=>s.status==='pending').length;
 
   document.getElementById('myStats').innerHTML=
     '<div class="stat"><div class="s-num">'+pts+'</div><div class="s-label">Score</div></div>'+
     '<div class="stat"><div class="s-num" style="color:var(--green)">'+doneCount+'</div><div class="s-label">Approved</div></div>'+
     '<div class="stat"><div class="s-num" style="color:var(--blue)">'+pendingCount+'</div><div class="s-label">Pending</div></div>'+
-    (rankLocked ? '' : '<div class="stat"><div class="s-num" style="color:var(--purple)">#'+rank+'</div><div class="s-label">Rank</div></div>');
+    ((rankLocked || !rank) ? '' : '<div class="stat"><div class="s-num" style="color:var(--purple)">#'+rank+'</div><div class="s-label">Rank</div></div>');
 
   renderCatProgress();renderHistory();renderLB();
   applyRankLock();
@@ -815,15 +824,13 @@ function renderHistory(){
 }
 
 function renderLB(){
-  if(rankLocked){document.getElementById('miniLB').innerHTML='';return;}
-  const calcPts=t=>{const d=getDoneMap(t);let p=0;CATEGORIES.forEach(c=>c.tasks.forEach(tk=>{if(d[c.id+'-'+tk.num])p+=tk.pts;}));return p;};
-  const sorted=[...teams].sort((a,b)=>calcPts(b)-calcPts(a));
-  document.getElementById('miniLB').innerHTML=sorted.map((t,i)=>{
-    const pts=calcPts(t);const isMe=t.id===myTeamId;
+  if(rankLocked || !leaderboard){document.getElementById('miniLB').innerHTML='';return;}
+  document.getElementById('miniLB').innerHTML=leaderboard.map((t,i)=>{
+    const isMe=t.id===myTeamId;
     const rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
     return '<div class="mlb-entry'+(isMe?' me':'')+'"><div class="mlb-rank '+rc+'">'+(i+1)+'</div>'+
       '<div class="mlb-dot" style="background:'+t.color+'"></div><div class="mlb-name">'+t.name+(isMe?' (You)':'')+'</div>'+
-      '<div class="mlb-pts">'+pts+' pts</div></div>';
+      '<div class="mlb-pts">'+t.points+' pts</div></div>';
   }).join('');
 }
 
