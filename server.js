@@ -299,6 +299,173 @@ app.post('/api/team/state', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// ANALYTICS DASHBOARD (admin only) — computes the full stats suite
+// ═══════════════════════════════════════════════════════════════
+app.get('/api/analytics', async (req, res) => {
+  try {
+    if (!isAdmin(req)) return res.status(403).json({ error: 'Forbidden' });
+
+    const teams       = await query('SELECT * FROM teams ORDER BY id');
+    const members     = await query('SELECT * FROM members');
+    const tasks       = await query('SELECT * FROM tasks');
+    const completions = await query('SELECT * FROM completions');
+    const subs        = await query('SELECT * FROM submissions');
+
+    const ptOf = (cid, tn) => { const m = tasks.find(t => t.category_id === cid && t.task_num === tn); return m ? (m.points || 20) : 20; };
+    const activeTeams = teams.filter(t => !t.disqualified);
+
+    // ---- Points per team + standings ----
+    const teamStats = teams.map(t => {
+      const comps = completions.filter(c => c.team_id === t.id);
+      const points = comps.reduce((s, c) => s + ptOf(c.category_id, c.task_num), 0);
+      const tSubs = subs.filter(s => s.team_id === t.id);
+      const approved = tSubs.filter(s => s.status === 'approved').length;
+      const rejected = tSubs.filter(s => s.status === 'rejected').length;
+      const pending  = tSubs.filter(s => s.status === 'pending').length;
+      const reviewed = approved + rejected;
+      return {
+        id: t.id, name: t.name, color: t.color, disqualified: !!t.disqualified,
+        members: members.filter(m => m.team_id === t.id).length,
+        points, completions: comps.length,
+        submissions: tSubs.length, approved, rejected, pending,
+        rejectionRate: reviewed ? Math.round((rejected / reviewed) * 100) : 0,
+        lastActivity: comps.concat(tSubs.map(s => ({ completed_at: s.submitted_at })))
+          .reduce((mx, x) => { const d = new Date(x.completed_at); return d > mx ? d : mx; }, new Date(0))
+      };
+    });
+    const standings = [...teamStats].filter(t => !t.disqualified).sort((a, b) => b.points - a.points);
+
+    // ---- KPIs ----
+    const totalTaskPoints = tasks.reduce((s, t) => s + (t.points || 20), 0);
+    const totalAwarded = teamStats.reduce((s, t) => s + t.points, 0);
+    const reviewedSubs = subs.filter(s => s.status !== 'pending');
+    const approvedSubs = subs.filter(s => s.status === 'approved');
+    const turnaround = reviewedSubs
+      .filter(s => s.reviewed_at && s.submitted_at)
+      .map(s => (new Date(s.reviewed_at) - new Date(s.submitted_at)) / 60000); // minutes
+    const avgTurnaround = turnaround.length ? Math.round(turnaround.reduce((a, b) => a + b, 0) / turnaround.length) : 0;
+    const teamsThatSubmitted = new Set(subs.map(s => s.team_id)).size;
+
+    const kpis = {
+      teams: teams.length,
+      activeTeams: activeTeams.length,
+      members: members.length,
+      tasks: tasks.length,
+      totalTaskPoints,
+      totalCompletions: completions.length,
+      totalAwarded,
+      avgPointsPerTeam: activeTeams.length ? Math.round(totalAwarded / activeTeams.length) : 0,
+      totalSubmissions: subs.length,
+      pending: subs.filter(s => s.status === 'pending').length,
+      approved: approvedSubs.length,
+      rejected: subs.filter(s => s.status === 'rejected').length,
+      approvalRate: reviewedSubs.length ? Math.round((approvedSubs.length / reviewedSubs.length) * 100) : 0,
+      avgReviewMinutes: avgTurnaround,
+      participationRate: teams.length ? Math.round((teamsThatSubmitted / teams.length) * 100) : 0
+    };
+
+    // ---- The Race ----
+    const race = {
+      podium: standings.slice(0, 3),
+      gapLeaderToSecond: standings.length > 1 ? standings[0].points - standings[1].points : 0,
+      maxPoints: standings.length ? standings[0].points : 0
+    };
+    // momentum: points earned in the last 60 minutes per team
+    const hourAgo = new Date(Date.now() - 3600 * 1000);
+    const momentum = teams.map(t => {
+      const recent = completions.filter(c => c.team_id === t.id && new Date(c.completed_at) >= hourAgo);
+      return { id: t.id, name: t.name, color: t.color, gained: recent.reduce((s, c) => s + ptOf(c.category_id, c.task_num), 0) };
+    }).filter(m => m.gained > 0).sort((a, b) => b.gained - a.gained).slice(0, 5);
+
+    // ---- Task Intelligence ----
+    const taskStats = tasks.map(t => {
+      const comps = completions.filter(c => c.category_id === t.category_id && c.task_num === t.task_num).length;
+      const tSubs = subs.filter(s => s.category_id === t.category_id && s.task_num === t.task_num);
+      const rej = tSubs.filter(s => s.status === 'rejected').length;
+      const rev = tSubs.filter(s => s.status !== 'pending').length;
+      return {
+        id: t.id, name: t.task_name, category: t.category_name, icon: t.category_icon,
+        level: t.level, points: t.points || 20,
+        completions: comps,
+        completionRate: activeTeams.length ? Math.round((comps / activeTeams.length) * 100) : 0,
+        attempts: tSubs.length,
+        rejectionRate: rev ? Math.round((rej / rev) * 100) : 0
+      };
+    });
+    const taskIntel = {
+      hardest: [...taskStats].sort((a, b) => a.completionRate - b.completionRate).slice(0, 6),
+      easiest: [...taskStats].sort((a, b) => b.completionRate - a.completionRate).slice(0, 6),
+      mostRejected: [...taskStats].filter(t => t.attempts > 0).sort((a, b) => b.rejectionRate - a.rejectionRate).slice(0, 6),
+      untouched: taskStats.filter(t => t.completions === 0 && t.attempts === 0).length
+    };
+
+    // ---- Points by difficulty tier ----
+    const tiers = ['Easy', 'Medium', 'Hard', 'Rare'];
+    const byTier = tiers.map(level => {
+      const tl = tasks.filter(t => (t.level || 'Easy') === level);
+      const earned = completions
+        .filter(c => { const m = tasks.find(t => t.category_id === c.category_id && t.task_num === c.task_num); return m && (m.level || 'Easy') === level; })
+        .reduce((s, c) => s + ptOf(c.category_id, c.task_num), 0);
+      return { level, taskCount: tl.length, earned };
+    });
+
+    // ---- Activity timeline: submissions per hour (last 24h) ----
+    const now = new Date();
+    const timeline = [];
+    for (let i = 23; i >= 0; i--) {
+      const start = new Date(now.getTime() - i * 3600 * 1000); start.setMinutes(0, 0, 0);
+      const end = new Date(start.getTime() + 3600 * 1000);
+      const count = subs.filter(s => { const d = new Date(s.submitted_at); return d >= start && d < end; }).length;
+      timeline.push({ hour: start.getHours(), label: start.getHours() + ':00', count });
+    }
+    const last15 = subs.filter(s => new Date(s.submitted_at) >= new Date(Date.now() - 15 * 60000)).length;
+    const lastHour = subs.filter(s => new Date(s.submitted_at) >= hourAgo).length;
+
+    // ---- Category heatmap: team × category completion % ----
+    const cats = [];
+    tasks.forEach(t => { if (!cats.find(c => c.id === t.category_id)) cats.push({ id: t.category_id, name: t.category_name, icon: t.category_icon, total: 0 }); });
+    cats.forEach(c => { c.total = tasks.filter(t => t.category_id === c.id).length; });
+    const heatmap = teams.map(t => ({
+      id: t.id, name: t.name, color: t.color,
+      cells: cats.map(c => {
+        const done = completions.filter(x => x.team_id === t.id && x.category_id === c.id).length;
+        return { categoryId: c.id, done, total: c.total, pct: c.total ? Math.round((done / c.total) * 100) : 0 };
+      })
+    }));
+
+    // ---- Review operations ----
+    const pendingSubs = subs.filter(s => s.status === 'pending');
+    const oldestPending = pendingSubs.length
+      ? Math.round((Date.now() - Math.min(...pendingSubs.map(s => new Date(s.submitted_at)))) / 60000)
+      : 0;
+    const rejReasons = {};
+    subs.filter(s => s.status === 'rejected' && s.rejection_comment)
+      .forEach(s => { const r = s.rejection_comment.trim(); rejReasons[r] = (rejReasons[r] || 0) + 1; });
+    const topRejections = Object.entries(rejReasons).map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count).slice(0, 5);
+
+    const reviewOps = {
+      pending: pendingSubs.length,
+      oldestPendingMinutes: oldestPending,
+      approved: approvedSubs.length,
+      rejected: kpis.rejected,
+      topRejections
+    };
+
+    res.json({
+      generatedAt: new Date().toISOString(),
+      kpis, race, momentum,
+      standings,
+      teamHealth: teamStats,
+      taskIntel, byTier,
+      timeline, activityPulse: { last15, lastHour },
+      categories: cats, heatmap,
+      reviewOps
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // Teams CRUD
 app.post('/api/teams', async (req, res) => {
   const client = await pool.connect();
