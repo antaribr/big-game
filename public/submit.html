@@ -240,6 +240,7 @@
   .lvl-medium { background: var(--blue-light); color: #1e40af; }
   .lvl-hard { background: var(--orange-light); color: #9a3412; }
   .lvl-rare { background: var(--purple-light); color: #5b21b6; }
+  .lvl-bonus { background: #fef3c7; color: #b45309; }
 
   .upload-area { border: 2px dashed #cbd5e1; border-radius: var(--radius-md); padding: 28px 16px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--card); position: relative; box-shadow: var(--shadow-sm); }
   .upload-area:active { border-color: var(--orange); background: var(--orange-light); }
@@ -652,8 +653,10 @@ function renderTasks(){
   document.getElementById('taskList').innerHTML=cat.tasks.map(t=>{
     const key=myCatId+'-'+t.num;const isDone=done[key];const subStatus=pendingMap[key];
     const isPending=subStatus==='pending';const isRejected=subStatus==='rejected';
+    const isBonus=t.num>=900;
     let cls='',status='',clickable=true;
-    if(isDone){cls='done';status='✅ Approved';clickable=false;}
+    if(isBonus){cls=isDone?'done':'';status=isDone?'🏆 +'+t.pts+' Won!':'🤖 Auto +'+t.pts;clickable=false;}
+    else if(isDone){cls='done';status='✅ Approved';clickable=false;}
     else if(isPending){cls='pending';status='⏳ Waiting';clickable=false;}
     else if(isRejected){cls='rejected';status='❌ Retry Flag';clickable=true;}
     else {status='+'+t.pts+' pts';}
@@ -839,5 +842,5 @@ async function manualRefresh() { if(myTeamId){await loadSubs();renderAll();if(ac
 init();
 setInterval(async()=>{if(myTeamId){await loadSubs();renderAll();if(activeSection==='home'&&myCatId)renderTasks();}},3000);
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0fd014d2ba1cac8',t:'MTc4MjE0OTY4MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
