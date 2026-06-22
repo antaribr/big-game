@@ -140,6 +140,7 @@ async function initDatabase() {
   } finally {
     client.release();
   }
+  await ensureBonusTasks();
 }
 
 async function seedDatabase(client) {
@@ -183,6 +184,69 @@ async function getTeamsFull() {
     completions: completions.filter(c => c.team_id === t.id).map(c => ({ categoryId: c.category_id, taskNum: c.task_num }))
   }));
 }
+
+// ═══════════════════════════════════════════════════════════════
+// AUTO BONUS: "First team to finish all Easy / Medium / Hard tasks" (+70 each)
+// ═══════════════════════════════════════════════════════════════
+const BONUS_POINTS = 70;
+const BONUS_DEFS = [
+  { task_num: 901, level: 'Easy',   task_name: 'First team to finish ALL Easy tasks' },
+  { task_num: 902, level: 'Medium', task_name: 'First team to finish ALL Medium tasks' },
+  { task_num: 903, level: 'Hard',   task_name: 'First team to finish ALL Hard tasks' }
+];
+
+// Find (or create) the Bonus category id. Reuses any existing category named like "bonus".
+async function getBonusCategory() {
+  const existing = await queryOne("SELECT category_id, category_name, category_icon FROM tasks WHERE LOWER(category_name) LIKE '%bonus%' AND task_num < 900 LIMIT 1");
+  if (existing) return { id: existing.category_id, name: existing.category_name, icon: existing.category_icon || '🎖️' };
+  return { id: 'bonus', name: 'Bonus 🎖️', icon: '🎖️' };
+}
+
+// Ensure the 3 bonus task rows exist in the tasks table (so they show up & carry points)
+async function ensureBonusTasks() {
+  const cat = await getBonusCategory();
+  for (const b of BONUS_DEFS) {
+    await pool.query(
+      `INSERT INTO tasks ("category_id","category_name","category_icon","task_num","task_name","evidence","level","points","comment")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       ON CONFLICT (category_id, task_num) DO UPDATE SET task_name = EXCLUDED.task_name, points = EXCLUDED.points`,
+      [cat.id, cat.name, cat.icon, b.task_num, b.task_name, '', 'Bonus', BONUS_POINTS, 'Auto-awarded by the system to the first team that finishes all ' + b.level + ' tasks.']
+    );
+  }
+  return cat;
+}
+
+// After any completion changes, award unclaimed bonuses to the first qualifying team.
+async function checkBonusAwards() {
+  try {
+    const cat = await getBonusCategory();
+    const tasks = await query("SELECT category_id, task_num, level FROM tasks WHERE task_num < 900");
+    const completions = await query('SELECT team_id, category_id, task_num FROM completions');
+    const teams = await query('SELECT id, name FROM teams WHERE disqualified = 0 ORDER BY id');
+
+    for (const b of BONUS_DEFS) {
+      // Has anyone already claimed this specific bonus?
+      const claimed = await queryOne('SELECT team_id FROM completions WHERE category_id=$1 AND task_num=$2', [cat.id, b.task_num]);
+      if (claimed) continue;
+
+      // All real tasks of this difficulty level
+      const levelTasks = tasks.filter(t => (t.level || 'Easy') === b.level);
+      if (!levelTasks.length) continue; // no tasks of this level → nothing to win
+
+      // First qualifying team (lowest id order — deterministic)
+      for (const team of teams) {
+        const teamDone = completions.filter(c => c.team_id === team.id);
+        const finishedAll = levelTasks.every(lt => teamDone.some(c => c.category_id === lt.category_id && c.task_num === lt.task_num));
+        if (finishedAll) {
+          await pool.query('INSERT INTO completions (team_id, category_id, task_num) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING', [team.id, cat.id, b.task_num]);
+          await addLog(team.id, '🏆', `${team.name} earned +${BONUS_POINTS} BONUS — first to finish all ${b.level} tasks!`);
+          break; // only the first team wins this bonus
+        }
+      }
+    }
+  } catch (e) { console.error('Bonus check error:', e.message); }
+}
+
 
 // ═══════════════════════════════════════════════════════════════
 // ADMIN LOGIN
@@ -632,6 +696,7 @@ app.post('/api/completions/toggle', async (req, res) => {
     } else {
       await pool.query('INSERT INTO completions (team_id, category_id, task_num) VALUES ($1, $2, $3)', [teamId, categoryId, taskNum]);
       await addLog(teamId, '✅', team.name+' completed '+categoryId+'-'+taskNum);
+      await checkBonusAwards();
       res.json({ completed: true });
     }
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -642,6 +707,7 @@ app.post('/api/submissions', async (req, res) => {
   try {
     const { teamId, categoryId, taskNum, note, evidence, fileName, fileData } = req.body;
     if (!teamId || !categoryId || !taskNum) return res.status(400).json({ error: 'Missing fields' });
+    if (parseInt(taskNum) >= 900) return res.status(400).json({ error: 'This is an automatic bonus — it is awarded by the system, not submitted.' });
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [teamId]);
     if (!team) return res.status(404).json({ error: 'Team not found' });
     const pending = await queryOne("SELECT * FROM submissions WHERE team_id=$1 AND category_id=$2 AND task_num=$3 AND status='pending'", [teamId, categoryId, taskNum]);
@@ -702,6 +768,7 @@ app.put('/api/submissions/:id/approve', async (req, res) => {
     if (!existing) await pool.query('INSERT INTO completions (team_id, category_id, task_num) VALUES ($1, $2, $3)', [sub.team_id, sub.category_id, sub.task_num]);
     const team = await queryOne('SELECT name FROM teams WHERE id=$1', [sub.team_id]);
     await addLog(sub.team_id, '✅', team.name+' — '+sub.category_id+'-'+sub.task_num+' APPROVED');
+    await checkBonusAwards();
 
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -922,7 +989,7 @@ app.delete('/api/categories/:catId', async (req, res) => {
 
 app.get('/api/tasks/export', async (req, res) => {
   try {
-    const tasks = await query('SELECT * FROM tasks ORDER BY category_id, task_num');
+    const tasks = await query('SELECT * FROM tasks WHERE task_num < 900 ORDER BY category_id, task_num');
     let csv = 'Category ID,Category Name,Task ID,Task Name,Evidence,Level,Comment\n';
     for (const t of tasks) {
       csv += [t.category_id, '"'+String(t.category_name).replace(/"/g,'""')+'"', t.task_num,
@@ -972,12 +1039,15 @@ app.post('/api/tasks/import', async (req, res) => {
       const evidence = cols || '', level = cols || 'Easy', comment = cols || '';
       
       if (!catId || !taskNum || !taskName) continue;
+      if (taskNum >= 900) continue; // reserved for auto bonus tasks
       const pts = LEVEL_PTS[level.toLowerCase()] || 20;
       const icon = catIcons[catId] || '📋';
       await pool.query('INSERT INTO tasks ("category_id","category_name","category_icon","task_num","task_name","evidence","level","points","comment") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
         [catId, catName, icon, taskNum, taskName, evidence, level, pts, comment]);
       imported++;
     }
+    await ensureBonusTasks();
+    await checkBonusAwards();
     await addLog(null, '📥', imported+' tasks imported from CSV');
     res.json({ success: true, imported });
   } catch (err) { res.status(500).json({ error: err.message }); }
