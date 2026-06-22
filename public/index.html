@@ -6,6 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>Event — Point System Admin</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -126,6 +127,39 @@
   .toast { background: var(--card); border: 1px solid var(--border); border-radius: 0.6rem; padding: 12px 18px; font-size: .88rem; font-weight: 600; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 8px; animation: toastSlide 0.2s ease; }
   @keyframes toastSlide { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
   .empty-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: .88rem; font-style: italic; }
+
+  /* ── Dashboard ── */
+  .dash-grid { display: grid; gap: 16px; margin-bottom: 16px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); border-left: 4px solid var(--orange); }
+  .kpi .k-num { font-size: 1.7rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+  .kpi .k-label { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; margin-top: 6px; }
+  .kpi .k-sub { font-size: .72rem; color: var(--text-dim); font-weight: 600; margin-top: 3px; }
+  .dash-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .dash-2col { grid-template-columns: 1fr; } }
+  .dash-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+  .dash-card h3 { font-size: 1rem; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; letter-spacing: -0.01em; }
+  .dash-card .chart-box { position: relative; height: 260px; }
+  .podium-row { display: flex; gap: 10px; align-items: flex-end; justify-content: center; margin-bottom: 8px; }
+  .podium-col { flex: 1; max-width: 130px; text-align: center; }
+  .podium-bar { border-radius: 10px 10px 0 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 8px; color: #fff; font-weight: 800; font-size: 1.1rem; box-shadow: var(--shadow); }
+  .podium-name { font-weight: 800; font-size: .85rem; margin-top: 8px; }
+  .podium-pts { font-size: .78rem; color: var(--text-dim); font-weight: 700; }
+  .mini-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .85rem; }
+  .mini-row:last-child { border-bottom: none; }
+  .mini-row .mr-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .mini-row .mr-name { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini-row .mr-val { font-weight: 800; }
+  .mini-bar-track { flex: 1; height: 8px; background: var(--bg); border-radius: 100px; overflow: hidden; }
+  .mini-bar-fill { height: 100%; border-radius: 100px; }
+  .pill-tag { display: inline-block; padding: 2px 8px; border-radius: 50px; font-size: .68rem; font-weight: 800; }
+  /* heatmap */
+  .heatmap-wrap { overflow-x: auto; }
+  .heatmap { border-collapse: collapse; width: 100%; font-size: .78rem; }
+  .heatmap th { padding: 8px 6px; text-align: center; font-weight: 700; color: var(--text-dim); font-size: .72rem; position: sticky; }
+  .heatmap td.team-cell { font-weight: 700; white-space: nowrap; padding: 6px 10px 6px 4px; }
+  .heatmap td.hm { text-align: center; padding: 4px; }
+  .hm-box { width: 100%; height: 30px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .7rem; color: #fff; }
   .log-item { padding: 10px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 0.5rem; font-size: .85rem; margin-bottom: 8px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px; }
 </style>
 </head>
@@ -156,7 +190,8 @@
   <div class="stats-row" id="dashStats"></div>
 
   <div class="nav-bar">
-    <button class="active" onclick="showSection('leaderboard',this)">🏅 Standings</button>
+    <button class="active" onclick="showSection('dashboard',this)">📊 Dashboard</button>
+    <button onclick="showSection('leaderboard',this)">🏅 Standings</button>
     <button onclick="showSection('taskcenter',this)">📝 Task Center</button>
     <button onclick="showSection('team',this)">👤 Team View</button>
     <button onclick="showSection('teams',this)">⚙️ Manage Teams</button>
@@ -165,7 +200,78 @@
     <button onclick="showSection('activity',this)">📜 Log</button>
   </div>
 
-  <div class="section active" id="section-leaderboard">
+  <div class="section active" id="section-dashboard">
+    <div class="section-header" style="margin-bottom:16px;">
+      <h2>📊 Event Dashboard</h2>
+      <span id="dashUpdated" style="font-size:.75rem;color:var(--text-muted);font-weight:600"></span>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <!-- The Race + Momentum -->
+    <div class="dash-2col">
+      <div class="dash-card">
+        <h3>🏁 The Race</h3>
+        <div id="podium"></div>
+        <div id="raceGap" style="text-align:center;font-size:.82rem;color:var(--text-dim);font-weight:600;margin-top:10px"></div>
+      </div>
+      <div class="dash-card">
+        <h3>⚡ Momentum <span style="font-size:.72rem;color:var(--text-muted);font-weight:600">(last hour)</span></h3>
+        <div id="momentum"></div>
+      </div>
+    </div>
+
+    <!-- Standings chart + Points by tier -->
+    <div class="dash-2col">
+      <div class="dash-card">
+        <h3>🏅 Standings</h3>
+        <div class="chart-box"><canvas id="chartStandings"></canvas></div>
+      </div>
+      <div class="dash-card">
+        <h3>💎 Points by Difficulty</h3>
+        <div class="chart-box"><canvas id="chartTier"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Activity timeline -->
+    <div class="dash-card">
+      <h3>⏱️ Submissions Activity <span id="pulse" style="font-size:.72rem;color:var(--text-muted);font-weight:600"></span></h3>
+      <div class="chart-box"><canvas id="chartTimeline"></canvas></div>
+    </div>
+
+    <!-- Task intelligence -->
+    <div class="dash-2col">
+      <div class="dash-card">
+        <h3>🧗 Hardest Tasks <span style="font-size:.72rem;color:var(--text-muted);font-weight:600">(lowest completion)</span></h3>
+        <div id="hardestTasks"></div>
+      </div>
+      <div class="dash-card">
+        <h3>🚩 Most Rejected Tasks</h3>
+        <div id="rejectedTasks"></div>
+      </div>
+    </div>
+
+    <!-- Category heatmap -->
+    <div class="dash-card">
+      <h3>🔥 Category Heatmap <span style="font-size:.72rem;color:var(--text-muted);font-weight:600">(completion % per team)</span></h3>
+      <div class="heatmap-wrap" id="heatmap"></div>
+    </div>
+
+    <!-- Team health + Review ops -->
+    <div class="dash-2col">
+      <div class="dash-card">
+        <h3>🩺 Team Health <span style="font-size:.72rem;color:var(--text-muted);font-weight:600">(rejection rate)</span></h3>
+        <div id="teamHealth"></div>
+      </div>
+      <div class="dash-card">
+        <h3>📨 Review Operations</h3>
+        <div id="reviewOps"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="section-leaderboard">
     <div class="section-card">
       <div class="section-header">
         <h2>🏅 Live Standings</h2>
@@ -404,6 +510,7 @@ function showSection(id, btn) {
   document.getElementById('section-'+id).classList.add('active');
   document.querySelectorAll('.nav-bar button').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
+  if (id === 'dashboard') loadDashboard();
   refreshAll();
 }
 
@@ -557,7 +664,7 @@ function renderTeamView() {
 // Brand palette + logo paths for the Summary Report PDF (matches the official template)
 const PDF_RED = '#d71d25';
 const PDF_YELLOW = '#fde204';
-const PDF_JIBA_LOGO = '/jiba_logo.png';     // جيبا وصيبا dartboard logo
+const PDF_JIBA_LOGO = '/report_jiba_logo.png';     // جيبا وصيبا dartboard logo
 const PDF_SCOUT_LOGO = '/report_scout_full.png';   // Lebanese Scout logo (fleur + text baked in)
 const PDF_BG = '/background.png';                   // full-page background image
 
@@ -577,6 +684,135 @@ function loadImageAsDataURL(src) {
     img.onerror = () => resolve('');
     img.src = src;
   });
+}
+
+// ════════ DASHBOARD ════════
+let dashCharts = {};
+async function loadDashboard() {
+  let d;
+  try { d = await api('GET', '/analytics'); }
+  catch (e) { document.getElementById('kpiGrid').innerHTML = '<div class="empty-state">Could not load analytics.</div>'; return; }
+  if (!d || d.error) { document.getElementById('kpiGrid').innerHTML = '<div class="empty-state">Could not load analytics.</div>'; return; }
+  renderDashboard(d);
+}
+
+function fmtMins(m) {
+  if (!m) return '—';
+  if (m < 60) return m + ' min';
+  const h = Math.floor(m / 60), mm = m % 60;
+  return h + 'h' + (mm ? ' ' + mm + 'm' : '');
+}
+
+function renderDashboard(d) {
+  document.getElementById('dashUpdated').textContent = 'Updated ' + new Date(d.generatedAt).toLocaleTimeString();
+
+  // KPIs
+  const k = d.kpis;
+  const kpi = (num, label, sub, color) =>
+    `<div class="kpi" style="border-left-color:${color||'var(--orange)'}"><div class="k-num" style="color:${color||'var(--text)'}">${num}</div><div class="k-label">${label}</div>${sub?`<div class="k-sub">${sub}</div>`:''}</div>`;
+  document.getElementById('kpiGrid').innerHTML =
+    kpi(k.activeTeams, 'Active Teams', k.members+' members', 'var(--orange)') +
+    kpi(k.totalAwarded, 'Points Awarded', 'of '+k.totalTaskPoints+' possible', 'var(--green)') +
+    kpi(k.avgPointsPerTeam, 'Avg / Team', null, 'var(--blue)') +
+    kpi(k.totalCompletions, 'Completions', k.tasks+' tasks', 'var(--purple)') +
+    kpi(k.pending, 'Pending Review', k.approved+' approved', '#f59e0b') +
+    kpi(k.approvalRate+'%', 'Approval Rate', k.rejected+' rejected', 'var(--green)') +
+    kpi(fmtMins(k.avgReviewMinutes), 'Avg Review Time', null, 'var(--blue)') +
+    kpi(k.participationRate+'%', 'Participation', 'teams that submitted', 'var(--purple)');
+
+  // Podium
+  const podHeights = [110, 130, 90]; // 2nd, 1st, 3rd visual
+  const p = d.race.podium;
+  const order = [p[1], p[0], p[2]]; // left=2nd, middle=1st, right=3rd
+  const medal = ['🥈','🥇','🥉'];
+  const heights = [100, 130, 80];
+  document.getElementById('podium').innerHTML = '<div class="podium-row">' + order.map((t, i) => {
+    if (!t) return '<div class="podium-col"></div>';
+    return `<div class="podium-col">
+      <div class="podium-name">${medal[i]} ${t.name}</div>
+      <div class="podium-bar" style="height:${heights[i]}px;background:${t.color}">${t.points}</div>
+      <div class="podium-pts">${t.points} pts</div></div>`;
+  }).join('') + '</div>';
+  document.getElementById('raceGap').textContent = d.race.gapLeaderToSecond > 0
+    ? `Leader is ${d.race.gapLeaderToSecond} pts ahead of 2nd place`
+    : (p.length ? 'Tight race at the top!' : 'No teams yet');
+
+  // Momentum
+  document.getElementById('momentum').innerHTML = d.momentum.length
+    ? d.momentum.map(m => `<div class="mini-row"><span class="mr-dot" style="background:${m.color}"></span><span class="mr-name">${m.name}</span><span class="mr-val" style="color:var(--green)">+${m.gained}</span></div>`).join('')
+    : '<div class="empty-state">No points earned in the last hour.</div>';
+
+  // Standings chart
+  drawChart('chartStandings', 'bar', {
+    labels: d.standings.map(t => t.name),
+    datasets: [{ label: 'Points', data: d.standings.map(t => t.points), backgroundColor: d.standings.map(t => t.color), borderRadius: 6 }]
+  }, { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } });
+
+  // Points by tier
+  drawChart('chartTier', 'doughnut', {
+    labels: d.byTier.map(t => t.level + ' (' + t.taskCount + ')'),
+    datasets: [{ data: d.byTier.map(t => t.earned), backgroundColor: ['#10b981','#3b82f6','#f97316','#8b5cf6'] }]
+  }, { plugins: { legend: { position: 'bottom' } } });
+
+  // Timeline
+  document.getElementById('pulse').textContent = `(${d.activityPulse.lastHour} in last hour · ${d.activityPulse.last15} in 15 min)`;
+  drawChart('chartTimeline', 'line', {
+    labels: d.timeline.map(t => t.label),
+    datasets: [{ label: 'Submissions', data: d.timeline.map(t => t.count), borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.15)', fill: true, tension: 0.35, pointRadius: 2 }]
+  }, { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } });
+
+  // Hardest tasks
+  const taskRow = (t, valLabel, val, color) =>
+    `<div class="mini-row"><span class="mr-name">${t.icon||'📋'} ${t.name}</span><span class="pill-tag" style="background:${color}22;color:${color}">${val}</span></div>`;
+  document.getElementById('hardestTasks').innerHTML = d.taskIntel.hardest.length
+    ? d.taskIntel.hardest.map(t => taskRow(t, '', t.completionRate + '% done', '#ef4444')).join('')
+    : '<div class="empty-state">No tasks yet.</div>';
+
+  document.getElementById('rejectedTasks').innerHTML = d.taskIntel.mostRejected.length
+    ? d.taskIntel.mostRejected.map(t => taskRow(t, '', t.rejectionRate + '% rejected', '#f59e0b')).join('')
+    : '<div class="empty-state">No rejections yet 🎉</div>';
+
+  // Heatmap
+  const cats = d.categories;
+  let hm = '<table class="heatmap"><thead><tr><th style="text-align:left">Team</th>' +
+    cats.map(c => `<th>${c.icon||''}<br>${c.name}</th>`).join('') + '</tr></thead><tbody>';
+  d.heatmap.forEach(t => {
+    hm += `<tr><td class="team-cell"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${t.color};margin-right:5px"></span>${t.name}</td>`;
+    t.cells.forEach(c => {
+      const a = c.pct / 100;
+      const bg = c.pct === 0 ? '#f1f5f9' : `rgba(16,185,129,${0.15 + a * 0.85})`;
+      const col = c.pct >= 45 ? '#fff' : 'var(--text-dim)';
+      hm += `<td class="hm"><div class="hm-box" style="background:${bg};color:${col}">${c.pct}%</div></td>`;
+    });
+    hm += '</tr>';
+  });
+  hm += '</tbody></table>';
+  document.getElementById('heatmap').innerHTML = cats.length ? hm : '<div class="empty-state">No categories yet.</div>';
+
+  // Team health (rejection rate bars)
+  const th = [...d.teamHealth].sort((a, b) => b.rejectionRate - a.rejectionRate);
+  document.getElementById('teamHealth').innerHTML = th.length
+    ? th.map(t => `<div class="mini-row"><span class="mr-dot" style="background:${t.color}"></span><span class="mr-name">${t.name}${t.disqualified?' 🚫':''}</span>
+        <div class="mini-bar-track" style="max-width:120px"><div class="mini-bar-fill" style="width:${t.rejectionRate}%;background:${t.rejectionRate>40?'#ef4444':t.rejectionRate>20?'#f59e0b':'#10b981'}"></div></div>
+        <span class="mr-val" style="min-width:38px;text-align:right">${t.rejectionRate}%</span></div>`).join('')
+    : '<div class="empty-state">No teams yet.</div>';
+
+  // Review ops
+  const r = d.reviewOps;
+  document.getElementById('reviewOps').innerHTML =
+    `<div class="mini-row"><span class="mr-name">⏳ Pending in queue</span><span class="mr-val">${r.pending}</span></div>
+     <div class="mini-row"><span class="mr-name">🕒 Oldest pending</span><span class="mr-val">${fmtMins(r.oldestPendingMinutes)}</span></div>
+     <div class="mini-row"><span class="mr-name">✅ Approved</span><span class="mr-val" style="color:var(--green)">${r.approved}</span></div>
+     <div class="mini-row"><span class="mr-name">❌ Rejected</span><span class="mr-val" style="color:var(--red)">${r.rejected}</span></div>` +
+    (r.topRejections.length ? '<div style="margin-top:10px;font-size:.75rem;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em">Top rejection reasons</div>' +
+      r.topRejections.map(x => `<div class="mini-row"><span class="mr-name" style="font-style:italic">"${x.reason}"</span><span class="mr-val">${x.count}×</span></div>`).join('') : '');
+}
+
+function drawChart(id, type, data, options) {
+  const el = document.getElementById(id);
+  if (!el || typeof Chart === 'undefined') return;
+  if (dashCharts[id]) dashCharts[id].destroy();
+  dashCharts[id] = new Chart(el, { type, data, options: Object.assign({ responsive: true, maintainAspectRatio: false }, options || {}) });
 }
 
 function renderRankLockBtn() {
@@ -1132,7 +1368,7 @@ async function adminLogin() {
     localStorage.setItem('evt_admin_token', data.token || '');
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
-    await loadCategoriesFromDB(); await loadState(); refreshAll();
+    await loadCategoriesFromDB(); await loadState(); refreshAll(); loadDashboard();
   } else { alert('Wrong password.'); }
 }
 
@@ -1153,13 +1389,18 @@ function escapeHtml(str) {
   if (localStorage.getItem('evt_admin_session') === '1' && adminToken()) {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
-    setTimeout(async () => { await loadCategoriesFromDB(); await loadState(); refreshAll(); }, 50);
+    setTimeout(async () => { await loadCategoriesFromDB(); await loadState(); refreshAll(); loadDashboard(); }, 50);
   }
 })();
 
 setInterval(async () => {
   if (localStorage.getItem('evt_admin_session') === '1') { await loadState(); renderSubmissions(); renderActivityLogs(); renderMetrics(); }
 }, 3000);
+
+// Dashboard refreshes less often (full chart redraw) to avoid flicker
+setInterval(() => {
+  if (localStorage.getItem('evt_admin_session') === '1' && document.getElementById('section-dashboard').classList.contains('active')) loadDashboard();
+}, 15000);
 </script>
 </body>
 </html>
